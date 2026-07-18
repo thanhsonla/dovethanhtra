@@ -116,6 +116,17 @@ try {
         `.execute(transaction)
       }
     }
+
+    await sql`
+      INSERT INTO treatment_facility (
+        code, name, facility_type, admin_area_id, location, address, metadata, created_by
+      ) SELECT
+        'M3_SAMPLE_TREATMENT', 'Cơ sở xử lý mẫu Mốc 3', 'treatment_facility', a.id,
+        ST_SetSRID(ST_MakePoint(104.72, 20.82), 4326), 'Fixture kỹ thuật',
+        '{"disclaimer":"Không dùng làm cơ sở xử lý chính thức."}'::jsonb, ${user.id}::uuid
+      FROM admin_area a WHERE a.code = 'M1_SAMPLE_AREA'
+      ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, active = true
+    `.execute(transaction)
   })
 
   process.stdout.write(

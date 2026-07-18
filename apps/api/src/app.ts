@@ -22,6 +22,11 @@ import { IdentityService } from './modules/identity/identity-service.js'
 import { MeasurementRepository } from './modules/measurements/measurement-repository.js'
 import { measurementRoutes } from './modules/measurements/measurement-routes.js'
 import { MeasurementService } from './modules/measurements/measurement-service.js'
+import { LocalRoutingProvider } from './modules/routing/local-routing-provider.js'
+import { RoutingRepository } from './modules/routing/routing-repository.js'
+import { routingRoutes } from './modules/routing/routing-routes.js'
+import { RoutingService } from './modules/routing/routing-service.js'
+import type { RoutingProvider } from './modules/routing/routing-provider.js'
 import { AppError } from './platform/app-error.js'
 import type { DatabaseHandle } from './platform/database.js'
 import type { ObjectStorageHandle } from './platform/object-storage.js'
@@ -33,6 +38,10 @@ export interface BuildAppOptions {
     objectStorage: ObjectStorageHandle
   }
   logger?: FastifyServerOptions['logger']
+  routing?: {
+    provider?: RoutingProvider
+    requestsPerMinute?: number
+  }
 }
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
@@ -91,7 +100,16 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   const audit = new AuditRepository(database)
   const catalogRepository = new CatalogRepository(database)
   const cases = new CaseService(database, new CaseRepository(database), audit)
-  const measurements = new MeasurementService(database, new MeasurementRepository(database), audit)
+  const measurementRepository = new MeasurementRepository(database)
+  const measurements = new MeasurementService(database, measurementRepository, audit)
+  const routing = new RoutingService(
+    database,
+    new RoutingRepository(database),
+    measurementRepository,
+    audit,
+    options.routing?.provider ?? new LocalRoutingProvider(),
+    options.routing?.requestsPerMinute ?? 30,
+  )
 
   await app.register(healthRoutes, {
     dependencies: options.dependencies,
@@ -119,6 +137,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     prefix: '/api/v1',
     service: measurements,
   })
+  await app.register(routingRoutes, { guards, prefix: '/api/v1', service: routing })
   await app.register(auditRoutes, {
     guards,
     prefix: '/api/v1/cases/:caseId/audit-events',

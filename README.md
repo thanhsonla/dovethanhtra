@@ -61,7 +61,7 @@ Sao chép toàn bộ thư mục vào repository mới, mở tại thư mục g�
 
 Không yêu cầu Codex xây toàn bộ ứng dụng trong một lượt. Mỗi lượt chỉ thực hiện một mốc có tiêu chí nghiệm thu và chạy kiểm thử trước khi chuyển mốc tiếp theo.
 
-### Chạy Mốc 2
+### Chạy Mốc 3
 
 Yêu cầu Node.js 24.18.0, pnpm 11.9.0 và Docker đang chạy. Từ thư mục gốc:
 
@@ -77,15 +77,20 @@ có thể cài Node/pnpm bằng công cụ khác nhưng `pnpm doctor` vẫn ph�
 cài dependency hoặc chạy kiểm thử.
 
 `pnpm dev` dùng cấu hình giả dành riêng cho local trong `.env.example`, khởi động
-PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 2 và seed dữ liệu local, sau đó mở API tại cổng
+PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 3 và seed dữ liệu local, sau đó mở API tại cổng
 `3000` và web tại cổng `5173`. Đăng nhập local bằng tài khoản giả trong
 `.env.example`. Không dùng các giá trị này cho staging hoặc production.
 
 Mốc 2 bổ sung không gian MapLibre ba vùng, hai nền kỹ thuật local qua
 `BasemapProvider`, vẽ/sửa điểm–tuyến–vùng và phép đo chính thức bằng PostGIS. Các
 nền local không gọi tile ngoài và không thay thế bản đồ địa chính; ranh giới seed
-chỉ là fixture kỹ thuật. Routing, GPS, ảnh, ngoại tuyến và xuất báo cáo chưa thuộc
-mốc này.
+chỉ là fixture kỹ thuật.
+
+Mốc 3 bổ sung cơ sở xử lý, waypoint, route nhiều phương án, phiên bản route và công
+thức xe.km/tấn.km/cự ly gia quyền. Local mặc định dùng `local-deterministic`, chỉ là
+fixture đường thẳng kỹ thuật. Để dùng Mapbox Directions, đặt `ROUTING_PROVIDER=mapbox`
+và cấp `MAPBOX_ACCESS_TOKEN` từ secret manager phía backend. GPS, ảnh, ngoại tuyến,
+đối chiếu và xuất báo cáo vẫn chưa thuộc mốc này.
 
 Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMAP_STYLE_URL`,
 `VITE_BASEMAP_LABEL` và `VITE_BASEMAP_ATTRIBUTION`. Cả URL và attribution phải có;

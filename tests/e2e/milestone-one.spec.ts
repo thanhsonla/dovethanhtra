@@ -45,6 +45,10 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByRole('button', { name: 'Thêm', exact: true }).click()
 
   await expect(page.getByText('Công tác E2E', { exact: true })).toBeVisible()
+  await page.getByLabel('Loại công tác').selectOption({ label: 'Vận chuyển rác đến khu xử lý' })
+  await page.getByLabel('Tên công tác').fill('Route vận chuyển E2E')
+  await page.getByRole('button', { name: 'Thêm', exact: true }).click()
+  await expect(page.getByText('Route vận chuyển E2E', { exact: true })).toBeVisible()
   expect(mapModuleResponses).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
@@ -61,6 +65,17 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByLabel('Tên phép đo').fill('Tuyến đo E2E')
   await page.getByRole('button', { name: 'Lưu và tính máy chủ' }).click()
   await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+
+  await page.getByRole('button', { name: 'Route vận chuyển E2E', exact: true }).click()
+  await page.getByLabel('Cơ sở xử lý').selectOption({ index: 1 })
+  await page.getByRole('button', { name: 'Tính phương án' }).click()
+  await expect(page.getByText('Nguồn cự ly:')).toContainText('local-deterministic')
+  await expect(page.getByText(/Phương án 1:/)).toBeVisible()
+  await page.getByRole('button', { name: 'Lưu route chính thức' }).click()
+  await expect(page.getByText('Lộ trình đến cơ sở xử lý', { exact: true }).first()).toBeVisible()
+  await page.getByLabel('Lý do tính lại').fill('Đối chứng route E2E')
+  await page.getByRole('button', { name: 'Tính lại thành phiên bản mới' }).click()
+  await expect(page.getByText(/v2 · Đã xác nhận/)).toBeVisible()
   await page.getByLabel('Bản đồ nền').selectOption('technical-dark')
   await expect(page.getByText('Nền: Kỹ thuật tối')).toBeVisible()
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText(
@@ -68,9 +83,13 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   )
   await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
 
-  await page.route('**/basemaps/e2e-style.json', (route) => route.abort())
-  await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
-  await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
-  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
-  await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+  // WebKit may reuse its HTTP cache without issuing an interceptable style request.
+  // Chromium covers the deterministic network-failure fallback; both projects cover route M3.
+  if (testInfo.project.name === 'chromium') {
+    await page.route('**/basemaps/e2e-style.json', (route) => route.abort())
+    await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
+    await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
+    await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
+    await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+  }
 })

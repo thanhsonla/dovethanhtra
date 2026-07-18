@@ -21,6 +21,13 @@ export const MeasurementGeometryKindSchema = Type.Union([
   Type.Literal('point'),
   Type.Literal('line'),
   Type.Literal('area'),
+  Type.Literal('route'),
+])
+
+export const DrawableMeasurementGeometryKindSchema = Type.Union([
+  Type.Literal('point'),
+  Type.Literal('line'),
+  Type.Literal('area'),
 ])
 
 export const MeasurementMethodSchema = Type.Union([
@@ -89,7 +96,7 @@ export const MeasurementSchema = Type.Object(
 export const CreateMeasurementRequestSchema = Type.Object(
   {
     name: Type.String({ minLength: 1, maxLength: 300 }),
-    geometryKind: MeasurementGeometryKindSchema,
+    geometryKind: DrawableMeasurementGeometryKindSchema,
     geometry: GeoJsonGeometrySchema,
     method: Type.Optional(Type.Union([Type.Literal('map_draw'), Type.Literal('import_geojson')])),
     calculationInputs: Type.Optional(Type.Record(Type.String(), Type.Number({ minimum: 0 }))),
@@ -101,7 +108,7 @@ export const CreateMeasurementRequestSchema = Type.Object(
 export const SupersedeMeasurementRequestSchema = Type.Object(
   {
     name: Type.String({ minLength: 1, maxLength: 300 }),
-    geometryKind: MeasurementGeometryKindSchema,
+    geometryKind: DrawableMeasurementGeometryKindSchema,
     geometry: GeoJsonGeometrySchema,
     method: Type.Optional(Type.Union([Type.Literal('map_draw'), Type.Literal('import_geojson')])),
     calculationInputs: Type.Optional(Type.Record(Type.String(), Type.Number({ minimum: 0 }))),
@@ -139,6 +146,7 @@ export type CreateMeasurementRequest = Static<typeof CreateMeasurementRequestSch
 export type GeoJsonGeometry = Static<typeof GeoJsonGeometrySchema>
 export type Measurement = Static<typeof MeasurementSchema>
 export type MeasurementGeometryKind = Static<typeof MeasurementGeometryKindSchema>
+export type DrawableMeasurementGeometryKind = Static<typeof DrawableMeasurementGeometryKindSchema>
 export type MeasurementListResponse = Static<typeof MeasurementListResponseSchema>
 export type MeasurementWarning = Static<typeof MeasurementWarningSchema>
 export type SupersedeMeasurementRequest = Static<typeof SupersedeMeasurementRequestSchema>

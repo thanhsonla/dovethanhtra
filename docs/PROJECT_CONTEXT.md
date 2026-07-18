@@ -4,8 +4,8 @@
 
 - Phiên bản tài liệu: 1.1.
 - Ngày chốt phạm vi: 18/07/2026.
-- Giai đoạn: Mốc 2 — bản đồ và phép đo điểm/tuyến/vùng đã triển khai; chưa triển
-  khai routing, GPS, ảnh, ngoại tuyến hoặc các chức năng Mốc 3 trở đi.
+- Giai đoạn: Mốc 3 — route vận chuyển đã triển khai trên nền phép đo Mốc 2; chưa
+  triển khai GPS, ảnh, ngoại tuyến, đối chiếu hoặc xuất báo cáo của Mốc 4–5.
 - Người dùng chính: một cán bộ thực hiện kiểm tra hiện trường; kiến trúc vẫn chuẩn bị cho nhiều người dùng về sau.
 
 ## Quyết định đã chốt
@@ -73,6 +73,7 @@
 | 18/07/2026 | ADR-011 | Snapshot danh mục, optimistic concurrency và audit cùng transaction  | Bảo toàn lịch sử và ngăn ghi đè âm thầm                     |
 | 18/07/2026 | ADR-012 | Tách raw/normalized geometry, tính PostGIS và version hóa phép đo    | Bảo toàn chứng cứ, kết quả chính thức và lịch sử hiệu chỉnh |
 | 19/07/2026 | ADR-013 | Cấu hình basemap và hash nguồn ranh giới                             | Đúng attribution, fallback an toàn và không ghi đè âm thầm  |
+| 19/07/2026 | ADR-014 | RoutingProvider backend và phiên bản route bất biến                  | Giữ token phía server, nguồn cự ly và lịch sử tính lại       |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -107,3 +108,21 @@
   chỉ được đóng hoàn toàn sau khi người dùng chọn nguồn được cấp phép và giới hạn key.
 - Đã có pipeline import địa giới kèm SHA-256, kiểm tra PostGIS và chống ghi đè cùng
   phiên bản. Chưa có ranh giới chính thức; fixture/example vẫn không dùng ngoài test.
+
+## Trạng thái triển khai Mốc 3
+
+- Migration bổ sung cơ sở xử lý và `transport_route` mở rộng measurement route;
+  lưu request không token, fingerprint, provider, profile, geometry, legs, thời gian,
+  distance, duration, hệ số và kết quả xe.km/tấn.km.
+- API có `RoutingProvider`, adapter Mapbox Directions v5 và provider local xác định.
+  Backend giới hạn yêu cầu theo phút, chuẩn hóa timeout/quota/no-route/provider error,
+  tự gọi provider lại khi lưu và không tin geometry/distance từ trình duyệt.
+- Route lưu ở trạng thái confirmed; tính lại tạo measurement/route phiên bản mới và
+  chuyển measurement cũ sang superseded trong cùng transaction có audit.
+- UI chọn cơ sở xử lý, nhập điểm đầu/waypoint/profile, xem phương án và nguồn cự ly,
+  lưu route và yêu cầu lý do khi tính lại.
+- Công thức CAL-004/CAL-005 và trường hợp tổng trọng lượng bằng 0 có unit test; API
+  integration bao phủ route hợp lệ, nhiều chặng, version và route-not-found.
+- Cơ sở xử lý và provider local seed chỉ là fixture kỹ thuật. Trước chạy thật phải
+  nhập danh mục chính thức, cấu hình Mapbox token giới hạn API/quota và field-test
+  với một tuyến đã biết cự ly.

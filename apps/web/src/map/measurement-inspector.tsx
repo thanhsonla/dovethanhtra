@@ -1,7 +1,7 @@
 import type {
   GeoJsonGeometry,
   Measurement,
-  MeasurementGeometryKind,
+  DrawableMeasurementGeometryKind,
   WorkItem,
 } from '@dove/contracts'
 import { type FormEvent } from 'react'
@@ -30,7 +30,7 @@ export interface MeasurementInspectorProps {
   onChanged(item: Measurement): Promise<void>
   onEdit(): void
   onError(value: string): void
-  selectedKind: MeasurementGeometryKind | null
+  selectedKind: DrawableMeasurementGeometryKind | null
   selectedWork: WorkItem | null
 }
 
@@ -59,6 +59,7 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
   const supersede = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!props.measurement || !props.draftGeometry) return
+    if (props.measurement.geometryKind === 'route') return
     const values = new FormData(event.currentTarget)
     try {
       const created = await api.supersedeMeasurement(props.measurement.id, {

@@ -1,11 +1,13 @@
 import type {
   GeoJsonGeometry,
+  DrawableMeasurementGeometryKind,
   InspectionCase,
   MeasurementGeometryKind,
   MeasurementListResponse,
   ServiceGroup,
   WorkItem,
   WorkType,
+  TreatmentFacility,
 } from '@dove/contracts'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -21,6 +23,7 @@ import {
 import { MeasurementMap, type MapMode, type Position } from './measurement-map.js'
 import { geometryFromPositions, temporaryValue } from './map-geometry.js'
 import { MeasurementInspector } from './measurement-inspector.js'
+import { RoutePlanner } from './route-planner.js'
 
 const basemaps = createBasemapProvider()
 const emptyPositions = createHistory<Position[]>([])
@@ -41,7 +44,7 @@ const statusLabels: Record<string, string> = {
 
 function kindForWork(item: WorkItem, workTypes: WorkType[]): MeasurementGeometryKind | null {
   const kind = workTypes.find((type) => type.id === item.workTypeId)?.measurementKind
-  return kind === 'point' || kind === 'line' || kind === 'area' ? kind : null
+  return kind === 'point' || kind === 'line' || kind === 'area' || kind === 'route' ? kind : null
 }
 
 export function MapWorkspace(props: {
@@ -66,6 +69,8 @@ export function MapWorkspace(props: {
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [basemapId, setBasemapId] = useState(basemaps.defaultId)
   const [error, setError] = useState('')
+  const [facilities, setFacilities] = useState<TreatmentFacility[]>([])
+  const [routePreview, setRoutePreview] = useState<GeoJsonGeometry | null>(null)
   const localFallbackId =
     basemaps.descriptors().find((item) => basemaps.supportsOffline(item.id))?.id ??
     basemaps.defaultId
@@ -79,10 +84,12 @@ export function MapWorkspace(props: {
   useEffect(() => {
     void Promise.all([
       api.getCaseMapContext(props.inspectionCase.id),
+      api.listTreatmentFacilities(),
       ...measurable.map((item) => api.listMeasurements(item.id)),
     ])
-      .then(([context, ...items]) => {
+      .then(([context, treatmentFacilities, ...items]) => {
         setBoundary(context.boundary)
+        setFacilities(treatmentFacilities)
         setSummaries(
           Object.fromEntries(measurable.map((workItem, index) => [workItem.id, items[index]!])),
         )
@@ -96,18 +103,24 @@ export function MapWorkspace(props: {
   const selected = allMeasurements.find((item) => item.id === selectedId) ?? null
   const selectedWork = measurable.find((item) => item.id === selectedWorkId) ?? null
   const selectedKind = selectedWork ? kindForWork(selectedWork, props.workTypes) : null
+  const drawableKind =
+    selectedKind === 'point' || selectedKind === 'line' || selectedKind === 'area'
+      ? selectedKind
+      : null
   const draftGeometry =
+    routePreview ??
     editHistory?.present ??
-    (selectedKind ? geometryFromPositions(selectedKind, positions.present) : null)
+    (drawableKind ? geometryFromPositions(drawableKind, positions.present) : null)
   const editMeasurement =
     selected && editHistory ? { ...selected, rawGeometry: editHistory.present } : null
 
-  const startDrawing = (nextMode: MeasurementGeometryKind) => {
+  const startDrawing = (nextMode: DrawableMeasurementGeometryKind) => {
     if (!selectedWork || selectedKind !== nextMode) return
     setMode(nextMode)
     setPositions(createHistory([]))
     setEditHistory(null)
     setDraftReady(false)
+    setRoutePreview(null)
     setSelectedId(null)
   }
 
@@ -169,7 +182,7 @@ export function MapWorkspace(props: {
           ← Hồ sơ
         </button>
         <div>
-          <p className="eyebrow">Mốc 2 · Bản đồ và phép đo</p>
+          <p className="eyebrow">Mốc 3 · Bản đồ, phép đo và route</p>
           <h1>{props.inspectionCase.name}</h1>
         </div>
         <label className="basemap-select">
@@ -331,26 +344,40 @@ export function MapWorkspace(props: {
         </section>
 
         <aside className="measurement-panel">
-          <MeasurementInspector
-            draftGeometry={draftGeometry}
-            draftReady={draftReady}
-            measurement={selected}
-            selectedKind={selectedKind}
-            selectedWork={selectedWork}
-            onCancel={cancelDraft}
-            onChanged={async (measurement) => {
-              cancelDraft()
-              setSelectedId(measurement.id)
-              await refreshWork(measurement.workItemId)
-            }}
-            onEdit={() => {
-              if (selected) {
-                setEditHistory(createHistory(selected.rawGeometry))
-                setMode('edit')
-              }
-            }}
-            onError={setError}
-          />
+          {selectedKind === 'route' && selectedWork ? (
+            <RoutePlanner
+              facilities={facilities}
+              measurement={selected}
+              workItem={selectedWork}
+              onError={setError}
+              onPreview={setRoutePreview}
+              onSaved={async (route) => {
+                setSelectedId(route.measurement.id)
+                await refreshWork(route.measurement.workItemId)
+              }}
+            />
+          ) : (
+            <MeasurementInspector
+              draftGeometry={draftGeometry}
+              draftReady={draftReady}
+              measurement={selected}
+              selectedKind={drawableKind}
+              selectedWork={selectedWork}
+              onCancel={cancelDraft}
+              onChanged={async (measurement) => {
+                cancelDraft()
+                setSelectedId(measurement.id)
+                await refreshWork(measurement.workItemId)
+              }}
+              onEdit={() => {
+                if (selected) {
+                  setEditHistory(createHistory(selected.rawGeometry))
+                  setMode('edit')
+                }
+              }}
+              onError={setError}
+            />
+          )}
         </aside>
       </section>
     </main>

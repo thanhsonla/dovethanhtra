@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: API kiểm tra khối lượng hiện trường
-  version: 0.3.0
-  description: Hợp đồng API đã triển khai đến hết Mốc 2, gồm bản đồ và phép đo PostGIS.
+  version: 0.4.0
+  description: Hợp đồng API đã triển khai đến hết Mốc 3, gồm phép đo PostGIS và route vận chuyển phiên bản hóa.
   license:
     name: Proprietary — sử dụng nội bộ/cá nhân
     identifier: LicenseRef-Proprietary
@@ -437,6 +437,52 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/AuditEvent' }
         default: { $ref: '#/components/responses/Error' }
+  /treatment-facilities:
+    get:
+      tags: [routing]
+      summary: Liệt kê điểm tập kết, trạm trung chuyển và cơ sở xử lý
+      responses:
+        '200': { description: Danh mục cơ sở }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [routing]
+      summary: Tạo cơ sở định tuyến
+      responses:
+        '201': { description: Cơ sở vừa tạo }
+        default: { $ref: '#/components/responses/Error' }
+  /routes/calculate:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [routing]
+      summary: Xem trước các phương án qua RoutingProvider
+      responses:
+        '200': { description: Phương án, provider, thời điểm và fingerprint }
+        default: { $ref: '#/components/responses/Error' }
+  /work-items/{workItemId}/routes:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [routing]
+      summary: Backend tính lại và lưu route chính thức
+      responses:
+        '201': { description: Route và measurement đã xác nhận }
+        default: { $ref: '#/components/responses/Error' }
+  /routes/{routeId}/recalculate:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [routing]
+      summary: Tạo phiên bản route mới, không ghi đè bản cũ
+      responses:
+        '201': { description: Phiên bản route mới }
+        default: { $ref: '#/components/responses/Error' }
+  /routes/weighted-distance:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [routing]
+      summary: Tính cự ly bình quân gia quyền
+      responses:
+        '200': { description: Cự ly gia quyền hoặc cảnh báo thiếu trọng lượng }
+        default: { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     cookieAuth:
@@ -682,7 +728,7 @@ components:
         version: { type: integer, minimum: 1 }
         supersedesId: { type: [string, 'null'], format: uuid }
         method: { enum: [map_draw, gps_point, gps_track, route_provider, import_geojson, manual_document] }
-        geometryKind: { enum: [point, line, area] }
+        geometryKind: { enum: [point, line, area, route] }
         rawGeometry: { $ref: '#/components/schemas/GeoJsonGeometry' }
         normalizedGeometry:
           oneOf:

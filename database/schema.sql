@@ -174,6 +174,7 @@ CREATE TABLE measurement (
 
 CREATE TABLE treatment_facility (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL UNIQUE,
   name text NOT NULL,
   facility_type text NOT NULL,
   admin_area_id uuid REFERENCES admin_area(id),
@@ -181,8 +182,10 @@ CREATE TABLE treatment_facility (
   address text,
   active boolean NOT NULL DEFAULT true,
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_by uuid NOT NULL REFERENCES app_user(id),
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
 );
 
 CREATE TABLE transport_route (
@@ -191,8 +194,8 @@ CREATE TABLE transport_route (
   route_source text NOT NULL CHECK (
     route_source IN ('drawn', 'routed', 'gps_track', 'manual_document')
   ),
-  provider text,
-  profile text,
+  provider text NOT NULL,
+  profile text NOT NULL,
   origin geometry(Point, 4326) NOT NULL,
   destination geometry(Point, 4326) NOT NULL,
   treatment_facility_id uuid REFERENCES treatment_facility(id),
@@ -200,7 +203,7 @@ CREATE TABLE transport_route (
   legs jsonb NOT NULL DEFAULT '[]'::jsonb,
   route_geometry geometry(LineString, 4326) NOT NULL,
   distance_one_way_m numeric(24, 8) NOT NULL CHECK (distance_one_way_m >= 0),
-  duration_s numeric(24, 3) CHECK (duration_s IS NULL OR duration_s >= 0),
+  duration_s numeric(24, 3) NOT NULL CHECK (duration_s >= 0),
   return_factor numeric(12, 4) NOT NULL DEFAULT 1 CHECK (return_factor >= 0),
   trip_count numeric(16, 4) NOT NULL DEFAULT 1 CHECK (trip_count >= 0),
   transported_weight_ton numeric(24, 8) CHECK (
@@ -208,7 +211,8 @@ CREATE TABLE transport_route (
   ),
   vehicle_km numeric(24, 8),
   ton_km numeric(24, 8),
-  request_fingerprint text,
+  route_request jsonb NOT NULL,
+  request_fingerprint text NOT NULL,
   provider_metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   calculated_at timestamptz NOT NULL DEFAULT now()
 );

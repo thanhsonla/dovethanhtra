@@ -37,7 +37,7 @@ export interface PersistMeasurementInput {
   code: string
   createdBy: string
   geometryKind: MeasurementGeometryKind
-  method: 'map_draw' | 'import_geojson'
+  method: 'map_draw' | 'import_geojson' | 'route_provider'
   name: string
   normalizedGeometry: GeoJsonGeometry | null
   note: string | null

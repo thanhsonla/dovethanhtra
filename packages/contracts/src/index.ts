@@ -54,6 +54,7 @@ export {
   CaseMapContextSchema,
   ConfirmMeasurementRequestSchema,
   CreateMeasurementRequestSchema,
+  DrawableMeasurementGeometryKindSchema,
   GeoJsonGeometrySchema,
   MeasurementGeometryKindSchema,
   MeasurementListResponseSchema,
@@ -65,6 +66,7 @@ export {
   type CaseMapContext,
   type ConfirmMeasurementRequest,
   type CreateMeasurementRequest,
+  type DrawableMeasurementGeometryKind,
   type GeoJsonGeometry,
   type Measurement,
   type MeasurementGeometryKind,
@@ -72,3 +74,4 @@ export {
   type MeasurementWarning,
   type SupersedeMeasurementRequest,
 } from './measurements.js'
+export * from './routing.js'

@@ -39,6 +39,24 @@
   background: #fff;
 }
 
+.route-planner form,
+.route-candidates {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.route-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.route-candidates {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
 .layer-tree {
   border-right: 1px solid #c9d7d0;
 }

@@ -15,6 +15,11 @@ import type {
   SessionResponse,
   WorkItem,
   WorkType,
+  RouteCalculation,
+  RouteRequest,
+  SaveTransportRouteRequest,
+  TreatmentFacility,
+  TransportRoute,
 } from '@dove/contracts'
 
 export class ApiClientError extends Error {
@@ -83,6 +88,19 @@ export const api = {
   listServiceGroups: () => request<ServiceGroup[]>('/catalog/service-groups'),
   listWorkItems: (caseId: string) => request<WorkItem[]>(`/cases/${caseId}/work-items`),
   listWorkTypes: () => request<WorkType[]>('/catalog/work-types'),
+  listTreatmentFacilities: () => request<TreatmentFacility[]>('/treatment-facilities'),
+  calculateRoute: (input: RouteRequest) =>
+    request<RouteCalculation>('/routes/calculate', { method: 'POST', body: JSON.stringify(input) }),
+  saveRoute: (workItemId: string, input: SaveTransportRouteRequest) =>
+    request<TransportRoute>(`/work-items/${workItemId}/routes`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  recalculateRoute: (routeId: string, reason: string) =>
+    request<TransportRoute>(`/routes/${routeId}/recalculate`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
   login: (email: string, password: string) =>
     request<SessionResponse>('/auth/login', {
       method: 'POST',

@@ -1,8 +1,8 @@
-import type { GeoJsonGeometry, MeasurementGeometryKind } from '@dove/contracts'
+import type { DrawableMeasurementGeometryKind, GeoJsonGeometry } from '@dove/contracts'
 
 import { AppError } from '../../platform/app-error.js'
 
-const allowedTypes: Record<MeasurementGeometryKind, GeoJsonGeometry['type'][]> = {
+const allowedTypes: Record<DrawableMeasurementGeometryKind, GeoJsonGeometry['type'][]> = {
   area: ['Polygon', 'MultiPolygon'],
   line: ['LineString', 'MultiLineString'],
   point: ['Point', 'MultiPoint'],
@@ -70,7 +70,7 @@ function coordinateCount(geometry: GeoJsonGeometry): number | null {
 
 export function validateGeoJsonInput(
   geometry: GeoJsonGeometry,
-  geometryKind: MeasurementGeometryKind,
+  geometryKind: DrawableMeasurementGeometryKind,
 ): void {
   if (!allowedTypes[geometryKind].includes(geometry.type)) {
     throw new AppError(422, 'GEOMETRY_KIND_MISMATCH', 'Kiểu GeoJSON không khớp kiểu đo.')

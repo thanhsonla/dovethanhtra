@@ -161,8 +161,9 @@ Nhận snapshot dữ liệu đã kiểm tra và tạo tệp. Export không truy 
 - `GET /treatment-facilities`
 - `POST /treatment-facilities`
 - `POST /routes/calculate`
-- `POST /measurements/{measurementId}/route`
+- `POST /work-items/{workItemId}/routes`
 - `POST /routes/{routeId}/recalculate`
+- `POST /routes/weighted-distance`
 
 ### Nguồn và đối chiếu
 
@@ -202,6 +203,11 @@ Nhận snapshot dữ liệu đã kiểm tra và tạo tệp. Export không truy 
 4. Tính fingerprint từ input + provider + profile, không gồm token.
 5. Trả các phương án cho người dùng chọn.
 6. Khi lưu, route gắn với measurement và không ghi đè phiên bản cũ.
+
+Trong Mốc 3, thao tác lưu gọi provider lại ở backend và nhận `candidateIndex`; API
+không nhận geometry/distance chính thức từ trình duyệt. Local/test dùng provider
+xác định mang nhãn `local-deterministic`. Mapbox Directions v5 chỉ được bật khi
+backend có token qua secret môi trường. Chi tiết tại ADR-014.
 
 ## 9. Triển khai
 

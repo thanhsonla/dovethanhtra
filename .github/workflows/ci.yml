@@ -71,9 +71,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:migrate
+      - run: pnpm db:migrate:test
       - run: pnpm db:seed
       - run: pnpm test:integration
-      - run: pnpm db:migrate:test
 
   e2e:
     runs-on: ubuntu-latest

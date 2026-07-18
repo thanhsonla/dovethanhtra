@@ -211,6 +211,13 @@ export class MeasurementService {
     return this.database.transaction().execute(async (transaction) => {
       const before = await this.repository.get(transaction, measurementId, ownerId)
       if (!before) throw new AppError(404, 'MEASUREMENT_NOT_FOUND', 'Không tìm thấy phép đo.')
+      if (before.geometryKind === 'route') {
+        throw new AppError(
+          409,
+          'ROUTE_USES_ROUTING_WORKFLOW',
+          'Route phải được kiểm tra lại qua phân hệ định tuyến.',
+        )
+      }
       if (!['draft', 'needs_attention'].includes(before.status)) {
         throw new AppError(
           409,

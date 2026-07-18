@@ -15,6 +15,12 @@ export interface AppConfig {
     accessKey: string
     secretKey: string
   }
+  routing: {
+    provider: 'local' | 'mapbox'
+    mapboxAccessToken: string | null
+    requestsPerMinute: number
+    timeoutMs: number
+  }
 }
 
 function required(environment: NodeJS.ProcessEnv, name: string): string {
@@ -57,6 +63,12 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
       useSSL: environment.MINIO_USE_SSL === 'true',
       accessKey: required(environment, 'MINIO_ROOT_USER'),
       secretKey: required(environment, 'MINIO_ROOT_PASSWORD'),
+    },
+    routing: {
+      provider: environment.ROUTING_PROVIDER === 'mapbox' ? 'mapbox' : 'local',
+      mapboxAccessToken: environment.MAPBOX_ACCESS_TOKEN || null,
+      requestsPerMinute: positiveInteger(environment, 'ROUTING_REQUESTS_PER_MINUTE', 30),
+      timeoutMs: positiveInteger(environment, 'ROUTING_TIMEOUT_MS', 8000),
     },
   }
 }

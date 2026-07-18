@@ -1,4 +1,4 @@
-import type { MeasurementGeometryKind, MeasurementWarning } from '@dove/contracts'
+import type { DrawableMeasurementGeometryKind, MeasurementWarning } from '@dove/contracts'
 
 interface CalculationSpec {
   expression?: unknown
@@ -20,7 +20,7 @@ export interface CalculationResult {
   warnings: MeasurementWarning[]
 }
 
-const baseVariable: Record<MeasurementGeometryKind, string> = {
+const baseVariable: Record<DrawableMeasurementGeometryKind, string> = {
   area: 'area_m2',
   line: 'length_m',
   point: 'count',
@@ -35,7 +35,7 @@ function numericFactor(token: string, variables: Record<string, number>): number
 
 export function calculateMeasurement(
   baseValue: number | null,
-  geometryKind: MeasurementGeometryKind,
+  geometryKind: DrawableMeasurementGeometryKind,
   inputs: Record<string, number>,
   snapshot: FormulaSnapshot,
 ): CalculationResult {
