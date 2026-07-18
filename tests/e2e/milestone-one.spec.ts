@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test'
 
 test('creates a case and adds a catalog work item', async ({ page }, testInfo) => {
+  const mapModuleResponses: string[] = []
+  page.on('response', (response) => {
+    if (/\/src\/map\/map-workspace\.tsx|\/assets\/map-workspace-[\w-]+\.js/.test(response.url())) {
+      mapModuleResponses.push(response.url())
+    }
+  })
   await page.goto('/')
 
   await page.getByLabel('Email').fill('owner@example.local')
@@ -39,9 +45,13 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByRole('button', { name: 'Thêm', exact: true }).click()
 
   await expect(page.getByText('Công tác E2E', { exact: true })).toBeVisible()
+  expect(mapModuleResponses).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
+  await expect.poll(() => mapModuleResponses.length).toBeGreaterThan(0)
+  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('configured-remote')
+  await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Nền E2E được cấp phép')
   await page.getByRole('button', { name: 'Tuyến' }).click()
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 330, y: 320 } })
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 390, y: 320 } })
@@ -53,5 +63,14 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
   await page.getByLabel('Bản đồ nền').selectOption('technical-dark')
   await expect(page.getByText('Nền: Kỹ thuật tối')).toBeVisible()
+  await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText(
+    'Nền kỹ thuật local · Không phải bản đồ địa chính',
+  )
+  await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+
+  await page.route('**/basemaps/e2e-style.json', (route) => route.abort())
+  await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
+  await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
+  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
   await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
 })

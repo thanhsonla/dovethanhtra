@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "pnpm -r build",
+    "bundle:check": "node scripts/check-bundle-budget.mjs",
     "dev": "dotenv -e .env.example -- pnpm dev:local",
     "dev:local": "pnpm infra:up && pnpm db:migrate && pnpm db:seed && concurrently -n api,web -c blue,green \"pnpm --filter @dove/api dev\" \"pnpm --filter @dove/web dev\"",
     "dev:apps": "concurrently -n api,web -c blue,green \"pnpm --filter @dove/api dev\" \"pnpm --filter @dove/web dev\"",
@@ -18,6 +19,7 @@
     "db:migrate": "pnpm --filter @dove/api db:migrate",
     "db:migrate:down": "pnpm --filter @dove/api db:migrate:down",
     "db:migrate:test": "pnpm db:migrate:down && pnpm db:migrate",
+    "db:admin-area:import": "pnpm --filter @dove/api db:admin-area:import",
     "db:seed": "pnpm --filter @dove/api db:seed",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

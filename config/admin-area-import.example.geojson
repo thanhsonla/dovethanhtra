@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "IMPORT_EXAMPLE_NOT_OFFICIAL",
+        "name": "Ví dụ định dạng import — không chính thức",
+        "areaType": "example",
+        "source": "FORMAT_EXAMPLE_NOT_FOR_FIELD_USE",
+        "sourceVersion": "example-v1",
+        "validFrom": "2026-01-01",
+        "validTo": null
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [104.62, 20.75],
+              [104.75, 20.75],
+              [104.75, 20.86],
+              [104.62, 20.86],
+              [104.62, 20.75]
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -19,6 +19,8 @@ export class AdminAreaRepository {
         code,
         name,
         area_type AS "areaType",
+        source,
+        source_hash AS "sourceHash",
         source_version AS "sourceVersion",
         valid_from AS "validFrom",
         valid_to AS "validTo"

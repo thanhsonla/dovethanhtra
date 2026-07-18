@@ -87,6 +87,21 @@ nền local không gọi tile ngoài và không thay thế bản đồ địa ch
 chỉ là fixture kỹ thuật. Routing, GPS, ảnh, ngoại tuyến và xuất báo cáo chưa thuộc
 mốc này.
 
+Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMAP_STYLE_URL`,
+`VITE_BASEMAP_LABEL` và `VITE_BASEMAP_ATTRIBUTION`. Cả URL và attribution phải có;
+nếu tải lỗi, ứng dụng tự trở về nền kỹ thuật local. Không đặt secret thật trong
+`.env.example`; public browser token vẫn phải được giới hạn domain/API/quota.
+
+Nhập ranh giới chính thức sau khi migration đã chạy:
+
+```bash
+pnpm exec dotenv -e .env.example -- pnpm db:admin-area:import -- /duong/dan/ranh-gioi.geojson
+```
+
+Định dạng được minh họa tại `config/admin-area-import.example.geojson`. Đây chỉ là
+ví dụ schema, không phải dữ liệu địa giới chính thức. Import yêu cầu EPSG:4326,
+geometry hợp lệ, metadata nguồn/phiên bản và sẽ lưu SHA-256 của tệp nguồn.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`
@@ -102,6 +117,7 @@ pnpm typecheck
 pnpm test
 pnpm exec dotenv -e .env.example -- pnpm test:integration
 pnpm build
+pnpm bundle:check
 pnpm test:e2e
 ```
 

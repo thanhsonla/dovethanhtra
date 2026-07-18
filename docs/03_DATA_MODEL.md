@@ -27,7 +27,10 @@ erDiagram
 
 ### `admin_area`
 
-Lưu địa bàn và phiên bản ranh giới. Trường chính: `id`, `code`, `name`, `area_type`, `parent_id`, `valid_from`, `valid_to`, `boundary`, `source`, `source_version`.
+Lưu địa bàn và phiên bản ranh giới. Trường chính: `id`, `code`, `name`, `area_type`, `parent_id`, `valid_from`, `valid_to`, `boundary`, `source`, `source_version`, `source_hash`.
+
+`source_hash` là SHA-256 của đúng byte GeoJSON nguồn khi nhập qua CLI. Không ghi đè
+cùng `code/source_version` nếu hash thay đổi; phải tạo phiên bản nguồn mới.
 
 ### `inspection_case`
 

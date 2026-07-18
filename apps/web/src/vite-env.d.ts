@@ -1,0 +1,11 @@
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_BASEMAP_ATTRIBUTION?: string
+  readonly VITE_BASEMAP_LABEL?: string
+  readonly VITE_BASEMAP_STYLE_URL?: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

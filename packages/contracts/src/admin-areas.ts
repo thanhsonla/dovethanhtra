@@ -8,6 +8,8 @@ export const AdminAreaSchema = Type.Object(
     code: Type.String(),
     name: Type.String(),
     areaType: Type.String(),
+    source: Type.Union([Type.String(), Type.Null()]),
+    sourceHash: Type.Union([Type.String({ pattern: '^[0-9a-f]{64}$' }), Type.Null()]),
     sourceVersion: Type.String(),
     validFrom: DateSchema,
     validTo: Type.Union([DateSchema, Type.Null()]),

@@ -10,7 +10,7 @@ import type {
 import { useEffect, useMemo, useState } from 'react'
 
 import { api } from '../api.js'
-import { LocalTechnicalBasemapProvider } from './basemap-provider.js'
+import { createBasemapProvider } from './basemap-provider.js'
 import {
   createHistory,
   pushHistory,
@@ -22,7 +22,7 @@ import { MeasurementMap, type MapMode, type Position } from './measurement-map.j
 import { geometryFromPositions, temporaryValue } from './map-geometry.js'
 import { MeasurementInspector } from './measurement-inspector.js'
 
-const basemaps = new LocalTechnicalBasemapProvider()
+const basemaps = createBasemapProvider()
 const emptyPositions = createHistory<Position[]>([])
 const modeLabels: Record<MapMode, string> = {
   area: 'Vẽ vùng',
@@ -66,6 +66,9 @@ export function MapWorkspace(props: {
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [basemapId, setBasemapId] = useState(basemaps.defaultId)
   const [error, setError] = useState('')
+  const localFallbackId =
+    basemaps.descriptors().find((item) => basemaps.supportsOffline(item.id))?.id ??
+    basemaps.defaultId
 
   const refreshWork = async (workItemId: string) => {
     const summary = await api.listMeasurements(workItemId)
@@ -307,6 +310,10 @@ export function MapWorkspace(props: {
               )
             }
             onFinishDrawing={finishDrawing}
+            onBasemapFallback={() => {
+              setBasemapId(localFallbackId)
+              setError('Không tải được nền đã cấu hình; đã chuyển sang nền kỹ thuật local.')
+            }}
             onSelect={selectMeasurement}
             selectedId={selectedId}
           />

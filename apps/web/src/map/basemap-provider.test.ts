@@ -1,0 +1,36 @@
+import { describe, expect, it } from 'vitest'
+
+import { ConfiguredBasemapProvider } from './basemap-provider.js'
+
+describe('configured basemap provider', () => {
+  it('uses only attributed HTTPS styles and retains the local fallback', () => {
+    const provider = new ConfiguredBasemapProvider({
+      VITE_BASEMAP_ATTRIBUTION: '© Nhà cung cấp kiểm thử',
+      VITE_BASEMAP_LABEL: 'Nền kiểm thử',
+      VITE_BASEMAP_STYLE_URL: 'https://maps.example.test/style.json',
+    })
+    expect(provider.defaultId).toBe('configured-remote')
+    expect(provider.get('configured-remote')).toMatchObject({
+      attribution: '© Nhà cung cấp kiểm thử',
+      label: 'Nền kiểm thử',
+    })
+    expect(provider.supportsOffline('configured-remote')).toBe(false)
+    expect(provider.descriptors().some((item) => provider.supportsOffline(item.id))).toBe(true)
+  })
+
+  it.each([
+    { VITE_BASEMAP_STYLE_URL: 'https://maps.example.test/style.json' },
+    {
+      VITE_BASEMAP_ATTRIBUTION: 'Không hợp lệ',
+      VITE_BASEMAP_STYLE_URL: 'http://maps.example.test/style.json',
+    },
+    {
+      VITE_BASEMAP_ATTRIBUTION: 'Không hợp lệ',
+      VITE_BASEMAP_STYLE_URL: 'https://user:password@maps.example.test/style.json',
+    },
+  ])('rejects incomplete or unsafe remote configuration', (environment) => {
+    const provider = new ConfiguredBasemapProvider(environment)
+    expect(provider.defaultId).toBe('technical-light')
+    expect(provider.descriptors()).toHaveLength(2)
+  })
+})

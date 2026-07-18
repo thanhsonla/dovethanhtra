@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-- Phiên bản tài liệu: 1.0.
+- Phiên bản tài liệu: 1.1.
 - Ngày chốt phạm vi: 18/07/2026.
 - Giai đoạn: Mốc 2 — bản đồ và phép đo điểm/tuyến/vùng đã triển khai; chưa triển
   khai routing, GPS, ảnh, ngoại tuyến hoặc các chức năng Mốc 3 trở đi.
@@ -27,6 +27,8 @@
 - Object storage local dùng MinIO; xác thực dùng cookie session phía máy chủ, hash
   session, Argon2id và CSRF double-submit.
 - Kiểm thử dùng Vitest và Playwright; CI dùng GitHub Actions.
+- CI áp ngân sách raw/gzip cho bundle; MapLibre được lazy-load và E2E xác nhận chưa
+  tải mô-đun bản đồ trước thao tác mở bản đồ.
 - Hồ sơ dùng owner authorization, xóa mềm và optimistic concurrency bằng
   `version`/`ETag`/`If-Match`.
 - Công tác trong hồ sơ lưu snapshot cấu hình công thức; danh mục ngừng hoạt động
@@ -40,6 +42,10 @@
   `superseded`. Cảnh báo ngoài ranh giới/chồng lặp không tự cắt hoặc trừ hình học.
 - Mốc 2 dùng hai nền kỹ thuật local qua `BasemapProvider`, không cần khóa API và
   không gọi tile bên thứ ba.
+- Basemap được cấp phép có thể cấu hình bằng HTTPS style URL + attribution; lỗi tải
+  style chuyển về nền local. Không có nhà cung cấp thật hoặc token nào được commit.
+- Import địa giới yêu cầu FeatureCollection EPSG:4326, nguồn/phiên bản/ngày hiệu lực,
+  lưu SHA-256 byte nguồn và từ chối ghi đè cùng phiên bản nếu hash thay đổi.
 
 ## Chưa chốt
 
@@ -66,6 +72,7 @@
 | 18/07/2026 | ADR-010 | Vitest, Playwright và GitHub Actions                                  | Bao phủ unit, migration, Chromium/WebKit và cổng chất lượng |
 | 18/07/2026 | ADR-011 | Snapshot danh mục, optimistic concurrency và audit cùng transaction  | Bảo toàn lịch sử và ngăn ghi đè âm thầm                     |
 | 18/07/2026 | ADR-012 | Tách raw/normalized geometry, tính PostGIS và version hóa phép đo    | Bảo toàn chứng cứ, kết quả chính thức và lịch sử hiệu chỉnh |
+| 19/07/2026 | ADR-013 | Cấu hình basemap và hash nguồn ranh giới                             | Đúng attribution, fallback an toàn và không ghi đè âm thầm  |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -87,3 +94,16 @@
   không mất lớp nghiệp vụ.
 - Bộ integration bao phủ tuyến 1 km, vùng 1 ha, vùng tự cắt, tuyến trùng, tuyến qua
   ranh giới, ba phép đo confirmed và chuỗi supersede. Route-not-found để Mốc 3.
+
+## Trạng thái khắc phục rủi ro ngày 19/07/2026
+
+- Đã đóng lệch runtime: local/CI dùng Node 24.18.0 và pnpm 11.9.0; `pnpm doctor`
+  kiểm tra runtime/Docker, `pnpm doctor:services` kiểm tra thêm PostGIS và MinIO.
+- Đã tạo baseline Git local Mốc 0–2 tại commit `d183234`; secret scan trước commit
+  không phát hiện secret và không có remote/push nào được cấu hình.
+- Bundle có cổng CI: main 204,33 kB raw/63,77 kB gzip; map lazy 1.050,43 kB raw/
+  278,25 kB gzip; CSS 77,85 kB raw/12,36 kB gzip, đều trong ngân sách ADR-010.
+- Đã có provider nền cấu hình, attribution động và fallback local. Rủi ro điều khoản
+  chỉ được đóng hoàn toàn sau khi người dùng chọn nguồn được cấp phép và giới hạn key.
+- Đã có pipeline import địa giới kèm SHA-256, kiểm tra PostGIS và chống ghi đè cùng
+  phiên bản. Chưa có ranh giới chính thức; fixture/example vẫn không dùng ngoài test.

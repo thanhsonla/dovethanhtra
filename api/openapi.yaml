@@ -515,12 +515,14 @@ components:
         expiresAt: { type: string, format: date-time }
     AdminArea:
       type: object
-      required: [id, code, name, areaType, sourceVersion, validFrom, validTo]
+      required: [id, code, name, areaType, source, sourceHash, sourceVersion, validFrom, validTo]
       properties:
         id: { type: string, format: uuid }
         code: { type: string }
         name: { type: string }
         areaType: { type: string }
+        source: { type: [string, 'null'] }
+        sourceHash: { type: [string, 'null'], pattern: '^[0-9a-f]{64}$' }
         sourceVersion: { type: string }
         validFrom: { type: string, format: date }
         validTo: { type: [string, 'null'], format: date }

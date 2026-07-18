@@ -1,5 +1,10 @@
 import type { GeoJsonGeometry, Measurement } from '@dove/contracts'
-import maplibregl, { type GeoJSONSource, type Map as MapLibreMap, type Marker } from 'maplibre-gl'
+import maplibregl, {
+  type AttributionControl,
+  type GeoJSONSource,
+  type Map as MapLibreMap,
+  type Marker,
+} from 'maplibre-gl'
 import type { GeoJSON } from 'geojson'
 import { useEffect, useRef } from 'react'
 
@@ -20,6 +25,7 @@ interface MeasurementMapProps {
   measurements: Measurement[]
   mode: MapMode
   onAddPosition(position: Position): void
+  onBasemapFallback(): void
   onEditGeometry(geometry: GeoJsonGeometry): void
   onFinishDrawing(): void
   onSelect(id: string): void
@@ -181,6 +187,8 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const markers = useRef<Marker[]>([])
+  const attributionControl = useRef<AttributionControl | null>(null)
+  const fallbackRequested = useRef(false)
   const activeBasemapId = useRef(props.basemapId)
   const latest = useRef(props)
   latest.current = props
@@ -197,12 +205,11 @@ export function MeasurementMap(props: MeasurementMapProps) {
       zoom: 11.5,
     })
     map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-    map.addControl(
-      new maplibregl.AttributionControl({
-        compact: true,
-        customAttribution: descriptor.attribution,
-      }),
-    )
+    attributionControl.current = new maplibregl.AttributionControl({
+      compact: true,
+      customAttribution: descriptor.attribution,
+    })
+    map.addControl(attributionControl.current)
     map.on('style.load', () => syncData(map, latest.current))
     map.on('click', (event) => {
       const current = latest.current
@@ -220,6 +227,14 @@ export function MeasurementMap(props: MeasurementMapProps) {
       if (['line', 'area'].includes(latest.current.mode)) {
         event.preventDefault()
         latest.current.onFinishDrawing()
+      }
+    })
+    map.on('error', () => {
+      const current = latest.current
+      const active = current.basemapProvider.get(current.basemapId)
+      if (typeof active.style === 'string' && !map.isStyleLoaded() && !fallbackRequested.current) {
+        fallbackRequested.current = true
+        current.onBasemapFallback()
       }
     })
     mapRef.current = map
@@ -245,8 +260,15 @@ export function MeasurementMap(props: MeasurementMapProps) {
     const map = mapRef.current
     if (!map || activeBasemapId.current === props.basemapId) return
     activeBasemapId.current = props.basemapId
+    fallbackRequested.current = false
     const descriptor = props.basemapProvider.get(props.basemapId)
     map.setStyle(descriptor.style)
+    if (attributionControl.current) map.removeControl(attributionControl.current)
+    attributionControl.current = new maplibregl.AttributionControl({
+      compact: true,
+      customAttribution: descriptor.attribution,
+    })
+    map.addControl(attributionControl.current)
   }, [props.basemapId, props.basemapProvider])
 
   useEffect(() => {

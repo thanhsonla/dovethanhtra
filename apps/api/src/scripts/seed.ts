@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 import { hash } from '@node-rs/argon2'
@@ -34,6 +35,9 @@ function required(name: string): string {
 
 const config = loadConfig()
 const database = createDatabase(config.databaseUrl)
+const sampleBoundaryWkt =
+  'MULTIPOLYGON(((104.62 20.75,104.75 20.75,104.75 20.86,104.62 20.86,104.62 20.75)))'
+const sampleBoundaryHash = createHash('sha256').update(sampleBoundaryWkt).digest('hex')
 
 try {
   const catalogPath = fileURLToPath(
@@ -52,18 +56,16 @@ try {
 
   await sql`
     INSERT INTO admin_area (
-      code, name, area_type, valid_from, boundary, source, source_version, metadata
+      code, name, area_type, valid_from, boundary, source, source_version, source_hash, metadata
     ) VALUES (
       'M1_SAMPLE_AREA',
       'Địa bàn mẫu Mốc 1',
       'sample',
       '2020-01-01'::date,
-      ST_GeomFromText(
-        'MULTIPOLYGON(((104.62 20.75,104.75 20.75,104.75 20.86,104.62 20.86,104.62 20.75)))',
-        4326
-      ),
+      ST_GeomFromText(${sampleBoundaryWkt}, 4326),
       'M1_SAMPLE_NOT_FOR_OFFICIAL_MEASUREMENT',
       'sample-v1',
+      ${sampleBoundaryHash},
       ${JSON.stringify({
         disclaimer:
           'Fixture kỹ thuật; không dùng làm ranh giới hành chính hoặc phép đo chính thức.',
@@ -72,6 +74,7 @@ try {
     ON CONFLICT (code, source_version) DO UPDATE SET
       name = EXCLUDED.name,
       boundary = EXCLUDED.boundary,
+      source_hash = EXCLUDED.source_hash,
       metadata = EXCLUDED.metadata
   `.execute(database.query)
 

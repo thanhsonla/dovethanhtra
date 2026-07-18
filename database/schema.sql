@@ -36,10 +36,14 @@ CREATE TABLE admin_area (
   boundary geometry(MultiPolygon, 4326) NOT NULL,
   source text,
   source_version text NOT NULL,
+  source_hash char(64),
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT admin_area_dates CHECK (valid_to IS NULL OR valid_to >= valid_from),
   CONSTRAINT admin_area_boundary_valid CHECK (ST_IsValid(boundary)),
+  CONSTRAINT admin_area_source_hash_format CHECK (
+    source_hash IS NULL OR source_hash ~ '^[0-9a-f]{64}$'
+  ),
   UNIQUE (code, source_version)
 );
 

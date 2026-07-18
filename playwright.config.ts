@@ -21,7 +21,8 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: 'pnpm --filter @dove/web dev --host 127.0.0.1 --port 4173',
+      command:
+        'pnpm exec dotenv -e .env.example -v VITE_BASEMAP_STYLE_URL=http://127.0.0.1:4173/basemaps/e2e-style.json -v VITE_BASEMAP_LABEL="Nền E2E" -v VITE_BASEMAP_ATTRIBUTION="Nền E2E được cấp phép" -- pnpm --filter @dove/web dev --host 127.0.0.1 --port 4173',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !process.env.CI,
     },

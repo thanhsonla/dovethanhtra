@@ -1,0 +1,11 @@
+{
+  "version": 8,
+  "sources": {},
+  "layers": [
+    {
+      "id": "e2e-background",
+      "type": "background",
+      "paint": { "background-color": "#e7efe9" }
+    }
+  ]
+}
