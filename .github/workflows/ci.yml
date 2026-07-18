@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm doctor
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm audit --audit-level high
+
+  migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgis:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_DB: dove_test
+          POSTGRES_PASSWORD: local-ci-not-a-secret
+          POSTGRES_USER: dove_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dove_ci -d dove_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      BOOTSTRAP_OWNER_EMAIL: owner@example.local
+      BOOTSTRAP_OWNER_NAME: CI Owner
+      BOOTSTRAP_OWNER_PASSWORD: local-ci-password
+      DATABASE_URL: postgresql://dove_ci:local-ci-not-a-secret@127.0.0.1:5432/dove_test
+      MINIO_BUCKET: unused-in-integration
+      MINIO_ENDPOINT: 127.0.0.1
+      MINIO_PORT: 9000
+      MINIO_ROOT_PASSWORD: local-ci-not-a-secret
+      MINIO_ROOT_USER: dove_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm test:integration
+      - run: pnpm db:migrate:test
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgis:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_DB: dove_field
+          POSTGRES_PASSWORD: local-only-change-me
+          POSTGRES_USER: dove_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dove_local -d dove_field"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec dotenv -e .env.example -- pnpm db:migrate
+      - run: pnpm exec dotenv -e .env.example -- pnpm db:seed
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm test:e2e
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2

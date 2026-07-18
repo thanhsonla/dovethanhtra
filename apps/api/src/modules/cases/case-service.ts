@@ -1,0 +1,186 @@
+import type { CreateCaseRequest, CreateWorkItemRequest, UpdateCaseRequest } from '@dove/contracts'
+
+import { AppError } from '../../platform/app-error.js'
+import type { AppDatabase } from '../../platform/database.js'
+import type { AuditRepository } from '../audit/audit-repository.js'
+import type { CaseListFilters, CaseRepository } from './case-repository.js'
+
+function translateConstraint(error: unknown): never {
+  const code = (error as { code?: string }).code
+  const constraint = (error as { constraint?: string }).constraint
+  if (code === '23505') {
+    throw new AppError(409, 'CASE_CODE_EXISTS', 'Mã hồ sơ đã tồn tại.')
+  }
+  if (code === '23514' && constraint?.includes('dates')) {
+    throw new AppError(422, 'DATE_RANGE_INVALID', 'Ngày kết thúc phải từ ngày bắt đầu trở đi.')
+  }
+  throw error
+}
+
+export class CaseService {
+  constructor(
+    private readonly database: AppDatabase,
+    private readonly repository: CaseRepository,
+    private readonly audit: AuditRepository,
+  ) {}
+
+  list(ownerId: string, filters: CaseListFilters) {
+    return this.repository.list(ownerId, filters)
+  }
+
+  async get(id: string, ownerId: string) {
+    const found = await this.repository.get(this.database, id, ownerId)
+    if (!found) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+    return found
+  }
+
+  async getMapContext(id: string, ownerId: string) {
+    const found = await this.repository.getMapContext(id, ownerId)
+    if (!found) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+    return found
+  }
+
+  async create(input: CreateCaseRequest, ownerId: string, traceId: string) {
+    try {
+      return await this.database.transaction().execute(async (transaction) => {
+        const id = await this.repository.create(transaction, input, ownerId)
+        if (!id) {
+          throw new AppError(
+            422,
+            'ADMIN_AREA_INVALID',
+            'Địa bàn không tồn tại hoặc không có hiệu lực trong kỳ hồ sơ.',
+          )
+        }
+        const created = await this.repository.get(transaction, id, ownerId)
+        if (!created) throw new AppError(500, 'CASE_CREATE_FAILED', 'Không thể đọc hồ sơ vừa tạo.')
+        await this.audit.append(transaction, {
+          action: 'created',
+          actorId: ownerId,
+          afterData: created,
+          entityId: created.id,
+          entityType: 'inspection_case',
+          inspectionCaseId: created.id,
+          traceId,
+        })
+        return created
+      })
+    } catch (error) {
+      if (error instanceof AppError) throw error
+      return translateConstraint(error)
+    }
+  }
+
+  async update(
+    id: string,
+    expectedVersion: number,
+    input: UpdateCaseRequest,
+    ownerId: string,
+    traceId: string,
+  ) {
+    try {
+      return await this.database.transaction().execute(async (transaction) => {
+        const before = await this.repository.get(transaction, id, ownerId)
+        if (!before) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+        if (before.status === 'locked') {
+          throw new AppError(423, 'CASE_LOCKED', 'Hồ sơ đã khóa và không thể sửa.')
+        }
+        const changed = await this.repository.update(
+          transaction,
+          id,
+          ownerId,
+          expectedVersion,
+          input,
+        )
+        if (!changed) {
+          throw new AppError(
+            409,
+            'VERSION_CONFLICT',
+            'Hồ sơ đã thay đổi. Hãy tải lại trước khi sửa.',
+          )
+        }
+        const updated = await this.repository.get(transaction, id, ownerId)
+        if (!updated) throw new AppError(500, 'CASE_UPDATE_FAILED', 'Không thể đọc hồ sơ vừa sửa.')
+        await this.audit.append(transaction, {
+          action: 'updated',
+          actorId: ownerId,
+          afterData: updated,
+          beforeData: before,
+          entityId: id,
+          entityType: 'inspection_case',
+          inspectionCaseId: id,
+          traceId,
+        })
+        return updated
+      })
+    } catch (error) {
+      if (error instanceof AppError) throw error
+      return translateConstraint(error)
+    }
+  }
+
+  async remove(id: string, ownerId: string, traceId: string) {
+    return this.database.transaction().execute(async (transaction) => {
+      const before = await this.repository.get(transaction, id, ownerId)
+      if (!before) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+      if (before.status === 'locked') {
+        throw new AppError(423, 'CASE_LOCKED', 'Hồ sơ đã khóa và không thể xóa.')
+      }
+      if (!(await this.repository.softDelete(transaction, id, ownerId))) {
+        throw new AppError(
+          409,
+          'CASE_DELETE_CONFLICT',
+          'Không thể xóa mềm hồ sơ ở trạng thái hiện tại.',
+        )
+      }
+      await this.audit.append(transaction, {
+        action: 'soft_deleted',
+        actorId: ownerId,
+        beforeData: before,
+        entityId: id,
+        entityType: 'inspection_case',
+        inspectionCaseId: id,
+        traceId,
+      })
+    })
+  }
+
+  listWorkItems(caseId: string, ownerId: string) {
+    return this.repository.listWorkItems(caseId, ownerId)
+  }
+
+  async createWorkItem(
+    caseId: string,
+    input: CreateWorkItemRequest,
+    ownerId: string,
+    traceId: string,
+  ) {
+    try {
+      return await this.database.transaction().execute(async (transaction) => {
+        const id = await this.repository.createWorkItem(transaction, caseId, ownerId, input)
+        if (!id) {
+          throw new AppError(
+            422,
+            'WORK_ITEM_SOURCE_INVALID',
+            'Hồ sơ hoặc loại công tác không hợp lệ, không hoạt động, hay hồ sơ đã khóa.',
+          )
+        }
+        const created = await this.repository.getWorkItem(transaction, id, ownerId)
+        if (!created)
+          throw new AppError(500, 'WORK_ITEM_CREATE_FAILED', 'Không thể đọc công tác vừa tạo.')
+        await this.audit.append(transaction, {
+          action: 'created',
+          actorId: ownerId,
+          afterData: created,
+          entityId: created.id,
+          entityType: 'case_work_item',
+          inspectionCaseId: caseId,
+          traceId,
+        })
+        return created
+      })
+    } catch (error) {
+      if (error instanceof AppError) throw error
+      return translateConstraint(error)
+    }
+  }
+}

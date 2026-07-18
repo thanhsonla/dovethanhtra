@@ -1,0 +1,44 @@
+{
+  "name": "dove-hien-truong",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "pnpm": "11.9.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "dotenv -e .env.example -- pnpm dev:local",
+    "dev:local": "pnpm infra:up && pnpm db:migrate && pnpm db:seed && concurrently -n api,web -c blue,green \"pnpm --filter @dove/api dev\" \"pnpm --filter @dove/web dev\"",
+    "dev:apps": "concurrently -n api,web -c blue,green \"pnpm --filter @dove/api dev\" \"pnpm --filter @dove/web dev\"",
+    "doctor": "node scripts/doctor.mjs",
+    "doctor:services": "node scripts/doctor.mjs --services",
+    "db:migrate": "pnpm --filter @dove/api db:migrate",
+    "db:migrate:down": "pnpm --filter @dove/api db:migrate:down",
+    "db:migrate:test": "pnpm db:migrate:down && pnpm db:migrate",
+    "db:seed": "pnpm --filter @dove/api db:seed",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:down": "docker compose down",
+    "infra:up": "docker compose up -d --wait",
+    "lint": "eslint . --max-warnings 0",
+    "test": "pnpm -r test",
+    "test:integration": "pnpm --filter @dove/api test:integration",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.1",
+    "@types/node": "24.10.13",
+    "concurrently": "10.0.3",
+    "dotenv-cli": "11.0.0",
+    "eslint": "10.0.1",
+    "globals": "16.4.0",
+    "prettier": "3.9.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.64.0"
+  }
+}

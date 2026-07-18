@@ -1,0 +1,14 @@
+.pnpm-store/
+AGENTS.md
+Bo_tai_lieu_trien_khai_ung_dung_kiem_tra_khoi_luong_hien_truong_MVP_v1.docx
+LICENSE.md
+api/openapi.yaml
+config/work-catalog.example.json
+coverage/
+database/schema.sql
+dist/
+docs/*.md
+node_modules/
+playwright-report/
+pnpm-lock.yaml
+test-results/

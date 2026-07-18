@@ -1,0 +1,18 @@
+packages:
+  - apps/*
+  - packages/*
+
+allowBuilds:
+  esbuild: true
+
+catalog:
+  '@sinclair/typebox': 0.34.52
+  '@types/node': 24.10.13
+  typescript: 6.0.3
+  vitest: 4.1.10
+
+minimumReleaseAgeExclude:
+  - kysely@0.29.4
+
+overrides:
+  shell-quote: 1.8.4

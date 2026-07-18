@@ -1,0 +1,10 @@
+{
+  "name": "Kiểm tra khối lượng hiện trường",
+  "short_name": "Hiện trường",
+  "description": "Ứng dụng kiểm tra khối lượng dịch vụ công ích đô thị trên bản đồ.",
+  "lang": "vi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f3",
+  "theme_color": "#174a3a"
+}

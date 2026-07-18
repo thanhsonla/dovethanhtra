@@ -1,0 +1,734 @@
+openapi: 3.1.0
+info:
+  title: API kiểm tra khối lượng hiện trường
+  version: 0.3.0
+  description: Hợp đồng API đã triển khai đến hết Mốc 2, gồm bản đồ và phép đo PostGIS.
+  license:
+    name: Proprietary — sử dụng nội bộ/cá nhân
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: /api/v1
+security:
+  - cookieAuth: []
+paths:
+  /auth/login:
+    post:
+      security: []
+      tags: [identity]
+      summary: Đăng nhập và tạo cookie session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Phiên đăng nhập
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        default: { $ref: '#/components/responses/Error' }
+  /auth/session:
+    get:
+      tags: [identity]
+      summary: Lấy người dùng và hạn phiên hiện tại
+      responses:
+        '200':
+          description: Phiên hiện tại
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        default: { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [identity]
+      summary: Thu hồi phiên hiện tại
+      responses:
+        '200': { description: Đã đăng xuất }
+        default: { $ref: '#/components/responses/Error' }
+  /admin-areas:
+    get:
+      tags: [admin-areas]
+      summary: Liệt kê địa bàn còn hiệu lực
+      responses:
+        '200':
+          description: Danh sách địa bàn
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminArea' }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/service-groups:
+    get:
+      tags: [catalog]
+      summary: Liệt kê nhóm dịch vụ
+      parameters:
+        - $ref: '#/components/parameters/IncludeInactive'
+      responses:
+        '200':
+          description: Danh sách nhóm
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ServiceGroup' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [catalog]
+      summary: Tạo nhóm dịch vụ; yêu cầu owner hoặc catalog_admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateServiceGroup' }
+      responses:
+        '201':
+          description: Nhóm vừa tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceGroup' }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/service-groups/{id}:
+    patch:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [catalog]
+      summary: Sửa hoặc ngừng dùng nhóm dịch vụ
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name: { type: string }
+                displayOrder: { type: integer, minimum: 0 }
+                color: { type: [string, 'null'] }
+                active: { type: boolean }
+      responses:
+        '200':
+          description: Nhóm đã cập nhật
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceGroup' }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/work-types:
+    get:
+      tags: [catalog]
+      summary: Liệt kê loại công tác và phiên bản công thức
+      parameters:
+        - $ref: '#/components/parameters/IncludeInactive'
+      responses:
+        '200':
+          description: Danh sách loại công tác
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WorkType' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [catalog]
+      summary: Tạo phiên bản loại công tác
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateWorkType' }
+      responses:
+        '201':
+          description: Loại công tác vừa tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkType' }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/work-types/{id}:
+    patch:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [catalog]
+      summary: Đổi tên hoặc ngừng dùng loại công tác
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name: { type: string }
+                active: { type: boolean }
+      responses:
+        '200':
+          description: Loại công tác đã cập nhật
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkType' }
+        default: { $ref: '#/components/responses/Error' }
+  /cases:
+    get:
+      tags: [cases]
+      summary: Liệt kê hồ sơ thuộc người dùng hiện tại
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 200 }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/CaseStatus' }
+      responses:
+        '200':
+          description: Danh sách hồ sơ
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/InspectionCase' }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [cases]
+      summary: Tạo hồ sơ và snapshot ranh giới địa bàn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCase' }
+      responses:
+        '201':
+          description: Hồ sơ vừa tạo
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InspectionCase' }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [cases]
+      summary: Lấy hồ sơ
+      responses:
+        '200':
+          description: Hồ sơ
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InspectionCase' }
+        default: { $ref: '#/components/responses/Error' }
+    patch:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [cases]
+      summary: Sửa hồ sơ bằng optimistic concurrency
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name: { type: string }
+                periodStart: { type: string, format: date }
+                periodEnd: { type: string, format: date }
+                inspectedEntity: { type: [string, 'null'] }
+                description: { type: [string, 'null'] }
+                status: { enum: [draft, in_progress, review, archived] }
+      responses:
+        '200':
+          description: Hồ sơ đã sửa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InspectionCase' }
+        '409': { $ref: '#/components/responses/Error' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [cases]
+      summary: Xóa mềm hồ sơ
+      responses:
+        '204': { description: Đã xóa mềm }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/work-items:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [cases]
+      summary: Liệt kê công tác trong hồ sơ
+      responses:
+        '200':
+          description: Danh sách công tác
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WorkItem' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [cases]
+      summary: Thêm công tác và snapshot công thức
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workTypeId, name]
+              additionalProperties: false
+              properties:
+                workTypeId: { type: string, format: uuid }
+                name: { type: string, minLength: 1, maxLength: 300 }
+                periodStart: { type: [string, 'null'], format: date }
+                periodEnd: { type: [string, 'null'], format: date }
+                warningThreshold: { type: object }
+      responses:
+        '201':
+          description: Công tác vừa thêm
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkItem' }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/map-context:
+    get:
+      tags: [cases, measurements]
+      summary: Lấy ranh giới snapshot làm ngữ cảnh bản đồ của hồ sơ
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Ranh giới hồ sơ ở EPSG:4326
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CaseMapContext' }
+        default: { $ref: '#/components/responses/Error' }
+  /work-items/{workItemId}/measurements:
+    parameters:
+      - $ref: '#/components/parameters/WorkItemId'
+    get:
+      tags: [measurements]
+      summary: Liệt kê phép đo và tổng các phiên bản hiện hành đã xác nhận
+      responses:
+        '200':
+          description: Danh sách phép đo và tổng chính thức
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeasurementListResponse' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [measurements]
+      summary: Lưu hình học gốc, kiểm tra và tính chính thức bằng PostGIS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMeasurement' }
+      responses:
+        '201':
+          description: Phép đo vừa tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Measurement' }
+        default: { $ref: '#/components/responses/Error' }
+  /measurements/{measurementId}:
+    parameters:
+      - $ref: '#/components/parameters/MeasurementId'
+    get:
+      tags: [measurements]
+      summary: Lấy một phép đo thuộc hồ sơ của người dùng hiện tại
+      responses:
+        '200':
+          description: Phép đo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Measurement' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [measurements]
+      summary: Xóa mềm phép đo và ghi audit
+      responses:
+        '204': { description: Đã xóa mềm }
+        default: { $ref: '#/components/responses/Error' }
+  /measurements/{measurementId}/validate:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [measurements]
+      summary: Kiểm tra lại hình học và tính lại kết quả chính thức
+      parameters:
+        - $ref: '#/components/parameters/MeasurementId'
+      responses:
+        '200':
+          description: Phép đo sau kiểm tra
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Measurement' }
+        default: { $ref: '#/components/responses/Error' }
+  /measurements/{measurementId}/confirm:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [measurements]
+      summary: Xác nhận phép đo không còn lỗi nghiêm trọng
+      parameters:
+        - $ref: '#/components/parameters/MeasurementId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfirmMeasurement' }
+      responses:
+        '200':
+          description: Phép đo đã xác nhận
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Measurement' }
+        default: { $ref: '#/components/responses/Error' }
+  /measurements/{measurementId}/supersede:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [measurements]
+      summary: Hiệu chỉnh phép đo đã xác nhận bằng một phiên bản mới
+      parameters:
+        - $ref: '#/components/parameters/MeasurementId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SupersedeMeasurement' }
+      responses:
+        '201':
+          description: Phiên bản phép đo mới, chưa xác nhận
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Measurement' }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/audit-events:
+    get:
+      tags: [audit]
+      summary: Đọc tối đa 200 sự kiện audit gần nhất của hồ sơ
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Nhật ký append-only
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AuditEvent' }
+        default: { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: dove_session
+    csrfToken:
+      type: apiKey
+      in: header
+      name: x-csrf-token
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string }
+    IncludeInactive:
+      name: includeInactive
+      in: query
+      schema: { type: boolean, default: false }
+    WorkItemId:
+      name: workItemId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    MeasurementId:
+      name: measurementId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Error:
+      description: Lỗi chuẩn có mã và trace ID
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object }
+        traceId: { type: string }
+    User:
+      type: object
+      required: [id, email, displayName, role]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        role: { enum: [owner, editor, reviewer, viewer, catalog_admin] }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+    Session:
+      type: object
+      required: [user, expiresAt]
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        expiresAt: { type: string, format: date-time }
+    AdminArea:
+      type: object
+      required: [id, code, name, areaType, sourceVersion, validFrom, validTo]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        areaType: { type: string }
+        sourceVersion: { type: string }
+        validFrom: { type: string, format: date }
+        validTo: { type: [string, 'null'], format: date }
+    ServiceGroup:
+      type: object
+      required: [id, code, name, displayOrder, color, active, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        displayOrder: { type: integer }
+        color: { type: [string, 'null'] }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateServiceGroup:
+      type: object
+      required: [code, name, displayOrder]
+      additionalProperties: false
+      properties:
+        code: { type: string, pattern: '^[A-Z0-9_]+$' }
+        name: { type: string }
+        displayOrder: { type: integer, minimum: 0 }
+        color: { type: [string, 'null'] }
+    WorkType:
+      type: object
+      required: [id, serviceGroupId, code, name, measurementKind, baseUnit, attributeSchema, calculationSpec, calculationVersion, active, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        serviceGroupId: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        measurementKind: { enum: [count, point, line, area, route, composite] }
+        baseUnit: { type: string }
+        attributeSchema: { type: object }
+        calculationSpec: { type: object }
+        calculationVersion: { type: integer, minimum: 1 }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateWorkType:
+      type: object
+      required: [serviceGroupId, code, name, measurementKind, baseUnit, calculationSpec, calculationVersion]
+      properties:
+        serviceGroupId: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        measurementKind: { enum: [count, point, line, area, route, composite] }
+        baseUnit: { type: string }
+        attributeSchema: { type: object }
+        calculationSpec: { type: object }
+        calculationVersion: { type: integer, minimum: 1 }
+    CaseStatus:
+      enum: [draft, in_progress, review, locked, archived]
+    InspectionCase:
+      type: object
+      required: [id, caseCode, name, adminAreaId, adminAreaName, periodStart, periodEnd, status, workItemCount, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        caseCode: { type: string }
+        name: { type: string }
+        adminAreaId: { type: string, format: uuid }
+        adminAreaName: { type: string }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        inspectedEntity: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+        status: { $ref: '#/components/schemas/CaseStatus' }
+        workItemCount: { type: integer, minimum: 0 }
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateCase:
+      type: object
+      required: [caseCode, name, adminAreaId, periodStart, periodEnd]
+      additionalProperties: false
+      properties:
+        caseCode: { type: string }
+        name: { type: string }
+        adminAreaId: { type: string, format: uuid }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        inspectedEntity: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+    WorkItem:
+      type: object
+      required: [id, caseId, workTypeId, workTypeCode, name, periodStart, periodEnd, unit, formulaSnapshot, warningThreshold, status]
+      properties:
+        id: { type: string, format: uuid }
+        caseId: { type: string, format: uuid }
+        workTypeId: { type: string, format: uuid }
+        workTypeCode: { type: string }
+        name: { type: string }
+        periodStart: { type: [string, 'null'], format: date }
+        periodEnd: { type: [string, 'null'], format: date }
+        unit: { type: string }
+        formulaSnapshot: { type: object }
+        warningThreshold: { type: object }
+        status: { enum: [draft, active, completed, archived] }
+    GeoJsonGeometry:
+      type: object
+      required: [type, coordinates]
+      additionalProperties: false
+      properties:
+        type: { enum: [Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon] }
+        coordinates: {}
+    MeasurementWarning:
+      type: object
+      required: [code, severity, message]
+      additionalProperties: false
+      properties:
+        code: { type: string }
+        severity: { enum: [warning, error] }
+        message: { type: string }
+        details: { type: object }
+    CreateMeasurement:
+      type: object
+      required: [name, geometryKind, geometry]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 300 }
+        geometryKind: { enum: [point, line, area] }
+        geometry: { $ref: '#/components/schemas/GeoJsonGeometry' }
+        method: { enum: [map_draw, import_geojson] }
+        calculationInputs:
+          type: object
+          additionalProperties: { type: number, minimum: 0 }
+        note: { type: [string, 'null'], maxLength: 5000 }
+    SupersedeMeasurement:
+      type: object
+      required: [name, geometryKind, geometry, reason]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 300 }
+        geometryKind: { enum: [point, line, area] }
+        geometry: { $ref: '#/components/schemas/GeoJsonGeometry' }
+        method: { enum: [map_draw, import_geojson] }
+        calculationInputs:
+          type: object
+          additionalProperties: { type: number, minimum: 0 }
+        note: { type: [string, 'null'], maxLength: 5000 }
+        reason: { type: string, minLength: 3, maxLength: 1000 }
+    ConfirmMeasurement:
+      type: object
+      additionalProperties: false
+      properties:
+        reason: { type: string, maxLength: 1000 }
+    Measurement:
+      type: object
+      required: [id, caseId, workItemId, code, name, version, supersedesId, method, geometryKind, rawGeometry, normalizedGeometry, baseValue, calculatedQuantity, unit, calculationRuleCode, calculationVersion, calculationInputs, calculationOutput, validationStatus, warnings, status, note, confirmedAt, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        caseId: { type: string, format: uuid }
+        workItemId: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        version: { type: integer, minimum: 1 }
+        supersedesId: { type: [string, 'null'], format: uuid }
+        method: { enum: [map_draw, gps_point, gps_track, route_provider, import_geojson, manual_document] }
+        geometryKind: { enum: [point, line, area] }
+        rawGeometry: { $ref: '#/components/schemas/GeoJsonGeometry' }
+        normalizedGeometry:
+          oneOf:
+            - $ref: '#/components/schemas/GeoJsonGeometry'
+            - type: 'null'
+        baseValue: { type: [number, 'null'], minimum: 0 }
+        calculatedQuantity: { type: [number, 'null'], minimum: 0 }
+        unit: { type: string }
+        calculationRuleCode: { type: string }
+        calculationVersion: { type: integer, minimum: 1 }
+        calculationInputs:
+          type: object
+          additionalProperties: { type: number }
+        calculationOutput: { type: object }
+        validationStatus: { enum: [valid, invalid, needs_attention] }
+        warnings:
+          type: array
+          items: { $ref: '#/components/schemas/MeasurementWarning' }
+        status: { enum: [draft, pending_validation, needs_attention, confirmed, superseded, deleted] }
+        note: { type: [string, 'null'] }
+        confirmedAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MeasurementListResponse:
+      type: object
+      required: [items, confirmedTotal, unit]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Measurement' }
+        confirmedTotal: { type: number, minimum: 0 }
+        unit: { type: string }
+    CaseMapContext:
+      type: object
+      required: [caseId, boundary]
+      properties:
+        caseId: { type: string, format: uuid }
+        boundary: { $ref: '#/components/schemas/GeoJsonGeometry' }
+    AuditEvent:
+      type: object
+      required: [id, entityType, entityId, action, actorId, actorName, occurredAt, reason, traceId]
+      properties:
+        id: { type: string, format: uuid }
+        entityType: { type: string }
+        entityId: { type: string, format: uuid }
+        action: { type: string }
+        actorId: { type: string, format: uuid }
+        actorName: { type: string }
+        occurredAt: { type: string, format: date-time }
+        reason: { type: [string, 'null'] }
+        traceId: { type: string }

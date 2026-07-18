@@ -1,0 +1,222 @@
+{
+  "catalogVersion": 1,
+  "effectiveFrom": "2026-07-18",
+  "serviceGroups": [
+    {
+      "code": "ENV_SANITATION",
+      "name": "Dịch vụ vệ sinh môi trường",
+      "color": "#0E7490",
+      "displayOrder": 10,
+      "workTypes": [
+        {
+          "code": "STREET_SWEEP_LENGTH",
+          "name": "Quét đường theo chiều dài",
+          "measurementKind": "line",
+          "baseUnit": "m.lần",
+          "calculation": {
+            "ruleCode": "RULE-LENGTH-FREQUENCY-1",
+            "version": 1,
+            "expression": "length_m * side_factor * frequency * service_days",
+            "requiredInputs": ["side_factor", "frequency", "service_days"]
+          }
+        },
+        {
+          "code": "PAVEMENT_CLEANING_AREA",
+          "name": "Duy trì vệ sinh hè phố theo diện tích",
+          "measurementKind": "area",
+          "baseUnit": "m2.lần",
+          "calculation": {
+            "ruleCode": "RULE-AREA-FREQUENCY-1",
+            "version": 1,
+            "expression": "area_m2 * frequency * service_days",
+            "requiredInputs": ["frequency", "service_days"]
+          }
+        },
+        {
+          "code": "WASTE_COLLECTION_POINT",
+          "name": "Điểm thu gom/tập kết rác",
+          "measurementKind": "point",
+          "baseUnit": "điểm",
+          "calculation": {
+            "ruleCode": "RULE-COUNT-1",
+            "version": 1,
+            "expression": "count"
+          }
+        }
+      ]
+    },
+    {
+      "code": "WASTE_TRANSPORT",
+      "name": "Dịch vụ vận chuyển và xử lý rác thải",
+      "color": "#C2410C",
+      "displayOrder": 20,
+      "workTypes": [
+        {
+          "code": "WASTE_ROUTE_DISTANCE",
+          "name": "Vận chuyển rác đến khu xử lý",
+          "measurementKind": "route",
+          "baseUnit": "xe.km",
+          "calculation": {
+            "ruleCode": "RULE-ROUTE-VEHICLE-KM-1",
+            "version": 1,
+            "expression": "distance_one_way_km * return_factor * trip_count",
+            "requiredInputs": ["return_factor", "trip_count"]
+          }
+        },
+        {
+          "code": "WASTE_TON_KM",
+          "name": "Khối lượng vận chuyển theo tấn.km",
+          "measurementKind": "route",
+          "baseUnit": "tấn.km",
+          "calculation": {
+            "ruleCode": "RULE-ROUTE-TON-KM-1",
+            "version": 1,
+            "expression": "distance_one_way_km * return_factor * transported_weight_ton",
+            "requiredInputs": ["return_factor", "transported_weight_ton"]
+          }
+        },
+        {
+          "code": "WASTE_TREATMENT_WEIGHT",
+          "name": "Khối lượng rác xử lý",
+          "measurementKind": "composite",
+          "baseUnit": "tấn",
+          "calculation": {
+            "ruleCode": "RULE-SUM-WEIGHT-1",
+            "version": 1,
+            "expression": "sum(weight_ton)",
+            "requiredInputs": ["weight_ton"]
+          }
+        }
+      ]
+    },
+    {
+      "code": "GREENERY",
+      "name": "Dịch vụ chăm sóc cây xanh, hoa cảnh",
+      "color": "#15803D",
+      "displayOrder": 30,
+      "workTypes": [
+        {
+          "code": "TREE_MAINTENANCE",
+          "name": "Chăm sóc/cắt tỉa cây xanh",
+          "measurementKind": "point",
+          "baseUnit": "cây.lần",
+          "calculation": {
+            "ruleCode": "RULE-COUNT-FREQUENCY-1",
+            "version": 1,
+            "expression": "count * frequency",
+            "requiredInputs": ["frequency"]
+          },
+          "attributes": ["species_group", "trunk_diameter_cm", "height_group", "condition"]
+        },
+        {
+          "code": "GRASS_CUTTING",
+          "name": "Cắt cỏ/thảm cây",
+          "measurementKind": "area",
+          "baseUnit": "m2.lần",
+          "calculation": {
+            "ruleCode": "RULE-AREA-FREQUENCY-1",
+            "version": 1,
+            "expression": "area_m2 * frequency",
+            "requiredInputs": ["frequency"]
+          }
+        },
+        {
+          "code": "FLOWER_BED_MAINTENANCE",
+          "name": "Duy trì bồn hoa, thảm hoa",
+          "measurementKind": "area",
+          "baseUnit": "m2.lần",
+          "calculation": {
+            "ruleCode": "RULE-AREA-FREQUENCY-1",
+            "version": 1,
+            "expression": "area_m2 * frequency",
+            "requiredInputs": ["frequency"]
+          }
+        }
+      ]
+    },
+    {
+      "code": "LIGHTING",
+      "name": "Dịch vụ duy trì hệ thống điện chiếu sáng",
+      "color": "#CA8A04",
+      "displayOrder": 40,
+      "workTypes": [
+        {
+          "code": "LIGHT_POLE_COUNT",
+          "name": "Kiểm tra cột chiếu sáng",
+          "measurementKind": "point",
+          "baseUnit": "cột",
+          "calculation": {
+            "ruleCode": "RULE-COUNT-1",
+            "version": 1,
+            "expression": "count"
+          }
+        },
+        {
+          "code": "LUMINAIRE_COUNT",
+          "name": "Kiểm tra bộ đèn",
+          "measurementKind": "point",
+          "baseUnit": "bộ đèn",
+          "calculation": {
+            "ruleCode": "RULE-SUM-ATTRIBUTE-1",
+            "version": 1,
+            "expression": "sum(luminaire_count)",
+            "requiredInputs": ["luminaire_count"]
+          }
+        },
+        {
+          "code": "LIGHTING_CABLE_LENGTH",
+          "name": "Đường dây/cáp chiếu sáng",
+          "measurementKind": "line",
+          "baseUnit": "m",
+          "calculation": {
+            "ruleCode": "RULE-LENGTH-1",
+            "version": 1,
+            "expression": "length_m"
+          }
+        }
+      ]
+    },
+    {
+      "code": "URBAN_BEAUTIFICATION",
+      "name": "Dịch vụ chỉnh trang đô thị khác",
+      "color": "#7C3AED",
+      "displayOrder": 50,
+      "workTypes": [
+        {
+          "code": "CURB_PAINTING",
+          "name": "Sơn bó vỉa",
+          "measurementKind": "line",
+          "baseUnit": "m.lần",
+          "calculation": {
+            "ruleCode": "RULE-LENGTH-FREQUENCY-1",
+            "version": 1,
+            "expression": "length_m * face_factor * coat_count",
+            "requiredInputs": ["face_factor", "coat_count"]
+          }
+        },
+        {
+          "code": "DRAIN_CLEANING_LENGTH",
+          "name": "Nạo vét rãnh theo chiều dài",
+          "measurementKind": "line",
+          "baseUnit": "m",
+          "calculation": {
+            "ruleCode": "RULE-LENGTH-1",
+            "version": 1,
+            "expression": "length_m"
+          }
+        },
+        {
+          "code": "SIDEWALK_REPAIR_AREA",
+          "name": "Sửa chữa vỉa hè theo diện tích",
+          "measurementKind": "area",
+          "baseUnit": "m2",
+          "calculation": {
+            "ruleCode": "RULE-AREA-1",
+            "version": 1,
+            "expression": "area_m2"
+          }
+        }
+      ]
+    }
+  ]
+}
