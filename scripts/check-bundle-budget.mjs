@@ -55,5 +55,5 @@ if (failures.length > 0) {
   console.error(`Bundle vượt ngân sách: ${failures.join(', ')}.`)
   process.exitCode = 1
 } else {
-  console.log('Bundle nằm trong ngân sách hiệu năng Mốc 3.')
+  console.log('Bundle nằm trong ngân sách hiệu năng Mốc 4.')
 }

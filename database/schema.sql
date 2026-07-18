@@ -188,6 +188,21 @@ CREATE TABLE treatment_facility (
   deleted_at timestamptz
 );
 
+CREATE TABLE gps_track_point (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  measurement_id uuid NOT NULL REFERENCES measurement(id),
+  segment_index integer NOT NULL,
+  point_index integer NOT NULL,
+  position geometry(Point, 4326) NOT NULL,
+  recorded_at timestamptz NOT NULL,
+  accuracy_m numeric(12, 3) NOT NULL CHECK (accuracy_m >= 0),
+  altitude_m numeric(12, 3),
+  speed_mps numeric(12, 3),
+  accepted_for_normalized boolean NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (measurement_id, segment_index, point_index)
+);
+
 CREATE TABLE transport_route (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   measurement_id uuid NOT NULL UNIQUE REFERENCES measurement(id),
@@ -245,16 +260,32 @@ CREATE TABLE attachment (
   object_key text NOT NULL UNIQUE,
   original_name text NOT NULL,
   mime_type text NOT NULL,
-  size_bytes bigint NOT NULL CHECK (size_bytes >= 0),
-  sha256 text NOT NULL,
+  expected_size_bytes bigint NOT NULL CHECK (expected_size_bytes > 0),
+  size_bytes bigint CHECK (size_bytes > 0),
+  expected_sha256 char(64) NOT NULL,
+  sha256 char(64),
+  upload_status text NOT NULL CHECK (upload_status IN ('pending', 'completed', 'failed')),
   captured_at timestamptz,
-  captured_location geometry(Point, 4326),
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_by uuid NOT NULL REFERENCES app_user(id),
   created_at timestamptz NOT NULL DEFAULT now(),
+  completed_at timestamptz,
   deleted_at timestamptz,
   CONSTRAINT attachment_parent CHECK (
-    measurement_id IS NOT NULL OR case_work_item_id IS NOT NULL
+    num_nonnulls(measurement_id, case_work_item_id) = 1
+  ),
+  CONSTRAINT attachment_mime_type CHECK (
+    mime_type IN ('image/jpeg', 'image/png', 'image/webp')
+  ),
+  CONSTRAINT attachment_expected_sha256_hex CHECK (
+    expected_sha256 ~ '^[0-9a-f]{64}$'
+  ),
+  CONSTRAINT attachment_sha256_hex CHECK (
+    sha256 IS NULL OR sha256 ~ '^[0-9a-f]{64}$'
+  ),
+  CONSTRAINT attachment_completion CHECK (
+    (upload_status = 'completed' AND size_bytes IS NOT NULL AND sha256 IS NOT NULL AND completed_at IS NOT NULL)
+    OR upload_status <> 'completed'
   )
 );
 
@@ -274,6 +305,7 @@ CREATE TABLE audit_event (
 
 CREATE TABLE sync_mutation (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id uuid NOT NULL REFERENCES app_user(id),
   idempotency_key text NOT NULL,
   device_id text NOT NULL,
   entity_type text NOT NULL,
@@ -284,7 +316,7 @@ CREATE TABLE sync_mutation (
   response_summary jsonb,
   processed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (device_id, idempotency_key)
+  UNIQUE (actor_id, device_id, idempotency_key)
 );
 
 CREATE TABLE case_snapshot (

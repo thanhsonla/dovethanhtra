@@ -20,6 +20,13 @@ import type {
   SaveTransportRouteRequest,
   TreatmentFacility,
   TransportRoute,
+  Attachment,
+  CreateGpsPointRequest,
+  CreateGpsTrackRequest,
+  GpsPointResponse,
+  GpsTrackResponse,
+  PresignAttachmentRequest,
+  PresignAttachmentResponse,
 } from '@dove/contracts'
 
 export class ApiClientError extends Error {
@@ -100,6 +107,38 @@ export const api = {
     request<TransportRoute>(`/routes/${routeId}/recalculate`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
+    }),
+  createGpsTrack: (
+    workItemId: string,
+    input: CreateGpsTrackRequest,
+    idempotencyKey: string,
+    deviceId: string,
+  ) =>
+    request<GpsTrackResponse>(`/work-items/${workItemId}/gps-tracks`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+      headers: { 'idempotency-key': idempotencyKey, 'x-device-id': deviceId },
+    }),
+  createGpsPoint: (
+    workItemId: string,
+    input: CreateGpsPointRequest,
+    idempotencyKey: string,
+    deviceId: string,
+  ) =>
+    request<GpsPointResponse>(`/work-items/${workItemId}/gps-points`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+      headers: { 'idempotency-key': idempotencyKey, 'x-device-id': deviceId },
+    }),
+  presignAttachment: (input: PresignAttachmentRequest) =>
+    request<PresignAttachmentResponse>('/attachments/presign', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  completeAttachment: (attachmentId: string) =>
+    request<Attachment>('/attachments/complete', {
+      method: 'POST',
+      body: JSON.stringify({ attachmentId }),
     }),
   login: (email: string, password: string) =>
     request<SessionResponse>('/auth/login', {

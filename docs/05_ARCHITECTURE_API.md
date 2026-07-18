@@ -177,6 +177,18 @@ Nhận snapshot dữ liệu đã kiểm tra và tạo tệp. Export không truy 
 - `POST /attachments/complete`
 - `DELETE /attachments/{attachmentId}` — xóa mềm.
 
+### Hiện trường và đồng bộ Mốc 4
+
+- `POST /work-items/{workItemId}/gps-tracks` — yêu cầu `Idempotency-Key` và `X-Device-Id`.
+- `POST /work-items/{workItemId}/gps-points` — ghi vị trí hiện tại và accuracy,
+  dùng cùng cơ chế idempotency.
+- GPS raw lưu từng point và segment; normalized geometry không thay thế raw.
+- `POST /attachments/presign` chỉ tạo bản ghi `pending` và URL MinIO có hạn.
+- `POST /attachments/complete` đọc lại object, xác minh size/MIME/SHA-256 rồi mới
+  chuyển `completed`.
+- Service worker chỉ cache app shell/tài nguyên same-origin được kiểm soát; không
+  cache API hoặc basemap.
+
 ### Nhập/xuất và nhật ký
 
 - `POST /imports/geojson`

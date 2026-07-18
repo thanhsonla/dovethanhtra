@@ -133,7 +133,7 @@ export function App() {
     <div className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Mốc 2 · Bản đồ và phép đo</p>
+          <p className="eyebrow">Mốc 4 · Hiện trường và ngoại tuyến</p>
           <h1>Kiểm tra khối lượng hiện trường</h1>
         </div>
         <div className="account">

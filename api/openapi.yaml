@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: API kiểm tra khối lượng hiện trường
-  version: 0.4.0
-  description: Hợp đồng API đã triển khai đến hết Mốc 3, gồm phép đo PostGIS và route vận chuyển phiên bản hóa.
+  version: 0.5.0
+  description: Hợp đồng API đã triển khai đến hết Mốc 4, gồm route, GPS, đồng bộ idempotent và bằng chứng ảnh.
   license:
     name: Proprietary — sử dụng nội bộ/cá nhân
     identifier: LicenseRef-Proprietary
@@ -482,6 +482,46 @@ paths:
       summary: Tính cự ly bình quân gia quyền
       responses:
         '200': { description: Cự ly gia quyền hoặc cảnh báo thiếu trọng lượng }
+        default: { $ref: '#/components/responses/Error' }
+  /work-items/{workItemId}/gps-tracks:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [field]
+      summary: Lưu GPS raw/normalized bằng mutation idempotent
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+        - { name: X-Device-Id, in: header, required: true, schema: { type: string } }
+      responses:
+        '201': { description: GPS track mới }
+        '200': { description: Kết quả cũ của cùng mutation }
+        default: { $ref: '#/components/responses/Error' }
+  /work-items/{workItemId}/gps-points:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [field]
+      summary: Ghi vị trí GPS hiện tại kèm accuracy bằng mutation idempotent
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+        - { name: X-Device-Id, in: header, required: true, schema: { type: string } }
+      responses:
+        '201': { description: GPS point mới }
+        '200': { description: Kết quả cũ của cùng mutation }
+        default: { $ref: '#/components/responses/Error' }
+  /attachments/presign:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [field]
+      summary: Tạo upload ảnh pending và URL MinIO có thời hạn
+      responses:
+        '201': { description: Upload pending }
+        default: { $ref: '#/components/responses/Error' }
+  /attachments/complete:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [field]
+      summary: Xác minh object và hoàn tất bằng chứng ảnh
+      responses:
+        '200': { description: Ảnh đã xác minh SHA-256 }
         default: { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:

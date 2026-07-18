@@ -37,7 +37,8 @@ export interface PersistMeasurementInput {
   code: string
   createdBy: string
   geometryKind: MeasurementGeometryKind
-  method: 'map_draw' | 'import_geojson' | 'route_provider'
+  gpsAccuracyM?: number | null
+  method: 'map_draw' | 'import_geojson' | 'route_provider' | 'gps_point' | 'gps_track'
   name: string
   normalizedGeometry: GeoJsonGeometry | null
   note: string | null
@@ -53,10 +54,11 @@ export interface PersistMeasurementInput {
 
 interface MeasurementRow extends Omit<
   Measurement,
-  'baseValue' | 'calculatedQuantity' | 'confirmedAt' | 'createdAt' | 'updatedAt'
+  'baseValue' | 'calculatedQuantity' | 'gpsAccuracyM' | 'confirmedAt' | 'createdAt' | 'updatedAt'
 > {
   baseValue: number | string | null
   calculatedQuantity: number | string | null
+  gpsAccuracyM: number | string | null
   confirmedAt: Date | string | null
   createdAt: Date | string
   updatedAt: Date | string
@@ -68,7 +70,8 @@ const measurementColumns = sql.raw(`
   m.geometry_kind AS "geometryKind", ST_AsGeoJSON(m.raw_geometry)::json AS "rawGeometry",
   CASE WHEN m.normalized_geometry IS NULL THEN NULL
     ELSE ST_AsGeoJSON(m.normalized_geometry)::json END AS "normalizedGeometry",
-  m.base_value AS "baseValue", m.calculated_quantity AS "calculatedQuantity", m.unit,
+  m.gps_accuracy_m AS "gpsAccuracyM", m.base_value AS "baseValue",
+  m.calculated_quantity AS "calculatedQuantity", m.unit,
   m.calculation_rule_code AS "calculationRuleCode",
   m.calculation_version AS "calculationVersion", m.calculation_inputs AS "calculationInputs",
   m.calculation_output AS "calculationOutput", m.validation_status AS "validationStatus",
@@ -81,6 +84,7 @@ function mapMeasurement(row: MeasurementRow): Measurement {
     ...row,
     baseValue: row.baseValue === null ? null : Number(row.baseValue),
     calculatedQuantity: row.calculatedQuantity === null ? null : Number(row.calculatedQuantity),
+    gpsAccuracyM: row.gpsAccuracyM === null ? null : Number(row.gpsAccuracyM),
     confirmedAt: row.confirmedAt ? isoDateTime(row.confirmedAt) : null,
     createdAt: isoDateTime(row.createdAt),
     updatedAt: isoDateTime(row.updatedAt),
@@ -184,7 +188,7 @@ export class MeasurementRepository {
     const result = await sql<{ id: string }>`
       INSERT INTO measurement (
         case_work_item_id, code, name, version, supersedes_id, method, geometry_kind,
-        raw_geometry, normalized_geometry, base_value, calculated_quantity, unit,
+        raw_geometry, normalized_geometry, gps_accuracy_m, base_value, calculated_quantity, unit,
         calculation_rule_code, calculation_version, calculation_inputs, calculation_output,
         validation_status, warnings, status, note, created_by
       ) VALUES (
@@ -194,7 +198,7 @@ export class MeasurementRepository {
         ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(input.rawGeometry)}), 4326),
         CASE WHEN ${normalized}::text IS NULL THEN NULL
           ELSE ST_SetSRID(ST_GeomFromGeoJSON(${normalized}), 4326) END,
-        ${input.baseValue}, ${input.calculatedQuantity}, ${input.unit},
+        ${input.gpsAccuracyM ?? null}, ${input.baseValue}, ${input.calculatedQuantity}, ${input.unit},
         ${input.calculationRuleCode}, ${input.calculationVersion},
         ${JSON.stringify(input.calculationInputs)}::jsonb,
         ${JSON.stringify(input.calculationOutput)}::jsonb,

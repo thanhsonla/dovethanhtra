@@ -1,6 +1,15 @@
 import { expect, test } from '@playwright/test'
 
 test('creates a case and adds a catalog work item', async ({ page }, testInfo) => {
+  await page.context().grantPermissions(['geolocation'])
+  await page.context().setGeolocation({ latitude: 20.8, longitude: 104.65 })
+  let configuredStyleRequests = 0
+  if (testInfo.project.name === 'chromium') {
+    await page.route('**/basemaps/e2e-style.json', (route) => {
+      configuredStyleRequests += 1
+      return configuredStyleRequests <= 2 ? route.continue() : route.abort()
+    })
+  }
   const mapModuleResponses: string[] = []
   page.on('response', (response) => {
     if (/\/src\/map\/map-workspace\.tsx|\/assets\/map-workspace-[\w-]+\.js/.test(response.url())) {
@@ -49,6 +58,10 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByLabel('Tên công tác').fill('Route vận chuyển E2E')
   await page.getByRole('button', { name: 'Thêm', exact: true }).click()
   await expect(page.getByText('Route vận chuyển E2E', { exact: true })).toBeVisible()
+  await page.getByLabel('Loại công tác').selectOption({ label: 'Kiểm tra cột chiếu sáng' })
+  await page.getByLabel('Tên công tác').fill('GPS point E2E')
+  await page.getByRole('button', { name: 'Thêm', exact: true }).click()
+  await expect(page.getByText('GPS point E2E', { exact: true })).toBeVisible()
   expect(mapModuleResponses).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
@@ -65,6 +78,69 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByLabel('Tên phép đo').fill('Tuyến đo E2E')
   await page.getByRole('button', { name: 'Lưu và tính máy chủ' }).click()
   await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+
+  await page.getByRole('button', { name: 'Bắt đầu GPS' }).click()
+  await expect(page.getByText('GPS track: 1 điểm')).toBeVisible()
+  await page.context().setGeolocation({ latitude: 20.8, longitude: 104.651 })
+  await expect(page.getByText('GPS track: 2 điểm')).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<number>((resolve, reject) => {
+            const openRequest = indexedDB.open('dove-field-v4', 1)
+            openRequest.onerror = () =>
+              reject(openRequest.error ?? new Error('Không thể mở IndexedDB kiểm thử.'))
+            openRequest.onsuccess = () => {
+              const database = openRequest.result
+              const request = database.transaction('gpsDrafts').objectStore('gpsDrafts').count()
+              request.onerror = () =>
+                reject(request.error ?? new Error('Không thể đếm GPS draft kiểm thử.'))
+              request.onsuccess = () => {
+                database.close()
+                resolve(request.result)
+              }
+            }
+          }),
+      ),
+    )
+    .toBeGreaterThan(0)
+  await page.reload()
+  await page.getByRole('button', { name: new RegExp(caseName) }).click()
+  await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
+  await expect(page.getByText('GPS track: 2 điểm')).toBeVisible()
+  await expect(page.getByText('Đồng bộ: local_only')).toBeVisible()
+  await page.getByRole('button', { name: 'Bắt đầu GPS' }).click()
+  await expect(page.getByText('GPS track: 3 điểm')).toBeVisible()
+  await page.getByRole('button', { name: 'Tạm dừng' }).click()
+  await page.context().setGeolocation({ latitude: 20.8, longitude: 104.652 })
+  await expect(page.getByText('GPS track: 3 điểm')).toBeVisible()
+  await page.getByRole('button', { name: 'Tiếp tục' }).click()
+  await page.context().setGeolocation({ latitude: 20.8, longitude: 104.653 })
+  await expect(page.getByText('GPS track: 4 điểm')).toBeVisible()
+  await page.context().setGeolocation({ latitude: 20.8, longitude: 104.654 })
+  await expect(page.getByText('GPS track: 5 điểm')).toBeVisible()
+  await page.context().setOffline(true)
+  await page.getByRole('button', { name: 'Kết thúc và lưu' }).click()
+  await expect(page.getByText('Đồng bộ: queued')).toBeVisible()
+  const gpsResponsePromise = page.waitForResponse((response) =>
+    response.url().includes('/gps-tracks'),
+  )
+  await page.context().setOffline(false)
+  const gpsResponse = await gpsResponsePromise
+  expect(gpsResponse.status(), await gpsResponse.text()).toBeLessThan(300)
+  await expect(page.getByText('Đồng bộ: synced')).toBeVisible()
+  await expect(page.getByText(/GPS \d/).first()).toBeVisible()
+
+  await page.getByRole('button', { name: 'GPS point E2E', exact: true }).click()
+  const pointResponsePromise = page.waitForResponse((response) =>
+    response.url().includes('/gps-points'),
+  )
+  await page.getByRole('button', { name: 'Ghi vị trí GPS' }).click()
+  const pointResponse = await pointResponsePromise
+  expect(pointResponse.status(), await pointResponse.text()).toBeLessThan(300)
+  await expect(page.getByText('Đồng bộ: synced')).toBeVisible()
+  await expect(page.getByText(/Vị trí GPS \d/).first()).toBeVisible()
 
   await page.getByRole('button', { name: 'Route vận chuyển E2E', exact: true }).click()
   await page.getByLabel('Cơ sở xử lý').selectOption({ index: 1 })
@@ -83,11 +159,12 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   )
   await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
 
-  // WebKit may reuse its HTTP cache without issuing an interceptable style request.
-  // Chromium covers the deterministic network-failure fallback; both projects cover route M3.
+  // Remount the map so Chromium requests the remote style again; the route above
+  // deterministically fails that second request instead of depending on HTTP cache behavior.
   if (testInfo.project.name === 'chromium') {
-    await page.route('**/basemaps/e2e-style.json', (route) => route.abort())
-    await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
+    await page.reload()
+    await page.getByRole('button', { name: new RegExp(caseName) }).click()
+    await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
     await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
     await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
     await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()

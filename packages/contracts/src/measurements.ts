@@ -71,6 +71,7 @@ export const MeasurementSchema = Type.Object(
     geometryKind: MeasurementGeometryKindSchema,
     rawGeometry: GeoJsonGeometrySchema,
     normalizedGeometry: Type.Union([GeoJsonGeometrySchema, Type.Null()]),
+    gpsAccuracyM: Type.Union([Type.Number({ minimum: 0 }), Type.Null()]),
     baseValue: Type.Union([Type.Number({ minimum: 0 }), Type.Null()]),
     calculatedQuantity: Type.Union([Type.Number({ minimum: 0 }), Type.Null()]),
     unit: Type.String(),

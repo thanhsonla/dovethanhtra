@@ -4,8 +4,8 @@
 
 - Phiên bản tài liệu: 1.1.
 - Ngày chốt phạm vi: 18/07/2026.
-- Giai đoạn: Mốc 3 — route vận chuyển đã triển khai trên nền phép đo Mốc 2; chưa
-  triển khai GPS, ảnh, ngoại tuyến, đối chiếu hoặc xuất báo cáo của Mốc 4–5.
+- Giai đoạn: Mốc 4 — hiện trường và ngoại tuyến đã triển khai trên nền Mốc 2–3;
+  chưa triển khai đối chiếu hoặc xuất báo cáo của Mốc 5.
 - Người dùng chính: một cán bộ thực hiện kiểm tra hiện trường; kiến trúc vẫn chuẩn bị cho nhiều người dùng về sau.
 
 ## Quyết định đã chốt
@@ -74,6 +74,7 @@
 | 18/07/2026 | ADR-012 | Tách raw/normalized geometry, tính PostGIS và version hóa phép đo    | Bảo toàn chứng cứ, kết quả chính thức và lịch sử hiệu chỉnh |
 | 19/07/2026 | ADR-013 | Cấu hình basemap và hash nguồn ranh giới                             | Đúng attribution, fallback an toàn và không ghi đè âm thầm  |
 | 19/07/2026 | ADR-014 | RoutingProvider backend và phiên bản route bất biến                  | Giữ token phía server, nguồn cự ly và lịch sử tính lại       |
+| 19/07/2026 | ADR-015 | GPS raw, upload xác minh và đồng bộ idempotent                       | Không mất bằng chứng khi lọc/retry hoặc upload dở            |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -126,3 +127,26 @@
 - Cơ sở xử lý và provider local seed chỉ là fixture kỹ thuật. Trước chạy thật phải
   nhập danh mục chính thức, cấu hình Mapbox token giới hạn API/quota và field-test
   với một tuyến đã biết cự ly.
+
+## Trạng thái triển khai Mốc 4
+
+- PWA có manifest/icon và service worker cache app shell/tài nguyên same-origin;
+  loại trừ API và basemap để không cache dữ liệu hoặc nguồn nền trái chính sách.
+- Web dùng IndexedDB cho GPS draft và mutation queue, tự thử lại khi online và hiển
+  thị `local_only`, `queued`, `syncing`, `synced`, `conflict`, `failed`.
+- GPS pause/resume tạo segment riêng; từng raw point lưu tọa độ, timestamp, accuracy,
+  altitude/speed nếu có. Normalized geometry lọc theo accuracy version 1 nhưng raw
+  geometry/raw point không bị thay thế.
+- GPS point ghi một vị trí hiện tại, accuracy và timestamp; kết quả chính thức vẫn
+  tính phía server và mutation có cùng bảo vệ idempotency như GPS track.
+- Mutation GPS yêu cầu device ID và idempotency key. Backend trả lại kết quả cũ cho
+  cùng key/payload, trả conflict cho cùng key khác payload và không tạo measurement trùng.
+- Ảnh dùng presigned PUT MinIO; bản ghi pending không phải bằng chứng hoàn tất.
+  Backend đọc lại object, kiểm tra size/MIME, tự tính SHA-256, audit rồi mới complete.
+- Migration rollback từ chối nếu có GPS point, attachment hoặc sync thành công để
+  tránh xóa bằng chứng âm thầm; DB buộc ảnh có đúng một parent và hash/MIME hợp lệ.
+- Integration bao phủ raw/normalized GPS, replay/xung đột idempotency, upload hợp
+  lệ, MIME/kích thước/hash sai và upload dở. E2E Chromium/WebKit bao phủ phục hồi
+  nháp sau reload, pause/resume nhiều segment và queue tự đồng bộ khi online lại.
+- Chưa field-test GPS trên thiết bị mục tiêu và chưa kiểm tra CORS presigned PUT với
+  cấu hình MinIO/staging thực tế; đây là cổng vận hành còn lại trước production.

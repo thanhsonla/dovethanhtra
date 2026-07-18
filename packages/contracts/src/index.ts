@@ -75,3 +75,4 @@ export {
   type SupersedeMeasurementRequest,
 } from './measurements.js'
 export * from './routing.js'
+export * from './field.js'

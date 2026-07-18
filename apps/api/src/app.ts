@@ -15,6 +15,9 @@ import { CatalogRepository } from './modules/catalog/catalog-repository.js'
 import { catalogRoutes } from './modules/catalog/catalog-routes.js'
 import { CatalogService } from './modules/catalog/catalog-service.js'
 import { healthRoutes } from './modules/health/health-routes.js'
+import { EvidenceService } from './modules/field/evidence-service.js'
+import { fieldRoutes } from './modules/field/field-routes.js'
+import { GpsService } from './modules/field/gps-service.js'
 import { createAuthGuards } from './modules/identity/auth-guards.js'
 import { IdentityRepository } from './modules/identity/identity-repository.js'
 import { identityRoutes } from './modules/identity/identity-routes.js'
@@ -110,6 +113,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     options.routing?.provider ?? new LocalRoutingProvider(),
     options.routing?.requestsPerMinute ?? 30,
   )
+  const gps = new GpsService(database, measurementRepository, audit)
+  const evidence = new EvidenceService(database, options.dependencies.objectStorage, audit)
 
   await app.register(healthRoutes, {
     dependencies: options.dependencies,
@@ -138,6 +143,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     service: measurements,
   })
   await app.register(routingRoutes, { guards, prefix: '/api/v1', service: routing })
+  await app.register(fieldRoutes, { evidence, gps, guards, prefix: '/api/v1' })
   await app.register(auditRoutes, {
     guards,
     prefix: '/api/v1/cases/:caseId/audit-events',

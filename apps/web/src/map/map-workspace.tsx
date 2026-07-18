@@ -12,6 +12,7 @@ import type {
 import { useEffect, useMemo, useState } from 'react'
 
 import { api } from '../api.js'
+import { FieldPanel } from '../field/field-panel.js'
 import { createBasemapProvider } from './basemap-provider.js'
 import {
   createHistory,
@@ -182,7 +183,7 @@ export function MapWorkspace(props: {
           ← Hồ sơ
         </button>
         <div>
-          <p className="eyebrow">Mốc 3 · Bản đồ, phép đo và route</p>
+          <p className="eyebrow">Mốc 4 · Bản đồ, hiện trường và ngoại tuyến</p>
           <h1>{props.inspectionCase.name}</h1>
         </div>
         <label className="basemap-select">
@@ -378,6 +379,16 @@ export function MapWorkspace(props: {
               onError={setError}
             />
           )}
+          <FieldPanel
+            measurement={selected}
+            workItem={selectedWork}
+            gpsKind={selectedKind === 'line' || selectedKind === 'point' ? selectedKind : null}
+            onError={setError}
+            onChanged={async (measurement) => {
+              setSelectedId(measurement.id)
+              await refreshWork(measurement.workItemId)
+            }}
+          />
         </aside>
       </section>
     </main>

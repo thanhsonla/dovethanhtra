@@ -61,7 +61,7 @@ Sao chép toàn bộ thư mục vào repository mới, mở tại thư mục g�
 
 Không yêu cầu Codex xây toàn bộ ứng dụng trong một lượt. Mỗi lượt chỉ thực hiện một mốc có tiêu chí nghiệm thu và chạy kiểm thử trước khi chuyển mốc tiếp theo.
 
-### Chạy Mốc 3
+### Chạy Mốc 4
 
 Yêu cầu Node.js 24.18.0, pnpm 11.9.0 và Docker đang chạy. Từ thư mục gốc:
 
@@ -77,7 +77,7 @@ có thể cài Node/pnpm bằng công cụ khác nhưng `pnpm doctor` vẫn ph�
 cài dependency hoặc chạy kiểm thử.
 
 `pnpm dev` dùng cấu hình giả dành riêng cho local trong `.env.example`, khởi động
-PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 3 và seed dữ liệu local, sau đó mở API tại cổng
+PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 4 và seed dữ liệu local, sau đó mở API tại cổng
 `3000` và web tại cổng `5173`. Đăng nhập local bằng tài khoản giả trong
 `.env.example`. Không dùng các giá trị này cho staging hoặc production.
 
@@ -91,6 +91,11 @@ thức xe.km/tấn.km/cự ly gia quyền. Local mặc định dùng `local-dete
 fixture đường thẳng kỹ thuật. Để dùng Mapbox Directions, đặt `ROUTING_PROVIDER=mapbox`
 và cấp `MAPBOX_ACCESS_TOKEN` từ secret manager phía backend. GPS, ảnh, ngoại tuyến,
 đối chiếu và xuất báo cáo vẫn chưa thuộc mốc này.
+
+Mốc 4 bổ sung service worker/app shell same-origin, IndexedDB cho GPS draft và mutation
+queue, GPS point/track nhiều segment với raw point bất biến, đồng bộ idempotent và upload ảnh gốc
+trực tiếp vào MinIO. Ảnh chỉ hoàn tất sau khi backend kiểm tra size/MIME và tự tính
+SHA-256. Chức năng đối chiếu và xuất báo cáo của Mốc 5 chưa được triển khai.
 
 Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMAP_STYLE_URL`,
 `VITE_BASEMAP_LABEL` và `VITE_BASEMAP_ATTRIBUTION`. Cả URL và attribution phải có;

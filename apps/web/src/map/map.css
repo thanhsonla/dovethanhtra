@@ -57,6 +57,22 @@
   border-top: 1px solid var(--line);
 }
 
+.field-panel {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.gps-controls,
+.photo-field {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.photo-field {
+  margin-top: 1rem;
+}
+
 .layer-tree {
   border-right: 1px solid #c9d7d0;
 }
