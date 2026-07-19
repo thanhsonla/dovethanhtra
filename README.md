@@ -80,6 +80,10 @@ Repository có `mise.toml` và `.node-version` để pin runtime. Nếu không d
 có thể cài Node/pnpm bằng công cụ khác nhưng `pnpm doctor` vẫn phải đạt trước khi
 cài dependency hoặc chạy kiểm thử.
 
+Integration, performance và E2E tự tạo/dùng database riêng `dove_field_test` qua
+`TEST_DATABASE_URL`; không ghi fixture vào `dove_field` của người dùng. API E2E chạy
+ở cổng `3100`, tách khỏi API local cổng `3000` kể cả khi `pnpm dev` đang mở.
+
 `pnpm dev` dùng cấu hình giả dành riêng cho local trong `.env.example`, khởi động
 PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 5 (Mốc 6 không đổi schema) và seed dữ liệu local, sau đó mở API tại cổng
 `3000` và web tại cổng `5180`. Đăng nhập local bằng tài khoản giả trong

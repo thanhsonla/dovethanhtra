@@ -233,3 +233,16 @@
   evidence và thumbnail không có lifecycle xóa tự động.
 - Local đã xác minh ClamAV 1.4.5 bằng EICAR và dữ liệu sạch. Node 24.18.0 được cài ở
   phạm vi người dùng; `pnpm doctor:services` kiểm thêm ClamAV.
+
+## Trạng thái khả dụng local ngày 19/07/2026
+
+- Đã sửa luồng tạo hồ sơ để người dùng nhập kỳ trước; danh sách địa bàn chỉ hiện
+  phiên bản có thời hạn hiệu lực giao với kỳ hồ sơ và hiển thị rõ ngày hiệu lực.
+- Đã phát hiện bộ integration/E2E trước đây dùng chung `dove_field`, làm lẫn fixture
+  vào tài khoản owner. Sau khi backup PostgreSQL + MinIO có checksum, 282 hồ sơ được
+  chuyển sang tài khoản fixture vô hiệu hóa, 78 loại công tác E2E ngừng kích hoạt và
+  24 địa bàn integration kết thúc hiệu lực. Không xóa cứng hồ sơ hoặc bằng chứng;
+  mỗi thay đổi có audit `test_fixture_quarantined`.
+- Integration, performance và E2E nay dùng `dove_field_test`; API E2E dùng cổng 3100
+  để không tái sử dụng nhầm API local cổng 3000. Không gian owner local trở về trạng
+  thái sạch để tạo hồ sơ thật từ 75 xã/phường Sơn La đang có hiệu lực.

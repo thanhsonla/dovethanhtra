@@ -196,7 +196,13 @@ export function App() {
               >
                 {showDeleted ? 'Ẩn đã xóa' : 'Hồ sơ đã xóa'}
               </button>
-              <button className="button" onClick={() => setShowCreate((value) => !value)}>
+              <button
+                className="button"
+                onClick={() => {
+                  setError('')
+                  setShowCreate((value) => !value)
+                }}
+              >
                 {showCreate ? 'Đóng' : 'Tạo hồ sơ'}
               </button>
             </div>

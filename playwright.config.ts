@@ -17,13 +17,14 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'pnpm exec dotenv -e .env.example -- pnpm --filter @dove/api dev',
-      url: 'http://127.0.0.1:3000/api/v1/health/live',
-      reuseExistingServer: !process.env.CI,
+      command:
+        'pnpm db:test:prepare && pnpm exec dotenv -e .env.example -v API_PORT=3100 -- node scripts/with-test-database.mjs pnpm --filter @dove/api dev',
+      url: 'http://127.0.0.1:3100/api/v1/health/live',
+      reuseExistingServer: false,
     },
     {
       command:
-        'pnpm exec dotenv -e .env.example -v VITE_BASEMAP_STYLE_URL=http://127.0.0.1:4173/basemaps/e2e-style.json -v VITE_BASEMAP_LABEL="Nền E2E" -v VITE_BASEMAP_ATTRIBUTION="Nền E2E được cấp phép" -- pnpm --filter @dove/web dev --host 127.0.0.1 --port 4173',
+        'pnpm exec dotenv -e .env.example -v VITE_API_PROXY_TARGET=http://127.0.0.1:3100 -v VITE_BASEMAP_STYLE_URL=http://127.0.0.1:4173/basemaps/e2e-style.json -v VITE_BASEMAP_LABEL="Nền E2E" -v VITE_BASEMAP_ATTRIBUTION="Nền E2E được cấp phép" -- pnpm --filter @dove/web dev --host 127.0.0.1 --port 4173',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !process.env.CI,
     },

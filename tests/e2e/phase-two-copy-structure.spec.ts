@@ -21,9 +21,9 @@ test('creates a case from selected work-item structure without copying results',
   const sourceForm = page.locator('.create-form')
   await sourceForm.getByLabel('Mã hồ sơ').fill(sourceCode)
   await sourceForm.getByLabel('Tên hồ sơ').fill(sourceName)
-  await sourceForm.getByLabel('Địa bàn').selectOption({ index: 1 })
   await sourceForm.getByLabel('Từ ngày').fill('2026-07-01')
   await sourceForm.getByLabel('Đến ngày').fill('2026-07-31')
+  await sourceForm.getByLabel('Địa bàn').selectOption({ index: 1 })
   await Promise.all([
     page.waitForResponse(
       (response) => response.request().method() === 'GET' && response.url().endsWith('/work-items'),
@@ -47,9 +47,9 @@ test('creates a case from selected work-item structure without copying results',
   const targetName = `Hồ sơ sao chép ${suffix}`
   await targetForm.getByLabel('Mã hồ sơ').fill(`COPY-E2E-DST-${suffix}`)
   await targetForm.getByLabel('Tên hồ sơ').fill(targetName)
-  await targetForm.getByLabel('Địa bàn').selectOption({ index: 1 })
   await targetForm.getByLabel('Từ ngày').fill('2026-08-01')
   await targetForm.getByLabel('Đến ngày').fill('2026-08-31')
+  await targetForm.getByLabel('Địa bàn').selectOption({ index: 1 })
   await targetForm
     .getByLabel('Sao chép cấu trúc từ hồ sơ (không bắt buộc)')
     .selectOption({ label: `${sourceCode} · ${sourceName}` })

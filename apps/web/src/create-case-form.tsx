@@ -1,6 +1,7 @@
 import type { AdminArea, InspectionCase, WorkItem } from '@dove/contracts'
 import { type FormEvent, useState } from 'react'
 
+import { areaValidityLabel, effectiveAreas } from './admin-area-validity.js'
 import { api } from './api.js'
 
 function message(error: unknown): string {
@@ -21,6 +22,9 @@ export function CreateCaseForm(props: {
   const [sourceCaseId, setSourceCaseId] = useState('')
   const [sourceWorkItems, setSourceWorkItems] = useState<WorkItem[]>([])
   const [selectedWorkItemIds, setSelectedWorkItemIds] = useState<string[]>([])
+  const [periodStart, setPeriodStart] = useState('')
+  const [periodEnd, setPeriodEnd] = useState('')
+  const selectableAreas = effectiveAreas(props.areas, periodStart, periodEnd)
 
   const changeSource = async (caseId: string) => {
     setSourceCaseId(caseId)
@@ -55,6 +59,8 @@ export function CreateCaseForm(props: {
       setSourceCaseId('')
       setSourceWorkItems([])
       setSelectedWorkItemIds([])
+      setPeriodStart('')
+      setPeriodEnd('')
       await props.onCreated(created)
     } catch (reason) {
       props.onError(message(reason))
@@ -72,23 +78,42 @@ export function CreateCaseForm(props: {
         <input name="name" required />
       </label>
       <label>
-        Địa bàn
-        <select name="adminAreaId" required>
-          <option value="">Chọn địa bàn</option>
-          {props.areas.map((area) => (
-            <option key={area.id} value={area.id}>
-              {area.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
         Từ ngày
-        <input name="periodStart" type="date" required />
+        <input
+          name="periodStart"
+          type="date"
+          required
+          value={periodStart}
+          onChange={(event) => setPeriodStart(event.target.value)}
+        />
       </label>
       <label>
         Đến ngày
-        <input name="periodEnd" type="date" required />
+        <input
+          name="periodEnd"
+          type="date"
+          required
+          value={periodEnd}
+          onChange={(event) => setPeriodEnd(event.target.value)}
+        />
+      </label>
+      <label className="wide">
+        Địa bàn
+        <select name="adminAreaId" required disabled={selectableAreas.length === 0}>
+          <option value="">
+            {!periodStart || !periodEnd
+              ? 'Chọn kỳ kiểm tra trước'
+              : selectableAreas.length === 0
+                ? 'Không có địa bàn hiệu lực trong kỳ này'
+                : 'Chọn địa bàn'}
+          </option>
+          {selectableAreas.map((area) => (
+            <option key={area.id} value={area.id}>
+              {areaValidityLabel(area)}
+            </option>
+          ))}
+        </select>
+        <small>Danh sách tự lọc theo thời hạn hiệu lực của phiên bản địa giới.</small>
       </label>
       <label className="wide">
         Sao chép cấu trúc từ hồ sơ (không bắt buộc)
@@ -132,7 +157,7 @@ export function CreateCaseForm(props: {
           </small>
         </fieldset>
       )}
-      <button className="button" type="submit">
+      <button className="button" type="submit" disabled={selectableAreas.length === 0}>
         Lưu hồ sơ
       </button>
     </form>

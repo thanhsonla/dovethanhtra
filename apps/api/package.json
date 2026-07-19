@@ -7,6 +7,7 @@
     "build": "tsc -p tsconfig.build.json",
     "db:migrate": "node-pg-migrate --migrations-dir ../../database/migrations --database-url-var DATABASE_URL up",
     "db:migrate:down": "node-pg-migrate --migrations-dir ../../database/migrations --database-url-var DATABASE_URL down 1",
+    "db:test:create": "tsx src/scripts/prepare-test-database.ts",
     "db:admin-area:import": "tsx src/scripts/import-admin-areas.ts",
     "db:admin-area:normalize-coverage": "tsx src/scripts/normalize-admin-area-coverage.ts",
     "db:seed": "tsx src/scripts/seed.ts",

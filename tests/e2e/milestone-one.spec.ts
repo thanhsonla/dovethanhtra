@@ -53,9 +53,9 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   const caseName = `Hồ sơ E2E ${suffix}`
   await page.getByLabel('Mã hồ sơ').fill(`E2E-${suffix}`)
   await page.getByLabel('Tên hồ sơ').fill(caseName)
-  await page.getByLabel('Địa bàn').selectOption({ index: 1 })
   await page.getByLabel('Từ ngày').fill('2026-07-01')
   await page.getByLabel('Đến ngày').fill('2026-07-31')
+  await page.getByLabel('Địa bàn').selectOption({ index: 1 })
   await page
     .getByRole('button', { name: 'Lưu hồ sơ' })
     .evaluate((element: HTMLButtonElement) => element.click())

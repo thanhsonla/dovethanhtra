@@ -23,6 +23,7 @@
     "db:admin-area:import": "pnpm --filter @dove/api db:admin-area:import",
     "db:admin-area:normalize-coverage": "pnpm --filter @dove/api db:admin-area:normalize-coverage",
     "db:seed": "pnpm --filter @dove/api db:seed",
+    "db:test:prepare": "dotenv -e .env.example -- pnpm --filter @dove/api db:test:create && dotenv -e .env.example -- node scripts/with-test-database.mjs pnpm db:migrate && dotenv -e .env.example -- node scripts/with-test-database.mjs pnpm db:seed",
     "data:son-la:prepare": "node scripts/prepare-son-la-admin-areas.mjs",
     "data:son-la:prepare-area-targets": "node scripts/prepare-son-la-area-targets.mjs",
     "format": "prettier --write .",
@@ -31,8 +32,8 @@
     "infra:up": "docker compose up -d --wait",
     "lint": "eslint . --max-warnings 0",
     "test": "pnpm -r test",
-    "test:integration": "pnpm --filter @dove/api test:integration",
-    "test:performance": "pnpm --filter @dove/api test:performance",
+    "test:integration": "pnpm db:test:prepare && dotenv -e .env.example -- node scripts/with-test-database.mjs pnpm --filter @dove/api test:integration",
+    "test:performance": "pnpm db:test:prepare && dotenv -e .env.example -- node scripts/with-test-database.mjs pnpm --filter @dove/api test:performance",
     "restore:verify:local": "scripts/verify-restore-local.sh",
     "test:e2e": "playwright test",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm -r typecheck"
