@@ -95,7 +95,7 @@
 | 19/07/2026 | ADR-019 | Chuẩn hóa topology và supersede địa giới Sơn La                    | Loại phần giao có quy tắc, giữ bản gốc và provenance           |
 | 19/07/2026 | ADR-020 | Sao chép cấu trúc công tác không mang theo kết quả                 | Tái sử dụng cấu hình nhưng không nhân bản chứng cứ              |
 | 19/07/2026 | ADR-021 | Pipeline dữ liệu P1 và vòng đời artifact                          | Import có preview, phục hồi, phân trang và export an toàn       |
-| 19/07/2026 | ADR-022 | Vệ tinh có nhãn mặc định và Google tùy chọn                      | Hiện ngay qua Esri; Google không lộ khóa billing                 |
+| 19/07/2026 | ADR-022 | Vệ tinh theo La Kinh và Google chính thức tùy chọn               | Mapbox có nhãn; không dùng endpoint Google không chính thức      |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -259,7 +259,8 @@
   đi qua route same-origin có auth, `no-store` và tắt access log tọa độ. Nền chỉ
   xuất hiện khi `GOOGLE_MAP_TILES_API_KEY` được cấp qua `.env.local`/secret manager;
   chưa nghiệm thu tile thật vì repository không chứa khóa Google có billing.
-- Sau khi đối chiếu `sonla-map-project`, xác nhận dự án tham chiếu dùng Esri chứ
-  không dùng Google. `Vệ tinh + địa danh` nay là nền mặc định, ghép World Imagery,
-  World Boundaries and Places và World Transportation trực tiếp trong
-  `BasemapProvider`; không cần key, có attribution và không cache ngoại tuyến.
+- Sau khi người dùng sửa nguồn tham chiếu sang màn hình La Kinh Vệ Tinh của `Minh
+  Huyen`, đã đối chiếu cơ chế Mapbox `satellite-streets-v12` + Google raster chèn
+  dưới label. Ứng dụng áp dụng phần Mapbox được cấp phép và đặt `Vệ tinh Mapbox +
+  địa danh` làm mặc định khi public token tồn tại; không sao chép `mt1.google.com`.
+  Esri World Imagery + reference layers vẫn là fallback không cần key.

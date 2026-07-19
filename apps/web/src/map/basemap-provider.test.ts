@@ -39,17 +39,17 @@ describe('configured basemap provider', () => {
       VITE_MAPBOX_PUBLIC_TOKEN: 'pk.public-test-token',
     })
     const satellite = provider.get('mapbox-satellite')
-    expect(provider.defaultId).toBe('esri-imagery-labels')
+    expect(provider.defaultId).toBe('mapbox-satellite')
     expect(provider.supportsOffline('mapbox-satellite')).toBe(false)
     expect(satellite).toMatchObject({
       id: 'mapbox-satellite',
-      label: 'Vệ tinh Mapbox',
+      label: 'Vệ tinh Mapbox + địa danh',
     })
     expect(satellite.attribution).toContain('© Mapbox')
     expect(JSON.stringify(satellite.style)).toContain('satellite-streets-v12')
   })
 
-  it('uses the same Esri imagery plus reference-layer pattern as sonla-map-project', () => {
+  it('provides an Esri imagery plus reference-layer fallback without a token', () => {
     const provider = new ConfiguredBasemapProvider({})
     const esri = provider.get('esri-imagery-labels')
     const style = JSON.stringify(esri.style)

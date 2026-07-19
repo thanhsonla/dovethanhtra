@@ -119,10 +119,13 @@ Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMA
 nếu tải lỗi, ứng dụng tự trở về nền kỹ thuật local. Không đặt secret thật trong
 `.env.example`; public browser token vẫn phải được giới hạn domain/API/quota.
 
-Mặc định ứng dụng dùng **Vệ tinh + địa danh** theo cùng mô hình với
-`sonla-map-project`: ảnh `Esri World Imagery`, phủ `World Boundaries and Places` và
-`World Transportation`. Nền này không cần Google key, luôn giữ attribution Esri và
-không được service worker cache. Đây là dịch vụ Esri, không được gọi nhầm là Google.
+Khi có `VITE_MAPBOX_PUBLIC_TOKEN`, ứng dụng mặc định dùng **Vệ tinh Mapbox + địa
+danh** từ style `satellite-streets-v12`, tương ứng với nền chính của màn hình La
+Kinh Vệ Tinh trong dự án `Minh Huyen`. Dự án tham chiếu còn chèn trực tiếp tile
+`mt1.google.com`; phần này không được sao chép vì là endpoint Google không chính
+thức, trái quy tắc provider và khó kiểm soát giấy phép/quota. Khi không có token
+Mapbox, ứng dụng fallback sang ảnh Esri World Imagery kèm các lớp reference địa
+danh/giao thông; mọi nền ngoài đều giữ attribution và không được cache ngoại tuyến.
 
 Để bật lớp **Vệ tinh Mapbox**, đặt public token giới hạn domain/API/quota trong tệp
 `.env.local` (tệp này bị Git bỏ qua): `VITE_MAPBOX_PUBLIC_TOKEN=pk...`. Ứng dụng dùng

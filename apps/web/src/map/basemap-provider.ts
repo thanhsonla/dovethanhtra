@@ -118,7 +118,7 @@ function mapboxSatelliteDescriptor(environment: BasemapEnvironment): BasemapDesc
       '<a href="https://www.mapbox.com/about/maps/">© Mapbox</a> ' +
       '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a>',
     id: 'mapbox-satellite',
-    label: 'Vệ tinh Mapbox',
+    label: 'Vệ tinh Mapbox + địa danh',
     style: {
       version: 8,
       sources: {
@@ -240,7 +240,7 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
     this.remote = remoteDescriptor(environment)
     this.satellite = mapboxSatelliteDescriptor(environment)
     this.google = capabilities.googleMapTiles ? googleSatelliteDescriptor(fetcher) : null
-    this.defaultId = this.google?.id ?? this.remote?.id ?? this.esri.id
+    this.defaultId = this.google?.id ?? this.remote?.id ?? this.satellite?.id ?? this.esri.id
   }
 
   descriptors() {

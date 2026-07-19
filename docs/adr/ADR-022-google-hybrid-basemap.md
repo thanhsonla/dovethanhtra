@@ -1,4 +1,4 @@
-# ADR-022: Nền vệ tinh có nhãn mặc định và Google tùy chọn
+# ADR-022: Nền vệ tinh theo La Kinh và Google chính thức tùy chọn
 
 - Trạng thái: Accepted
 - Ngày: 19/07/2026
@@ -6,8 +6,11 @@
 ## Bối cảnh
 
 Người dùng cần ảnh vệ tinh có tên xã/phường, đường và địa điểm hành chính dễ đọc.
-Ứng dụng tham chiếu `sonla-map-project` không dùng Google mà ghép `Esri World
-Imagery` với một lớp reference trong Leaflet.
+Màn hình La Kinh Vệ Tinh của dự án `Minh Huyen` dùng Mapbox style
+`satellite-streets-v12`, sau đó chèn raster `mt1.google.com` ngay trên lớp ảnh và
+dưới các symbol label Mapbox. Phần chèn ảnh Google tạo hiệu ứng tốt nhưng dùng
+endpoint không được tài liệu Google Map Tiles API công bố.
+
 Google Map Tiles API yêu cầu session token, API key trong mọi request, attribution
 theo viewport và không cho phép ứng dụng tự ý cache nội dung. Đưa khóa có billing
 vào bundle PWA làm tăng nguy cơ lạm dụng quota; dùng các host tile Google không được
@@ -15,10 +18,14 @@ công bố chính thức cũng không bảo đảm giấy phép hoặc độ ổ
 
 ## Quyết định
 
-- Nền mặc định không cần khóa ghép ba raster layer qua `BasemapProvider`: `Esri
-World Imagery`, `World Boundaries and Places` và `World Transportation`. Cách này
-  kế thừa mô hình ảnh + reference overlay của `sonla-map-project`, đồng thời bổ sung
-  lớp tên địa danh/địa giới phù hợp yêu cầu hiện tại.
+- Khi có public token Mapbox hợp lệ, nền mặc định là raster render từ Mapbox
+  `satellite-streets-v12`. Nền này giữ ảnh vệ tinh và label đã render, tương ứng với
+  style nền cốt lõi của La Kinh Vệ Tinh mà không đổi renderer MapLibre hiện tại.
+- Không sao chép request `mt1.google.com`. Mọi nguồn Google phải đi qua adapter
+  Google Map Tiles API chính thức đã có session, key, attribution và kiểm soát quota.
+- Khi thiếu token Mapbox/Google, fallback không cần khóa ghép ba raster layer qua
+  `BasemapProvider`: Esri `World Imagery`, `World Boundaries and Places` và
+  `World Transportation`.
 - Hiển thị đầy đủ attribution Esri và các nhà cung cấp dữ liệu. Không gọi nền này là
   Google và không đưa các tile Esri vào service-worker cache.
 - Dùng Google Map Tiles API chính thức, không dùng `mt1.google.com` hoặc URL tile
@@ -37,7 +44,7 @@ World Imagery`, `World Boundaries and Places` và `World Transportation`. Cách 
 
 ## Hệ quả
 
-Ảnh vệ tinh và lớp reference Esri hiển thị ngay khi có Internet, không phụ thuộc
-Google key. Google vẫn là lựa chọn nâng cao khi có tài khoản billing. Các nền ngoài
-đều không hỗ trợ ngoại tuyến; phải theo dõi attribution, điều khoản và độ sẵn sàng
-của nhà cung cấp trước mỗi đợt phát hành.
+Với token đang được cấu hình local, người dùng nhận nền Mapbox Satellite Streets
+giống phần nền hợp lệ của La Kinh Vệ Tinh. Esri vẫn bảo đảm bản đồ có ảnh khi thiếu
+token, còn Google chỉ bật khi có tài khoản billing và key chính thức. Các nền ngoài
+đều không hỗ trợ ngoại tuyến; phải theo dõi attribution, điều khoản và độ sẵn sàng.
