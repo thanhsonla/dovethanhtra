@@ -272,3 +272,6 @@
 - Nền có public token Mapbox được tách thành ảnh Google `lyrs=s` và nhãn vector
   Mapbox. Tất cả symbol label căn theo `viewport`, nên giữ hướng nằm ngang khi người
   dùng xoay/nghiêng bản đồ; Google hybrid raster là fallback nếu lớp nhãn lỗi.
+- Không gian bản đồ không còn panel trống bên phải hoặc thanh trạng thái phủ đáy.
+  Điểm/Tuyến/Vùng tự dùng công tác tương thích hoặc mở form tạo nhanh; chi tiết phép
+  đo chuyển thành ngăn đóng/mở và tự mở khi cần lưu kết quả.

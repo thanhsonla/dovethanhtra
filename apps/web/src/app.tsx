@@ -130,6 +130,7 @@ export function App() {
           groups={data.groups}
           inspectionCase={selected}
           onBack={() => setMapOpen(false)}
+          onWorkCreated={(created) => setWorkItems((items) => [...items, created])}
           workItems={workItems}
           workTypes={data.workTypes}
         />

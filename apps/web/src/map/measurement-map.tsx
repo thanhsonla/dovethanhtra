@@ -204,6 +204,10 @@ export function MeasurementMap(props: MeasurementMapProps) {
       customAttribution: attribution,
     })
     map.addControl(attributionControl.current)
+    map
+      .getContainer()
+      .querySelector('.maplibregl-ctrl-attrib')
+      ?.classList.remove('maplibregl-compact-show')
   }
 
   const refreshAttribution = (map: MapLibreMap, descriptor: BasemapDescriptor) => {

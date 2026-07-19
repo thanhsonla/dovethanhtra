@@ -9,7 +9,9 @@
 ## 2. Luồng hồ sơ end-to-end
 
 1. Tạo hồ sơ, chọn phiên bản địa giới và thêm công tác từ danh mục.
-2. Chọn công tác trước khi vẽ, ghi GPS, tạo route hoặc gắn ảnh.
+2. Chọn công tác trước khi vẽ, ghi GPS, tạo route hoặc gắn ảnh. Có thể bấm trực
+   tiếp **Điểm**, **Tuyến** hoặc **Vùng**; nếu chưa có công tác phù hợp, form tạo
+   nhanh sẽ xuất hiện và chỉ bắt đầu vẽ sau khi công tác được tạo thành công.
 3. Xem kết quả tạm trên trình duyệt; chỉ kết quả máy chủ và phép đo `confirmed`
    được cộng vào tổng chính thức.
 4. Nếu sửa phép đo đã xác nhận, dùng hiệu chỉnh để tạo phiên bản mới. Không xóa dữ
@@ -24,6 +26,8 @@
 
 - Trong bản đồ, chọn công tác điểm/tuyến/vùng rồi mở **Import GeoJSON**. Chọn tệp,
   kiểm số feature/schema/hash ở preview và chỉ bấm **Import chính thức** khi đúng.
+- Nút **Chi tiết** mở/đóng ngăn thuộc tính. Ngăn tự mở sau khi kết thúc phép đo để
+  nhập tên và lưu, nhưng có thể đóng khi cần quan sát toàn bộ bản đồ.
 - Tệp tối đa 5 MB và 1.000 feature, chỉ EPSG:4326. Nếu sửa tệp sau preview phải
   preview lại; hệ thống không commit một phần batch lỗi.
 - Mở **Phép đo đã xóa**, **Hồ sơ đã xóa** hoặc danh sách ảnh đã xóa, nhập lý do rồi

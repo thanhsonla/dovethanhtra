@@ -133,6 +133,12 @@ Mapbox Satellite Streets ở trên. Nhãn được đặt `text-rotation-alignme
 và `text-pitch-alignment: viewport`, vì vậy vẫn nằm ngang theo màn hình khi xoay hoặc
 nghiêng bản đồ. Nếu style nhãn không tải được, ứng dụng trở về Google hybrid raster.
 
+Thanh Điểm/Tuyến/Vùng trên bản đồ có thể tự chọn công tác tương thích hoặc tạo nhanh
+công tác khi hồ sơ chưa có. Bảng chi tiết là ngăn đóng/mở và chỉ xuất hiện khi người
+dùng yêu cầu hoặc cần lưu kết quả; thanh trạng thái dưới bản đồ đã chuyển thành thông
+báo dành cho trình đọc màn hình để không che ảnh nền. Attribution nhà cung cấp vẫn
+được giữ trong nút thông tin thu gọn.
+
 Để bật lớp **Vệ tinh Mapbox**, đặt public token giới hạn domain/API/quota trong tệp
 `.env.local` (tệp này bị Git bỏ qua): `VITE_MAPBOX_PUBLIC_TOKEN=pk...`. Ứng dụng dùng
 Mapbox Satellite Streets qua `BasemapProvider`, hiển thị attribution Mapbox/
