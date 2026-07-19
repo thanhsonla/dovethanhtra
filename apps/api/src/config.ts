@@ -21,6 +21,7 @@ export interface AppConfig {
     requestsPerMinute: number
     timeoutMs: number
   }
+  security: { loginRequestsPerMinute: number }
 }
 
 function required(environment: NodeJS.ProcessEnv, name: string): string {
@@ -69,6 +70,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
       mapboxAccessToken: environment.MAPBOX_ACCESS_TOKEN || null,
       requestsPerMinute: positiveInteger(environment, 'ROUTING_REQUESTS_PER_MINUTE', 30),
       timeoutMs: positiveInteger(environment, 'ROUTING_TIMEOUT_MS', 8000),
+    },
+    security: {
+      loginRequestsPerMinute: positiveInteger(environment, 'LOGIN_REQUESTS_PER_MINUTE', 5),
     },
   }
 }

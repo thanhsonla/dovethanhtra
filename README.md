@@ -46,6 +46,10 @@ Mỗi địa bàn/huyện được quản lý bằng một hoặc nhiều **hồ
 7. `docs/07_TEST_PLAN.md` — kế hoạch kiểm thử.
 8. `docs/08_IMPLEMENTATION_PLAN.md` — lộ trình triển khai.
 9. `docs/09_CODEX_COMMANDS.md` — cách giao việc cho Codex.
+10. `docs/10_USER_GUIDE.md` — hướng dẫn sử dụng MVP.
+11. `docs/11_OPERATIONS_RUNBOOK.md` — phát hành, backup và phục hồi.
+12. `docs/12_FIELD_TEST_PROTOCOL.md` — biên bản chạy thử thiết bị/địa bàn.
+13. `docs/13_PHASE_2_BACKLOG.md` — backlog sau MVP.
 
 Tệp kỹ thuật khởi tạo:
 
@@ -61,7 +65,7 @@ Sao chép toàn bộ thư mục vào repository mới, mở tại thư mục g�
 
 Không yêu cầu Codex xây toàn bộ ứng dụng trong một lượt. Mỗi lượt chỉ thực hiện một mốc có tiêu chí nghiệm thu và chạy kiểm thử trước khi chuyển mốc tiếp theo.
 
-### Chạy Mốc 5
+### Chạy Mốc 6
 
 Yêu cầu Node.js 24.18.0, pnpm 11.9.0 và Docker đang chạy. Từ thư mục gốc:
 
@@ -77,7 +81,7 @@ có thể cài Node/pnpm bằng công cụ khác nhưng `pnpm doctor` vẫn ph�
 cài dependency hoặc chạy kiểm thử.
 
 `pnpm dev` dùng cấu hình giả dành riêng cho local trong `.env.example`, khởi động
-PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 5 và seed dữ liệu local, sau đó mở API tại cổng
+PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 5 (Mốc 6 không đổi schema) và seed dữ liệu local, sau đó mở API tại cổng
 `3000` và web tại cổng `5173`. Đăng nhập local bằng tài khoản giả trong
 `.env.example`. Không dùng các giá trị này cho staging hoặc production.
 
@@ -99,8 +103,12 @@ SHA-256.
 
 Mốc 5 bổ sung khối lượng nguồn, đối chiếu theo measurement đã xác nhận, ngưỡng và
 giải trình; khóa/mở khóa kèm snapshot SHA-256; xuất Excel năm sheet và GeoJSON giữ
-ID truy vết. Mỗi lần xuất lưu snapshot, hash tệp, actor, thời gian và audit. Chưa
-triển khai các công việc ổn định/field-test/backup của Mốc 6.
+ID truy vết. Mỗi lần xuất lưu snapshot, hash tệp, actor, thời gian và audit.
+
+Mốc 6 bổ sung security headers/login rate limit, test IDOR, benchmark 10.000 geometry
+và XLSX, backup/restore PostgreSQL + MinIO có manifest hash, runbook, hướng dẫn sử
+dụng và biên bản field test. Phần kỹ thuật local/CI đã tự động hóa; field test trên
+thiết bị và restore staging thật vẫn là cổng thủ công trước production.
 
 Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMAP_STYLE_URL`,
 `VITE_BASEMAP_LABEL` và `VITE_BASEMAP_ATTRIBUTION`. Cả URL và attribution phải có;
@@ -131,6 +139,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm exec dotenv -e .env.example -- pnpm test:integration
+pnpm exec dotenv -e .env.example -- pnpm test:performance
 pnpm build
 pnpm bundle:check
 pnpm test:e2e

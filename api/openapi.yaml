@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: API kiểm tra khối lượng hiện trường
-  version: 0.6.0
-  description: Hợp đồng API đã triển khai đến hết Mốc 5, gồm đối chiếu, snapshot và Excel/GeoJSON.
+  version: 0.7.0
+  description: Hợp đồng API MVP qua Mốc 6, gồm hardening, đối chiếu, snapshot và Excel/GeoJSON.
   license:
     name: Proprietary — sử dụng nội bộ/cá nhân
     identifier: LicenseRef-Proprietary
@@ -27,6 +27,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Session' }
+        '429': { description: Vượt giới hạn đăng nhập theo IP }
         default: { $ref: '#/components/responses/Error' }
   /auth/session:
     get:

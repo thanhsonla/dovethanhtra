@@ -116,9 +116,19 @@ Mỗi mutation có khóa duy nhất do client tạo. Máy chủ lưu payload has
 - [ ] Không có secret trong repository hoặc build artifact.
 - [ ] Key bản đồ/route được giới hạn và có quota.
 - [ ] Kiểm thử quyền cho mọi endpoint có ID.
-- [ ] CSP, CORS và upload policy được cấu hình.
+- [x] API security headers và same-origin CORS baseline được cấu hình; CSP của
+      static host/reverse proxy phải xác minh lại trên production.
 - [ ] Backup thành công và đã thử restore.
 - [ ] Nhật ký không chứa token hoặc dữ liệu nhạy cảm không cần thiết.
 - [ ] Xóa mềm/phục hồi hoạt động.
 - [ ] Đồng bộ lặp lại không tạo bản ghi trùng.
-- [ ] Hồ sơ khóa không thể sửa bằng gọi API trực tiếp.
+- [x] Hồ sơ khóa không thể sửa bằng gọi API trực tiếp.
+
+## 11. Trạng thái hardening Mốc 6
+
+- Integration test dùng hai owner để kiểm IDOR đọc/sửa hồ sơ, comparison và audit.
+- Login có rate limit theo IP; API response không cache và có defensive headers.
+- Backup chứa database, object storage và SHA-256 manifest; restore drill dùng tài
+  nguyên tạm và không ghi đè dữ liệu đang chạy.
+- Các ô HTTPS/key quota/malware scan/field test vẫn là cổng môi trường production,
+  không được coi là đóng chỉ bằng kiểm thử local.

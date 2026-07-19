@@ -41,6 +41,7 @@ import type { RoutingProvider } from './modules/routing/routing-provider.js'
 import { AppError } from './platform/app-error.js'
 import type { DatabaseHandle } from './platform/database.js'
 import type { ObjectStorageHandle } from './platform/object-storage.js'
+import { registerSecurityHeaders } from './platform/request-security.js'
 
 export interface BuildAppOptions {
   auth: AppConfig['auth']
@@ -53,6 +54,7 @@ export interface BuildAppOptions {
     provider?: RoutingProvider
     requestsPerMinute?: number
   }
+  security?: { loginRequestsPerMinute?: number }
 }
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
@@ -60,6 +62,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     logger: options.logger ?? false,
     requestIdHeader: 'x-request-id',
   })
+  registerSecurityHeaders(app, options.auth.cookieSecure)
 
   await app.register(cookie)
   await app.register(swagger, {
@@ -141,6 +144,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await app.register(identityRoutes, {
     config: options.auth,
     guards,
+    loginRequestsPerMinute: options.security?.loginRequestsPerMinute ?? 5,
     prefix: '/api/v1/auth',
     service: identity,
   })

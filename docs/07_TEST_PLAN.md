@@ -122,3 +122,16 @@ Dung sai dùng để kiểm thử phần mềm, không phải chuẩn pháp lý:
 - Backup/restore được kiểm tra ở staging.
 - Tài liệu API, schema và danh mục mẫu đồng bộ.
 - Người dùng nghiệm thu thực địa một hồ sơ mẫu trước production.
+
+## 11. Tự động hóa Mốc 6
+
+- `pnpm test:performance`: tạo 10.000 geometry trong PostGIS, yêu cầu tải dataset
+  dưới 5 giây và tạo XLSX dưới 30 giây.
+- CI có job backup/restore PostgreSQL + MinIO vào database/bucket tạm và xác minh
+  SHA-256 manifest.
+- Integration Mốc 6 kiểm IDOR giữa hai owner, security headers, no-store và login
+  rate limit. E2E tiếp tục bắt buộc Chromium desktop và WebKit iPad.
+- Chromium và WebKit chạy tuần tự trong một worker để tránh tranh chấp tài nguyên
+  khi hai MapLibre/WebGL context khởi tạo đồng thời trên runner nhỏ.
+- Field test và restore staging không thể thay bằng fixture local; kết quả phải ghi
+  vào `12_FIELD_TEST_PROTOCOL.md` và runbook trước production.

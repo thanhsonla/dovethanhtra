@@ -245,3 +245,12 @@ Môi trường tối thiểu:
 - `production`: sao lưu, quota, giám sát, HTTPS và khóa giới hạn.
 
 CI thực hiện lint, typecheck, test, migration check, build và dependency scan. Production chỉ triển khai từ artifact đã qua CI.
+
+### Hardening và cổng Mốc 6
+
+- API trả CSP/frame/content-type/referrer/permissions headers và `Cache-Control:
+  private, no-store`; HSTS chỉ bật cùng secure cookie/HTTPS.
+- Login giới hạn theo IP bằng cửa sổ trượt cấu hình qua
+  `LOGIN_REQUESTS_PER_MINUTE`; route và export giữ quota theo người dùng.
+- Không bật CORS rộng trong API MVP; web gọi same-origin qua reverse proxy.
+- CI chạy thêm benchmark 10.000 geometry/XLSX và backup/restore drill cô lập.

@@ -74,6 +74,7 @@ jobs:
       - run: pnpm db:migrate:test
       - run: pnpm db:seed
       - run: pnpm test:integration
+      - run: pnpm test:performance
 
   e2e:
     runs-on: ubuntu-latest
@@ -114,3 +115,24 @@ jobs:
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
+
+  backup-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm infra:up
+      - run: pnpm exec dotenv -e .env.example -- pnpm db:migrate
+      - run: pnpm exec dotenv -e .env.example -- pnpm db:seed
+      - run: pnpm exec dotenv -e .env.example -- pnpm backup:local /tmp/dove-ci-backup
+      - run: pnpm exec dotenv -e .env.example -- pnpm restore:verify:local /tmp/dove-ci-backup
+      - if: always()
+        run: pnpm infra:down

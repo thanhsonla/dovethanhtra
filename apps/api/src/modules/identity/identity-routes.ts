@@ -7,13 +7,16 @@ import {
 import type { FastifyPluginAsync } from 'fastify'
 
 import type { AppConfig } from '../../config.js'
+import { AppError } from '../../platform/app-error.js'
 import { randomToken } from '../../platform/crypto.js'
+import { SlidingWindowRateLimiter } from '../../platform/request-security.js'
 import { CSRF_COOKIE, SESSION_COOKIE, type AuthGuards } from './auth-guards.js'
 import type { IdentityService } from './identity-service.js'
 
 interface IdentityRouteOptions {
   config: AppConfig['auth']
   guards: AuthGuards
+  loginRequestsPerMinute: number
   service: IdentityService
 }
 
@@ -25,6 +28,7 @@ const baseCookie = (secure: boolean) => ({
 })
 
 export const identityRoutes: FastifyPluginAsync<IdentityRouteOptions> = async (app, options) => {
+  const loginLimiter = new SlidingWindowRateLimiter(options.loginRequestsPerMinute)
   app.post<{ Body: LoginRequest }>(
     '/login',
     {
@@ -35,6 +39,8 @@ export const identityRoutes: FastifyPluginAsync<IdentityRouteOptions> = async (a
       },
     },
     async (request, reply) => {
+      if (!loginLimiter.consume(request.ip))
+        throw new AppError(429, 'LOGIN_RATE_LIMITED', 'Bạn đã đăng nhập sai quá nhiều lần.')
       const session = await options.service.login(request.body.email, request.body.password)
       const csrfToken = randomToken()
       reply.setCookie(SESSION_COOKIE, session.token, {

@@ -4,8 +4,8 @@
 
 - Phiên bản tài liệu: 1.1.
 - Ngày chốt phạm vi: 18/07/2026.
-- Giai đoạn: Mốc 5 — đối chiếu, snapshot và Excel/GeoJSON đã triển khai trên nền Mốc 1–4;
-  chưa thực hiện ổn định, backup/restore và field test của Mốc 6.
+- Giai đoạn: Mốc 6 — hardening, benchmark, backup/restore local và tài liệu vận hành
+  đã triển khai; field test thiết bị và restore staging còn là cổng trước production.
 - Người dùng chính: một cán bộ thực hiện kiểm tra hiện trường; kiến trúc vẫn chuẩn bị cho nhiều người dùng về sau.
 
 ## Quyết định đã chốt
@@ -31,6 +31,8 @@
 - Object storage local dùng MinIO; xác thực dùng cookie session phía máy chủ, hash
   session, Argon2id và CSRF double-submit.
 - Kiểm thử dùng Vitest và Playwright; CI dùng GitHub Actions.
+- Mốc 6 dùng benchmark tách riêng cho 10.000 geometry/XLSX; backup PostgreSQL/MinIO
+  có SHA-256 manifest và restore drill chỉ dùng database/bucket tạm.
 - CI áp ngân sách raw/gzip cho bundle; MapLibre được lazy-load và E2E xác nhận chưa
   tải mô-đun bản đồ trước thao tác mở bản đồ.
 - Hồ sơ dùng owner authorization, xóa mềm và optimistic concurrency bằng
@@ -80,6 +82,7 @@
 | 19/07/2026 | ADR-014 | RoutingProvider backend và phiên bản route bất biến                  | Giữ token phía server, nguồn cự ly và lịch sử tính lại       |
 | 19/07/2026 | ADR-015 | GPS raw, upload xác minh và đồng bộ idempotent                       | Không mất bằng chứng khi lọc/retry hoặc upload dở            |
 | 19/07/2026 | ADR-016 | Đối chiếu theo nguồn, snapshot hash và export qua provider          | Tổng đúng, khóa truy vết và thay được thư viện tạo tệp        |
+| 19/07/2026 | ADR-017 | Cổng phát hành, backup/restore và field trial                       | Chứng minh phục hồi và không giả lập nghiệm thu thực địa      |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -172,3 +175,18 @@
   khóa cũng chặn bắt đầu/hoàn tất attachment để giữ dataset bất biến.
 - XLSX đang tạo trong bộ nhớ phù hợp giới hạn MVP; export 10.000 dòng và thay provider
   bằng streaming/queue cần được kiểm tra trong Mốc 6 trước production.
+
+## Trạng thái triển khai Mốc 6
+
+- API có security headers, `no-store`, HSTS khi secure transport và login rate limit
+  cấu hình được. Integration test kiểm IDOR bằng hai owner và gọi API trực tiếp.
+- Benchmark riêng tạo/đọc 10.000 geometry và tạo XLSX trong ngân sách phát hành;
+  unit suite không phụ thuộc database hoặc benchmark thời gian.
+- Script backup tạo PostgreSQL custom dump, mirror bucket và SHA-256 manifest.
+  Restore drill local đã phục hồi database/PostGIS và bucket tạm rồi dọn an toàn.
+- CI chạy performance và backup/restore ngoài các cổng lint/type/integration/E2E/audit.
+- Đã có hướng dẫn người dùng, runbook, checklist production, protocol field test và
+  backlog giai đoạn 2.
+- Chưa được phép đánh dấu production-ready: field test thiết bị/iPad, route/GPS thật,
+  restore staging, địa giới/cơ sở xử lý chính thức và key provider giới hạn chưa có
+  bằng chứng nghiệm thu trong repository.

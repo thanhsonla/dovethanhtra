@@ -6,6 +6,10 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
     },
     environment: 'node',
-    exclude: [...configDefaults.exclude, 'test/**/*.integration.test.ts'],
+    exclude: [
+      ...configDefaults.exclude,
+      'test/**/*.integration.test.ts',
+      'performance/**/*.performance.test.ts',
+    ],
   },
 })

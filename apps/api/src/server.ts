@@ -20,6 +20,7 @@ const app = await buildApp({
   dependencies: { database, objectStorage },
   logger: { level: config.logLevel },
   routing: { provider: routingProvider, requestsPerMinute: config.routing.requestsPerMinute },
+  security: config.security,
 })
 
 const shutdown = async () => {
