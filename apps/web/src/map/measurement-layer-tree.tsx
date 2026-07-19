@@ -25,6 +25,12 @@ export function MeasurementLayerTree(props: {
     <aside className="layer-tree">
       <p className="section-kicker">Cây lớp dữ liệu</p>
       <h2>Công tác và phép đo</h2>
+      {props.measurable.length === 0 && (
+        <div className="map-empty-guide" role="note">
+          <strong>Chưa có công tác đo</strong>
+          <span>Quay lại hồ sơ, chọn loại công tác và nhập tên rồi bấm “Thêm”.</span>
+        </div>
+      )}
       {props.groups.map((group) => {
         const groupTypeIds = new Set(
           props.workTypes.filter((type) => type.serviceGroupId === group.id).map((type) => type.id),

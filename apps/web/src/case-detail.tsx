@@ -71,10 +71,13 @@ export function CaseDetail(props: {
           </li>
         ))}
       </ul>
-      {props.workItems.length > 0 && (
-        <button className="button map-open-button" onClick={() => props.onOpenMap()}>
-          Mở bản đồ hiện trường
-        </button>
+      <button className="button map-open-button" onClick={() => props.onOpenMap()}>
+        Mở bản đồ hiện trường
+      </button>
+      {props.workItems.length === 0 && (
+        <p className="map-open-hint">
+          Có thể mở bản đồ để xem ranh giới ngay. Hãy thêm công tác bên dưới trước khi tạo phép đo.
+        </p>
       )}
       {props.item.status !== 'locked' && (
         <form className="inline-form" onSubmit={(event) => void submit(event)}>

@@ -110,8 +110,17 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
   if (!props.measurement) {
     return (
       <div className="empty">
-        <p>Chọn công tác rồi dùng công cụ Điểm, Tuyến hoặc Vùng.</p>
-        <p>Nhấp đúp để kết thúc tuyến/vùng.</p>
+        {props.selectedWork ? (
+          <>
+            <p>Chọn công tác rồi dùng công cụ Điểm, Tuyến hoặc Vùng.</p>
+            <p>Nhấp đúp để kết thúc tuyến/vùng.</p>
+          </>
+        ) : (
+          <>
+            <p>Bản đồ đang ở chế độ xem ranh giới.</p>
+            <p>Quay lại hồ sơ và thêm công tác để bắt đầu đo.</p>
+          </>
+        )}
       </div>
     )
   }

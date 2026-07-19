@@ -114,6 +114,22 @@
   border-right: 1px solid #c9d7d0;
 }
 
+.map-empty-guide {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #c7dacf;
+  border-radius: 10px;
+  background: #f0f8f3;
+  color: #456357;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.map-empty-guide strong {
+  color: #176746;
+}
+
 .measurement-panel {
   border-left: 1px solid #c9d7d0;
 }
@@ -321,6 +337,13 @@
 .map-open-button {
   width: 100%;
   margin: 16px 0 5px;
+}
+
+.map-open-hint {
+  margin: 8px 0 16px;
+  color: #5b6e65;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .map-loading {

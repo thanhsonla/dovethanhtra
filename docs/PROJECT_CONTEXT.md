@@ -246,3 +246,6 @@
 - Integration, performance và E2E nay dùng `dove_field_test`; API E2E dùng cổng 3100
   để không tái sử dụng nhầm API local cổng 3000. Không gian owner local trở về trạng
   thái sạch để tạo hồ sơ thật từ 75 xã/phường Sơn La đang có hiệu lực.
+- Bản đồ hiện trường luôn mở được ngay cả khi hồ sơ chưa có công tác để người dùng
+  xem ranh giới và nền bản đồ. Cây lớp và panel thuộc tính hướng dẫn quay lại thêm
+  công tác trước khi đo; nút bản đồ không còn bị ẩn gây nhầm là chưa có chức năng.
