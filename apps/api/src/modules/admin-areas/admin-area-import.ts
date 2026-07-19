@@ -16,6 +16,7 @@ export interface AdminAreaImportRecord {
   normalizationReason: string | null
   source: string
   sourceVersion: string
+  supersedesSourceVersion: string | null
   validFrom: string
   validTo: string | null
 }
@@ -145,6 +146,18 @@ export function parseAdminAreaGeoJson(content: Buffer): ParsedAdminAreaImport {
       `features[${index}].properties.sourceVersion`,
       200,
     )
+    const supersedesSourceVersion =
+      properties.supersedesSourceVersion === null ||
+      properties.supersedesSourceVersion === undefined
+        ? null
+        : requiredString(
+            properties.supersedesSourceVersion,
+            `features[${index}].properties.supersedesSourceVersion`,
+            200,
+          )
+    if (supersedesSourceVersion === sourceVersion) {
+      throw new Error(`features[${index}] không thể tự thay thế cùng sourceVersion.`)
+    }
     const identity = `${code}\0${sourceVersion}`
     if (seen.has(identity)) throw new Error(`Trùng code/sourceVersion tại features[${index}].`)
     seen.add(identity)
@@ -168,6 +181,7 @@ export function parseAdminAreaGeoJson(content: Buffer): ParsedAdminAreaImport {
             ),
       source: requiredString(properties.source, `features[${index}].properties.source`, 500),
       sourceVersion,
+      supersedesSourceVersion,
       validFrom: validFrom!,
       validTo,
     }
@@ -178,9 +192,10 @@ export function parseAdminAreaGeoJson(content: Buffer): ParsedAdminAreaImport {
 export async function importAdminAreas(
   executor: QueryExecutor,
   input: ParsedAdminAreaImport,
-): Promise<{ inserted: number; skipped: number }> {
+): Promise<{ inserted: number; skipped: number; superseded: number }> {
   let inserted = 0
   let skipped = 0
+  let superseded = 0
   for (const record of input.records) {
     const geometryJson = JSON.stringify(record.geometry)
     const analysis = await sql<{ reason: string; valid: boolean }>`
@@ -224,5 +239,38 @@ export async function importAdminAreas(
     `.execute(executor)
     inserted += 1
   }
-  return { inserted, skipped }
+  for (const record of input.records) {
+    if (!record.supersedesSourceVersion) continue
+    const predecessor = await sql<{ alreadySuperseded: boolean; canSupersede: boolean }>`
+      SELECT
+        valid_from < ${record.validFrom}::date AS "canSupersede",
+        valid_to = (${record.validFrom}::date - INTERVAL '1 day')::date AS "alreadySuperseded"
+      FROM admin_area
+      WHERE code = ${record.code} AND source_version = ${record.supersedesSourceVersion}
+    `.execute(executor)
+    const state = predecessor.rows[0]
+    if (!state) {
+      throw new Error(
+        `Không tìm thấy phiên bản bị thay thế ${record.code}/${record.supersedesSourceVersion}.`,
+      )
+    }
+    if (!state.canSupersede) {
+      throw new Error(
+        `Phiên bản mới ${record.code}/${record.sourceVersion} phải có validFrom sau phiên bản cũ.`,
+      )
+    }
+    if (state.alreadySuperseded) continue
+    await sql`
+      UPDATE admin_area
+      SET
+        valid_to = (${record.validFrom}::date - INTERVAL '1 day')::date,
+        metadata = metadata || jsonb_build_object(
+          'supersededBySourceVersion', ${record.sourceVersion}::text,
+          'supersededOn', ${record.validFrom}::text
+        )
+      WHERE code = ${record.code} AND source_version = ${record.supersedesSourceVersion}
+    `.execute(executor)
+    superseded += 1
+  }
+  return { inserted, skipped, superseded }
 }

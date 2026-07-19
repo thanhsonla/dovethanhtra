@@ -107,4 +107,25 @@ describe('admin area GeoJSON import', () => {
       '3bf730467596baa1e72f17f88679c008e93ff4fd54ca4e7072ca04fcaa243c39',
     )
   })
+
+  it('accepts the topology-normalized Sơn La package with explicit supersession', () => {
+    const content = readFileSync(
+      new URL(
+        '../../../../../data/admin-areas/son-la-75-communes-topology-2026.geojson',
+        import.meta.url,
+      ),
+    )
+    const parsed = parseAdminAreaGeoJson(content)
+
+    expect(parsed.records).toHaveLength(75)
+    expect(parsed.records.every((record) => record.validFrom === '2026-07-19')).toBe(true)
+    expect(
+      parsed.records.every(
+        (record) => record.supersedesSourceVersion === 'son-la-75-qdt19-2025-gis-20260311-86361845',
+      ),
+    ).toBe(true)
+    expect(parsed.sourceHash).toBe(
+      'ad1d369974aee3a2a35d96a9cf7dc368f3f5463b2d2e3aee5535b77be4c6cdd8',
+    )
+  })
 })

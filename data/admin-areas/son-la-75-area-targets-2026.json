@@ -1,0 +1,389 @@
+{
+  "version": "son-la-area-targets-2026-07-01",
+  "provenance": {
+    "preparedAt": "2026-07-01",
+    "sourceClassification": "user-provided-pdf-extraction-reference",
+    "sourceHash": "f85e38390fb05ee50b2205f14dc1cda911b81465b6951543f996d8c1913472d7",
+    "sourceProject": "sonla-map-project/source/src/data/communes.json",
+    "sourceWorkbook": "sonla-map-project/docs/data/Danh_muc_75_xa_phuong_Son_La_dien_tich_dan_so.xlsx",
+    "sourceWorkbookHash": "c9bc37fee36bab86a1c1fe048a08aaa88affb6e91e5e7b0b61bc5fd646db383c",
+    "totalAreaKm2": 14108.89
+  },
+  "units": [
+    {
+      "code": "03646",
+      "name": "Phường Tô Hiệu",
+      "targetAreaKm2": 11.92
+    },
+    {
+      "code": "03664",
+      "name": "Phường Chiềng An",
+      "targetAreaKm2": 149.08
+    },
+    {
+      "code": "03670",
+      "name": "Phường Chiềng Cơi",
+      "targetAreaKm2": 93.56
+    },
+    {
+      "code": "03679",
+      "name": "Phường Chiềng Sinh",
+      "targetAreaKm2": 68.4
+    },
+    {
+      "code": "03980",
+      "name": "Phường Mộc Châu",
+      "targetAreaKm2": 167.62
+    },
+    {
+      "code": "03979",
+      "name": "Phường Mộc Sơn",
+      "targetAreaKm2": 37.88
+    },
+    {
+      "code": "04033",
+      "name": "Phường Vân Sơn",
+      "targetAreaKm2": 39.61
+    },
+    {
+      "code": "03982",
+      "name": "Phường Thảo Nguyên",
+      "targetAreaKm2": 53.09
+    },
+    {
+      "code": "04000",
+      "name": "Xã Đoàn Kết",
+      "targetAreaKm2": 240.66
+    },
+    {
+      "code": "04045",
+      "name": "Xã Lóng Sập",
+      "targetAreaKm2": 211.3
+    },
+    {
+      "code": "03985",
+      "name": "Xã Chiềng Sơn",
+      "targetAreaKm2": 204.9
+    },
+    {
+      "code": "03997",
+      "name": "Xã Tân Yên",
+      "targetAreaKm2": 192.79
+    },
+    {
+      "code": "04048",
+      "name": "Xã Vân Hồ",
+      "targetAreaKm2": 268.4
+    },
+    {
+      "code": "04006",
+      "name": "Xã Song Khủa",
+      "targetAreaKm2": 192.45
+    },
+    {
+      "code": "04018",
+      "name": "Xã Tô Múa",
+      "targetAreaKm2": 181.98
+    },
+    {
+      "code": "04057",
+      "name": "Xã Xuân Nha",
+      "targetAreaKm2": 263.37
+    },
+    {
+      "code": "03703",
+      "name": "Xã Quỳnh Nhai",
+      "targetAreaKm2": 244.31
+    },
+    {
+      "code": "03688",
+      "name": "Xã Mường Chiên",
+      "targetAreaKm2": 382.2
+    },
+    {
+      "code": "03694",
+      "name": "Xã Mường Giôn",
+      "targetAreaKm2": 290.54
+    },
+    {
+      "code": "03712",
+      "name": "Xã Mường Sại",
+      "targetAreaKm2": 122.94
+    },
+    {
+      "code": "03721",
+      "name": "Xã Thuận Châu",
+      "targetAreaKm2": 132.83
+    },
+    {
+      "code": "03754",
+      "name": "Xã Chiềng La",
+      "targetAreaKm2": 126.13
+    },
+    {
+      "code": "03784",
+      "name": "Xã Nậm Lầu",
+      "targetAreaKm2": 247.63
+    },
+    {
+      "code": "03799",
+      "name": "Xã Muổi Nọi",
+      "targetAreaKm2": 128.7
+    },
+    {
+      "code": "03757",
+      "name": "Xã Mường Khiêng",
+      "targetAreaKm2": 204.2
+    },
+    {
+      "code": "03781",
+      "name": "Xã Co Mạ",
+      "targetAreaKm2": 214.28
+    },
+    {
+      "code": "03724",
+      "name": "Xã Bình Thuận",
+      "targetAreaKm2": 121.78
+    },
+    {
+      "code": "03727",
+      "name": "Xã Mường É",
+      "targetAreaKm2": 139.91
+    },
+    {
+      "code": "03763",
+      "name": "Xã Long Hẹ",
+      "targetAreaKm2": 158.4
+    },
+    {
+      "code": "03760",
+      "name": "Xã Mường Bám",
+      "targetAreaKm2": 76.16
+    },
+    {
+      "code": "03808",
+      "name": "Xã Mường La",
+      "targetAreaKm2": 341.86
+    },
+    {
+      "code": "03814",
+      "name": "Xã Chiềng Lao",
+      "targetAreaKm2": 358.55
+    },
+    {
+      "code": "03847",
+      "name": "Xã Mường Bú",
+      "targetAreaKm2": 213.65
+    },
+    {
+      "code": "03850",
+      "name": "Xã Chiềng Hoa",
+      "targetAreaKm2": 296.48
+    },
+    {
+      "code": "03820",
+      "name": "Xã Ngọc Chiến",
+      "targetAreaKm2": 212.19
+    },
+    {
+      "code": "03856",
+      "name": "Xã Bắc Yên",
+      "targetAreaKm2": 195.23
+    },
+    {
+      "code": "03868",
+      "name": "Xã Tà Xùa",
+      "targetAreaKm2": 233.67
+    },
+    {
+      "code": "03880",
+      "name": "Xã Tạ Khoa",
+      "targetAreaKm2": 191.88
+    },
+    {
+      "code": "03862",
+      "name": "Xã Xím Vàng",
+      "targetAreaKm2": 232.35
+    },
+    {
+      "code": "03871",
+      "name": "Xã Pắc Ngà",
+      "targetAreaKm2": 122.59
+    },
+    {
+      "code": "03892",
+      "name": "Xã Chiềng Sại",
+      "targetAreaKm2": 124.55
+    },
+    {
+      "code": "03910",
+      "name": "Xã Phù Yên",
+      "targetAreaKm2": 117.98
+    },
+    {
+      "code": "03922",
+      "name": "Xã Gia Phù",
+      "targetAreaKm2": 111.32
+    },
+    {
+      "code": "03958",
+      "name": "Xã Tường Hạ",
+      "targetAreaKm2": 120.85
+    },
+    {
+      "code": "03907",
+      "name": "Xã Mường Cơi",
+      "targetAreaKm2": 194.98
+    },
+    {
+      "code": "03943",
+      "name": "Xã Mường Bang",
+      "targetAreaKm2": 270.15
+    },
+    {
+      "code": "03970",
+      "name": "Xã Tân Phong",
+      "targetAreaKm2": 135.45
+    },
+    {
+      "code": "03961",
+      "name": "Xã Kim Bon",
+      "targetAreaKm2": 104.51
+    },
+    {
+      "code": "03901",
+      "name": "Xã Suối Tọ",
+      "targetAreaKm2": 177.49
+    },
+    {
+      "code": "04075",
+      "name": "Xã Yên Châu",
+      "targetAreaKm2": 246.55
+    },
+    {
+      "code": "04078",
+      "name": "Xã Chiềng Hặc",
+      "targetAreaKm2": 239.91
+    },
+    {
+      "code": "04096",
+      "name": "Xã Lóng Phiêng",
+      "targetAreaKm2": 147.81
+    },
+    {
+      "code": "04087",
+      "name": "Xã Yên Sơn",
+      "targetAreaKm2": 116.62
+    },
+    {
+      "code": "04099",
+      "name": "Xã Phiêng Khoài",
+      "targetAreaKm2": 103.77
+    },
+    {
+      "code": "04132",
+      "name": "Xã Chiềng Mai",
+      "targetAreaKm2": 151.85
+    },
+    {
+      "code": "04105",
+      "name": "Xã Mai Sơn",
+      "targetAreaKm2": 164.4
+    },
+    {
+      "code": "04159",
+      "name": "Xã Phiêng Pằn",
+      "targetAreaKm2": 320.65
+    },
+    {
+      "code": "04123",
+      "name": "Xã Chiềng Mung",
+      "targetAreaKm2": 142.14
+    },
+    {
+      "code": "04144",
+      "name": "Xã Phiêng Cằm",
+      "targetAreaKm2": 280.33
+    },
+    {
+      "code": "04117",
+      "name": "Xã Mường Chanh",
+      "targetAreaKm2": 101.47
+    },
+    {
+      "code": "04136",
+      "name": "Xã Tà Hộc",
+      "targetAreaKm2": 149.56
+    },
+    {
+      "code": "04108",
+      "name": "Xã Chiềng Sung",
+      "targetAreaKm2": 109.28
+    },
+    {
+      "code": "04171",
+      "name": "Xã Bó Sinh",
+      "targetAreaKm2": 153.83
+    },
+    {
+      "code": "04222",
+      "name": "Xã Chiềng Khương",
+      "targetAreaKm2": 149.82
+    },
+    {
+      "code": "04219",
+      "name": "Xã Mường Hung",
+      "targetAreaKm2": 226.09
+    },
+    {
+      "code": "04204",
+      "name": "Xã Chiềng Khoong",
+      "targetAreaKm2": 253.87
+    },
+    {
+      "code": "04183",
+      "name": "Xã Mường Lầm",
+      "targetAreaKm2": 167.1
+    },
+    {
+      "code": "04186",
+      "name": "Xã Nậm Ty",
+      "targetAreaKm2": 201.89
+    },
+    {
+      "code": "04168",
+      "name": "Xã Sông Mã",
+      "targetAreaKm2": 105.99
+    },
+    {
+      "code": "04210",
+      "name": "Xã Huổi Một",
+      "targetAreaKm2": 240.66
+    },
+    {
+      "code": "04195",
+      "name": "Xã Chiềng Sơ",
+      "targetAreaKm2": 140.31
+    },
+    {
+      "code": "04231",
+      "name": "Xã Sốp Cộp",
+      "targetAreaKm2": 466.95
+    },
+    {
+      "code": "04228",
+      "name": "Xã Púng Bánh",
+      "targetAreaKm2": 364.64
+    },
+    {
+      "code": "04246",
+      "name": "Xã Mường Lạn",
+      "targetAreaKm2": 264.89
+    },
+    {
+      "code": "04240",
+      "name": "Xã Mường Lèo",
+      "targetAreaKm2": 375.76
+    }
+  ]
+}

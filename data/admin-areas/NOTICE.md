@@ -5,6 +5,8 @@ Tệp `son-la-75-communes-2025.geojson` được chuẩn hóa từ
 `83c1ca1776ec1eae391a297a38261168c24ccb68643171ead6ea73d8b22e3e85`.
 Gói chuẩn hóa có SHA-256
 `3bf730467596baa1e72f17f88679c008e93ff4fd54ca4e7072ca04fcaa243c39`.
+Gói topology đang hiệu lực `son-la-75-communes-topology-2026.geojson` có SHA-256
+`ad1d369974aee3a2a35d96a9cf7dc368f3f5463b2d2e3aee5535b77be4c6cdd8`.
 
 - Tên và mã được đối chiếu với Nghị quyết 1681/NQ-UBTVQH15 và Quyết định
   19/2025/QĐ-TTg, hiệu lực vận hành từ 01/07/2025.
@@ -17,6 +19,13 @@ Gói chuẩn hóa có SHA-256
   `03760 / Xã Mường Bám` có một vòng lặp một điểm A-B-A gây self-intersection. Bộ
   chuyển đổi chỉ bỏ hai tọa độ quay lại của vòng lặp đã thẩm định; hình học gốc đầy
   đủ, chuỗi tọa độ và lý do được giữ trong `geometryNormalizations` của chính gói.
+- Gói topology dùng bảng diện tích mục tiêu
+  `son-la-75-area-targets-2026.json`, SHA-256
+  `c0ae299abc57798e45e9fc65178681257d014b37df244170898235ae4929fdc2`.
+  Bảng được trích từ PDF do người dùng cung cấp và chỉ dùng làm tiêu chí chọn bên
+  giữ phần giao; không được nâng thành nguồn ranh giới pháp lý.
+- Toàn bộ 62 thao tác xử lý topology được lưu trong `coverageNormalization`; gói
+  ADR-018 không bị sửa hoặc xóa.
 
 Giấy phép nguồn: Copyright (c) 2021 Thang Le Quoc, MIT License. Toàn văn được lưu
 tại `LICENSE.vietnamese-provinces-database.txt` trong cùng thư mục.

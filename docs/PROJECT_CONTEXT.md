@@ -55,6 +55,9 @@
 - Danh mục 75 xã, phường Sơn La dùng Nghị quyết 1681/NQ-UBTVQH15 và Quyết định
   19/2025/QĐ-TTg. Hình học snapshot 11/03/2026 là dữ liệu tham khảo MIT, không thay
   hồ sơ địa giới pháp lý; phiên bản nhập được chốt tại ADR-018.
+- ADR-019 chuẩn hóa topology theo diện tích mục tiêu 01/07/2026: xử lý phần giao lớn
+  nhất trước, chọn bên giữ để giảm sai lệch diện tích và giữ nguyên hợp geometry.
+  Ngưỡng floating point là 0,01 m²; bản gốc không bị ghi đè.
 
 ## Chưa chốt
 
@@ -87,6 +90,7 @@
 | 19/07/2026 | ADR-016 | Đối chiếu theo nguồn, snapshot hash và export qua provider          | Tổng đúng, khóa truy vết và thay được thư viện tạo tệp        |
 | 19/07/2026 | ADR-017 | Cổng phát hành, backup/restore và field trial                       | Chứng minh phục hồi và không giả lập nghiệm thu thực địa      |
 | 19/07/2026 | ADR-018 | Gói địa giới 75 xã, phường Sơn La                                  | Danh mục chính thức, hình học tham khảo có nguồn và version    |
+| 19/07/2026 | ADR-019 | Chuẩn hóa topology và supersede địa giới Sơn La                    | Loại phần giao có quy tắc, giữ bản gốc và provenance           |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -99,8 +103,9 @@
   checksum/version; chưa có hồ sơ địa giới pháp lý do cơ quan có thẩm quyền bàn giao.
 - Local PostGIS đã nhập đủ 75/75, toàn bộ hợp lệ EPSG:4326 và import lặp bỏ qua đủ
   75. Nguồn có một one-point spike tại Mường Bám đã chuẩn hóa có lưu bản gốc/lý do.
-  Topology còn 49 cặp chồng lấn trên 1 m², tổng 20.783,40 m²; không tự động cắt và
-  phải thay bằng phiên bản hồ sơ có thẩm quyền khi có.
+  Phiên bản topology mới không còn phần giao trên 0,01 m²; 24 cặp chỉ còn sai số
+  floating point tối đa 0,00715 m². Đã ghi 62 thao tác, supersede 75 bản cũ và kiểm
+  chứng import lặp. Vẫn phải thay bằng hồ sơ có thẩm quyền khi có.
 
 ## Trạng thái triển khai Mốc 2
 

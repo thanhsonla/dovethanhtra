@@ -11,4 +11,5 @@ tuyến backend và phiên bản route bất biến; `ADR-015` ghi GPS, bằng c
 phát hành, backup/restore và field trial. ADR-001 đến ADR-004 được ghi trong
 `docs/PROJECT_CONTEXT.md` trước khi thư mục này được tạo.
 
-`ADR-018` chốt danh mục pháp lý và gói hình học tham khảo cho 75 xã, phường Sơn La.
+`ADR-018` chốt danh mục pháp lý và gói hình học tham khảo cho 75 xã, phường Sơn La;
+`ADR-019` chốt quy tắc chuẩn hóa 49 cặp chồng lấn và vòng đời supersession.

@@ -43,7 +43,7 @@ try {
     .transaction()
     .execute((transaction) => importAdminAreas(transaction, parsed))
   process.stdout.write(
-    `Import địa giới hoàn tất: ${result.inserted} mới, ${result.skipped} đã tồn tại; source hash ${parsed.sourceHash}.\n`,
+    `Import địa giới hoàn tất: ${result.inserted} mới, ${result.skipped} đã tồn tại, ${result.superseded} phiên bản cũ hết hiệu lực; source hash ${parsed.sourceHash}.\n`,
   )
 } finally {
   await database.destroy()

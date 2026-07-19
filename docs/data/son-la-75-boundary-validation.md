@@ -45,3 +45,28 @@ Không tự động cắt hoặc phân xử phần chồng lấn. Đây là sai 
 học tham khảo và phải được thay bằng `sourceVersion` mới khi nhận hồ sơ địa giới có
 thẩm quyền. Chưa thể kết luận độ phủ/gap pháp lý vì không có polygon tỉnh chính thức
 cùng phiên bản để làm chuẩn đối chiếu.
+
+## Kết quả phiên bản topology 19/07/2026
+
+- SourceVersion:
+  `son-la-75-qdt19-2025-gis-20260311-topology-20260719-v1`
+- SHA-256:
+  `ad1d369974aee3a2a35d96a9cf7dc368f3f5463b2d2e3aee5535b77be4c6cdd8`
+- Diện tích mục tiêu: `son-la-area-targets-2026-07-01`, tổng 14.108,89 km².
+- Thuật toán: `area-target-min-absolute-error-v1`, chi tiết tại ADR-019.
+
+| Kiểm tra                                  |    Kết quả |
+| ----------------------------------------- | ---------: |
+| Tổng geometry / geometry hợp lệ           |    75 / 75 |
+| Cặp giao trên 1 m²                        |          0 |
+| Cặp giao trên ngưỡng 0,01 m²              |          0 |
+| Cặp còn sai số floating point dưới ngưỡng |         24 |
+| Sai số giao lớn nhất còn lại              | 0,00715 m² |
+| Thao tác topology đã ghi provenance       |         62 |
+| Đơn vị bị cắt ít nhất một phần giao       |         34 |
+| Import lần đầu / import lặp               | 75 / 0 mới |
+| Phiên bản ADR-018 được đặt hết hiệu lực   |         75 |
+
+Hợp geometry của 75 đơn vị trước và sau chuẩn hóa không đổi quá 0,01 m². PostgreSQL
+giữ 75 bản ADR-018 đến hết 18/07/2026 và 75 bản topology từ 19/07/2026; API chỉ trả
+75 bản đang hiệu lực.

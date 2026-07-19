@@ -130,7 +130,7 @@ Gói 75 xã, phường Sơn La đã đối chiếu tên/mã theo Nghị quyết
 
 ```bash
 pnpm exec dotenv -e .env.example -- pnpm db:admin-area:import -- \
-  data/admin-areas/son-la-75-communes-2025.geojson
+  data/admin-areas/son-la-75-communes-topology-2026.geojson
 ```
 
 Hình học trong gói này là dữ liệu tham khảo có nguồn/giấy phép được ghi tại
@@ -140,10 +140,19 @@ gói từ bản nguồn đã thẩm định (checksum bị khóa) bằng:
 ```bash
 pnpm data:son-la:prepare -- /duong/dan/son-la-75-communes.geojson \
   data/admin-areas/son-la-75-communes-2025.geojson
+
+pnpm data:son-la:prepare-area-targets -- /duong/dan/communes.json \
+  data/admin-areas/son-la-75-area-targets-2026.json
+
+pnpm exec dotenv -e .env.example -- pnpm db:admin-area:normalize-coverage -- \
+  data/admin-areas/son-la-75-communes-2025.geojson \
+  data/admin-areas/son-la-75-area-targets-2026.json \
+  data/admin-areas/son-la-75-communes-topology-2026.geojson
 ```
 
 Kết quả kiểm tra `ST_IsValid`, import lặp và chồng lấn liên xã được lưu tại
-`docs/data/son-la-75-boundary-validation.md`; pipeline không tự động cắt phần giao.
+`docs/data/son-la-75-boundary-validation.md`. Bản gốc vẫn được giữ; pipeline topology
+ghi từng phần giao đã cắt và dùng diện tích mục tiêu để chọn bên giữ.
 
 Các cổng kiểm tra:
 
