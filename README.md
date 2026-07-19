@@ -119,10 +119,27 @@ Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMA
 nếu tải lỗi, ứng dụng tự trở về nền kỹ thuật local. Không đặt secret thật trong
 `.env.example`; public browser token vẫn phải được giới hạn domain/API/quota.
 
+Mặc định ứng dụng dùng **Vệ tinh + địa danh** theo cùng mô hình với
+`sonla-map-project`: ảnh `Esri World Imagery`, phủ `World Boundaries and Places` và
+`World Transportation`. Nền này không cần Google key, luôn giữ attribution Esri và
+không được service worker cache. Đây là dịch vụ Esri, không được gọi nhầm là Google.
+
 Để bật lớp **Vệ tinh Mapbox**, đặt public token giới hạn domain/API/quota trong tệp
 `.env.local` (tệp này bị Git bỏ qua): `VITE_MAPBOX_PUBLIC_TOKEN=pk...`. Ứng dụng dùng
 Mapbox Satellite Streets qua `BasemapProvider`, hiển thị attribution Mapbox/
 OpenStreetMap và không cache tile vệ tinh trong service worker.
+
+Để bật lớp **Google vệ tinh + địa danh**, bật billing và Map Tiles API trong Google
+Cloud, tạo key chỉ được dùng cho Map Tiles API và giới hạn theo IP/quota. Đặt key ở
+`.env.local` (không đặt trong biến `VITE_*`):
+
+```bash
+GOOGLE_MAP_TILES_API_KEY=your-server-side-key
+```
+
+Khởi động lại API sau khi thêm key. Backend tạo session vệ tinh kèm `layerRoadmap`
+với ngôn ngữ `vi-VN`, chuyển tiếp tile cho người dùng đã đăng nhập và lấy attribution
+theo viewport. Tile Google không được cache; nền kỹ thuật local vẫn là fallback.
 
 Nhập ranh giới chính thức sau khi migration đã chạy:
 

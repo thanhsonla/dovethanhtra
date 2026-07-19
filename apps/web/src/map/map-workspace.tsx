@@ -28,7 +28,6 @@ import { MeasurementLayerTree } from './measurement-layer-tree.js'
 import { RoutePlanner } from './route-planner.js'
 import { DataToolsPanel } from './data-tools-panel.js'
 
-const basemaps = createBasemapProvider()
 const emptyPositions = createHistory<Position[]>([])
 const modeLabels: Record<MapMode, string> = {
   area: 'Vẽ vùng',
@@ -53,6 +52,7 @@ export function MapWorkspace(props: {
     () => props.workItems.filter((item) => kindForWork(item, props.workTypes)),
     [props.workItems, props.workTypes],
   )
+  const [basemaps, setBasemaps] = useState(() => createBasemapProvider())
   const [boundary, setBoundary] = useState<GeoJsonGeometry | null>(null)
   const [summaries, setSummaries] = useState<Record<string, MeasurementListResponse>>({})
   const [selectedWorkId, setSelectedWorkId] = useState(measurable[0]?.id ?? '')
@@ -75,6 +75,18 @@ export function MapWorkspace(props: {
     setSummaries((current) => ({ ...current, [workItemId]: summary }))
     return summary
   }
+
+  useEffect(() => {
+    void api
+      .basemapCapabilities()
+      .then((capabilities) => {
+        if (!capabilities.googleMapTiles) return
+        const next = createBasemapProvider(undefined, capabilities)
+        setBasemaps(next)
+        setBasemapId(next.defaultId)
+      })
+      .catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     void Promise.all([

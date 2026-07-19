@@ -5,6 +5,12 @@ export {
   type ReadinessResponse,
 } from './health.js'
 export { AdminAreaSchema, type AdminArea } from './admin-areas.js'
+export {
+  BasemapCapabilitiesSchema,
+  BasemapViewportAttributionSchema,
+  type BasemapCapabilities,
+  type BasemapViewportAttribution,
+} from './basemaps.js'
 export { AuditEventSchema, type AuditEvent } from './audit.js'
 export {
   CurrentUserSchema,

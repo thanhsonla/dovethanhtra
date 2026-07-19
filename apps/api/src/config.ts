@@ -3,6 +3,10 @@ export interface AppConfig {
   apiPort: number
   databaseUrl: string
   logLevel: string
+  basemaps: {
+    googleMapTilesApiKey: string | null
+    timeoutMs: number
+  }
   auth: {
     cookieSecure: boolean
     sessionTtlHours: number
@@ -54,6 +58,10 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     apiPort: port(environment, 'API_PORT', 3000),
     databaseUrl: required(environment, 'DATABASE_URL'),
     logLevel: environment.LOG_LEVEL ?? 'info',
+    basemaps: {
+      googleMapTilesApiKey: environment.GOOGLE_MAP_TILES_API_KEY || null,
+      timeoutMs: positiveInteger(environment, 'GOOGLE_MAP_TILES_TIMEOUT_MS', 8000),
+    },
     auth: {
       cookieSecure: environment.COOKIE_SECURE === 'true',
       sessionTtlHours: positiveInteger(environment, 'SESSION_TTL_HOURS', 12),

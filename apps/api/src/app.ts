@@ -6,6 +6,8 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastif
 import type { AppConfig } from './config.js'
 import { adminAreaRoutes } from './modules/admin-areas/admin-area-routes.js'
 import { AdminAreaRepository } from './modules/admin-areas/admin-area-repository.js'
+import { basemapRoutes } from './modules/basemaps/basemap-routes.js'
+import type { GoogleMapTiles } from './modules/basemaps/google-map-tiles-provider.js'
 import { AuditRepository } from './modules/audit/audit-repository.js'
 import { auditRoutes } from './modules/audit/audit-routes.js'
 import { CaseRepository } from './modules/cases/case-repository.js'
@@ -52,6 +54,7 @@ export interface BuildAppOptions {
     objectStorage: ObjectStorageHandle
   }
   logger?: FastifyServerOptions['logger']
+  basemaps?: { googleMapTiles?: GoogleMapTiles | null }
   routing?: {
     provider?: RoutingProvider
     requestsPerMinute?: number
@@ -163,6 +166,11 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     guards,
     prefix: '/api/v1/admin-areas',
     repository: new AdminAreaRepository(database),
+  })
+  await app.register(basemapRoutes, {
+    googleMapTiles: options.basemaps?.googleMapTiles ?? null,
+    guards,
+    prefix: '/api/v1/basemaps',
   })
   await app.register(catalogRoutes, {
     guards,

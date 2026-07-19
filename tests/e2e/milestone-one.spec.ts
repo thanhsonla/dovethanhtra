@@ -67,6 +67,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .getByRole('button', { name: 'Mở bản đồ hiện trường' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
+  await expect(page.getByText('Nền: Nền E2E')).toBeVisible()
   await expect(page.getByText('Chưa có công tác đo')).toBeVisible()
   await page
     .getByRole('button', { name: '← Hồ sơ' })

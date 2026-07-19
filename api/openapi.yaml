@@ -61,6 +61,51 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/AdminArea' }
         default: { $ref: '#/components/responses/Error' }
+  /basemaps:
+    get:
+      tags: [basemaps]
+      summary: Kiểm tra các nền bản đồ phía máy chủ đã được cấu hình
+      responses:
+        '200':
+          description: Khả năng nền bản đồ hiện có
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BasemapCapabilities' }
+        default: { $ref: '#/components/responses/Error' }
+  /basemaps/google/tiles/{z}/{x}/{y}:
+    get:
+      tags: [basemaps]
+      summary: Chuyển tiếp tile Google hybrid cho phiên đã đăng nhập; không cache
+      parameters:
+        - { name: z, in: path, required: true, schema: { type: integer, minimum: 0, maximum: 22 } }
+        - { name: x, in: path, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: y, in: path, required: true, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200':
+          description: Tile ảnh từ Google Map Tiles API
+          headers:
+            Cache-Control: { schema: { type: string, const: 'private, no-store' } }
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+        default: { $ref: '#/components/responses/Error' }
+  /basemaps/google/viewport:
+    get:
+      tags: [basemaps]
+      summary: Lấy attribution và mức zoom Google theo viewport hiện tại
+      parameters:
+        - { name: zoom, in: query, required: true, schema: { type: integer, minimum: 0, maximum: 22 } }
+        - { name: north, in: query, required: true, schema: { type: number, exclusiveMinimum: -90, exclusiveMaximum: 90 } }
+        - { name: south, in: query, required: true, schema: { type: number, exclusiveMinimum: -90, exclusiveMaximum: 90 } }
+        - { name: east, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: west, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+      responses:
+        '200':
+          description: Attribution bắt buộc của viewport
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BasemapViewportAttribution' }
+        default: { $ref: '#/components/responses/Error' }
   /catalog/service-groups:
     get:
       tags: [catalog]
@@ -641,6 +686,19 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
   schemas:
+    BasemapCapabilities:
+      type: object
+      required: [googleMapTiles]
+      additionalProperties: false
+      properties:
+        googleMapTiles: { type: boolean }
+    BasemapViewportAttribution:
+      type: object
+      required: [attribution]
+      additionalProperties: false
+      properties:
+        attribution: { type: string, maxLength: 2000 }
+        maxZoom: { type: integer, minimum: 0, maximum: 22 }
     Error:
       type: object
       required: [code, message, traceId]

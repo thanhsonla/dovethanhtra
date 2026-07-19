@@ -94,6 +94,8 @@
 | 19/07/2026 | ADR-018 | Gói địa giới 75 xã, phường Sơn La                                  | Danh mục chính thức, hình học tham khảo có nguồn và version    |
 | 19/07/2026 | ADR-019 | Chuẩn hóa topology và supersede địa giới Sơn La                    | Loại phần giao có quy tắc, giữ bản gốc và provenance           |
 | 19/07/2026 | ADR-020 | Sao chép cấu trúc công tác không mang theo kết quả                 | Tái sử dụng cấu hình nhưng không nhân bản chứng cứ              |
+| 19/07/2026 | ADR-021 | Pipeline dữ liệu P1 và vòng đời artifact                          | Import có preview, phục hồi, phân trang và export an toàn       |
+| 19/07/2026 | ADR-022 | Vệ tinh có nhãn mặc định và Google tùy chọn                      | Hiện ngay qua Esri; Google không lộ khóa billing                 |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -252,3 +254,12 @@
 - Đã bổ sung nền `Vệ tinh Mapbox` qua raster Satellite Streets trong
   `BasemapProvider`. Public token chỉ được đọc từ `.env.local`, attribution được giữ
   trên bản đồ và nền kỹ thuật local vẫn là fallback khi token/tiles không khả dụng.
+- Đã bổ sung adapter Google Map Tiles phía API cho nền vệ tinh kèm nhãn đường/địa
+  danh tiếng Việt. Khóa Google không vào bundle PWA; tile và attribution viewport
+  đi qua route same-origin có auth, `no-store` và tắt access log tọa độ. Nền chỉ
+  xuất hiện khi `GOOGLE_MAP_TILES_API_KEY` được cấp qua `.env.local`/secret manager;
+  chưa nghiệm thu tile thật vì repository không chứa khóa Google có billing.
+- Sau khi đối chiếu `sonla-map-project`, xác nhận dự án tham chiếu dùng Esri chứ
+  không dùng Google. `Vệ tinh + địa danh` nay là nền mặc định, ghép World Imagery,
+  World Boundaries and Places và World Transportation trực tiếp trong
+  `BasemapProvider`; không cần key, có attribution và không cache ngoại tuyến.

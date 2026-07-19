@@ -35,6 +35,7 @@ import type {
   GeoJsonImportPreview,
   GeoJsonImportCommitResponse,
   ExportJob,
+  BasemapCapabilities,
 } from '@dove/contracts'
 
 export class ApiClientError extends Error {
@@ -99,6 +100,7 @@ async function downloadFile(path: string) {
 }
 
 export const api = {
+  basemapCapabilities: () => request<BasemapCapabilities>('/basemaps'),
   createCase: (input: CreateCaseRequest) =>
     request<InspectionCase>('/cases', { method: 'POST', body: JSON.stringify(input) }),
   createWorkItem: (caseId: string, input: CreateWorkItemRequest) =>

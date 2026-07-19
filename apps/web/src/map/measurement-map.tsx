@@ -8,7 +8,7 @@ import maplibregl, {
 import type { GeoJSON } from 'geojson'
 import { useEffect, useRef } from 'react'
 
-import type { BasemapProvider } from './basemap-provider.js'
+import type { BasemapDescriptor, BasemapProvider } from './basemap-provider.js'
 
 export type MapMode = 'view' | 'point' | 'line' | 'area' | 'edit'
 export type Position = [number, number]
@@ -188,10 +188,43 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const mapRef = useRef<MapLibreMap | null>(null)
   const markers = useRef<Marker[]>([])
   const attributionControl = useRef<AttributionControl | null>(null)
+  const attributionRequest = useRef(0)
   const fallbackRequested = useRef(false)
   const activeBasemapId = useRef(props.basemapId)
   const latest = useRef(props)
   latest.current = props
+
+  const replaceAttribution = (map: MapLibreMap, attribution: string) => {
+    if (attributionControl.current && map.hasControl(attributionControl.current)) {
+      map.removeControl(attributionControl.current)
+    }
+    attributionControl.current = new maplibregl.AttributionControl({
+      compact: true,
+      customAttribution: attribution,
+    })
+    map.addControl(attributionControl.current)
+  }
+
+  const refreshAttribution = (map: MapLibreMap, descriptor: BasemapDescriptor) => {
+    const requestId = ++attributionRequest.current
+    replaceAttribution(map, descriptor.attribution)
+    if (!descriptor.viewportAttribution) return
+    const bounds = map.getBounds()
+    void descriptor
+      .viewportAttribution({
+        east: bounds.getEast(),
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        west: bounds.getWest(),
+        zoom: Math.max(0, Math.min(22, Math.round(map.getZoom()))),
+      })
+      .then((attribution) => {
+        if (requestId === attributionRequest.current && mapRef.current === map) {
+          replaceAttribution(map, attribution)
+        }
+      })
+      .catch(() => undefined)
+  }
 
   useEffect(() => {
     if (!container.current) return
@@ -205,12 +238,14 @@ export function MeasurementMap(props: MeasurementMapProps) {
       zoom: 11.5,
     })
     map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-    attributionControl.current = new maplibregl.AttributionControl({
-      compact: true,
-      customAttribution: descriptor.attribution,
+    replaceAttribution(map, descriptor.attribution)
+    map.on('style.load', () => {
+      syncData(map, latest.current)
+      refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId))
     })
-    map.addControl(attributionControl.current)
-    map.on('style.load', () => syncData(map, latest.current))
+    map.on('moveend', () =>
+      refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId)),
+    )
     map.on('click', (event) => {
       const current = latest.current
       if (['point', 'line', 'area'].includes(current.mode)) {
@@ -232,15 +267,17 @@ export function MeasurementMap(props: MeasurementMapProps) {
     map.on('error', () => {
       const current = latest.current
       const active = current.basemapProvider.get(current.basemapId)
-      if (typeof active.style === 'string' && !map.isStyleLoaded() && !fallbackRequested.current) {
+      if (!current.basemapProvider.supportsOffline(active.id) && !fallbackRequested.current) {
         fallbackRequested.current = true
         current.onBasemapFallback()
       }
     })
     mapRef.current = map
     return () => {
+      attributionRequest.current += 1
       markers.current.forEach((marker) => marker.remove())
       map.remove()
+      attributionControl.current = null
       mapRef.current = null
     }
   }, [])
@@ -263,12 +300,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
     fallbackRequested.current = false
     const descriptor = props.basemapProvider.get(props.basemapId)
     map.setStyle(descriptor.style)
-    if (attributionControl.current) map.removeControl(attributionControl.current)
-    attributionControl.current = new maplibregl.AttributionControl({
-      compact: true,
-      customAttribution: descriptor.attribution,
-    })
-    map.addControl(attributionControl.current)
+    refreshAttribution(map, descriptor)
   }, [props.basemapId, props.basemapProvider])
 
   useEffect(() => {
