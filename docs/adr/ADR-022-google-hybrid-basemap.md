@@ -1,4 +1,4 @@
-# ADR-022: Nền vệ tinh theo La Kinh và Google chính thức tùy chọn
+# ADR-022: Cho phép Google hybrid trực tiếp theo La Kinh
 
 - Trạng thái: Accepted
 - Ngày: 19/07/2026
@@ -9,7 +9,8 @@ Người dùng cần ảnh vệ tinh có tên xã/phường, đường và đị
 Màn hình La Kinh Vệ Tinh của dự án `Minh Huyen` dùng Mapbox style
 `satellite-streets-v12`, sau đó chèn raster `mt1.google.com` ngay trên lớp ảnh và
 dưới các symbol label Mapbox. Phần chèn ảnh Google tạo hiệu ứng tốt nhưng dùng
-endpoint không được tài liệu Google Map Tiles API công bố.
+endpoint không được tài liệu Google Map Tiles API công bố. Ngày 19/07/2026, chủ dự
+án xác nhận chấp thuận thay đổi quy tắc để sử dụng endpoint này.
 
 Google Map Tiles API yêu cầu session token, API key trong mọi request, attribution
 theo viewport và không cho phép ứng dụng tự ý cache nội dung. Đưa khóa có billing
@@ -18,18 +19,23 @@ công bố chính thức cũng không bảo đảm giấy phép hoặc độ ổ
 
 ## Quyết định
 
-- Khi có public token Mapbox hợp lệ, nền mặc định là raster render từ Mapbox
+- Khi có public token Mapbox hợp lệ, cung cấp thêm raster render từ Mapbox
   `satellite-streets-v12`. Nền này giữ ảnh vệ tinh và label đã render, tương ứng với
   style nền cốt lõi của La Kinh Vệ Tinh mà không đổi renderer MapLibre hiện tại.
-- Không sao chép request `mt1.google.com`. Mọi nguồn Google phải đi qua adapter
-  Google Map Tiles API chính thức đã có session, key, attribution và kiểm soát quota.
+- Cho phép `BasemapProvider` dùng trực tiếp
+  `https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}` và đặt làm nền mặc
+  định. Dùng `lyrs=y` để ảnh vệ tinh và nhãn địa danh nằm trong cùng raster tile.
+- Ngoại lệ không cho phép component gọi trực tiếp, không mở rộng sang endpoint khác,
+  không cache/offline, không trích xuất hoặc phân tích dữ liệu từ tile.
+- Google Map Tiles API chính thức vẫn được giữ làm lựa chọn ưu tiên khi backend có
+  key/session hợp lệ; Mapbox, Esri và nền kỹ thuật tiếp tục là fallback.
 - Khi thiếu token Mapbox/Google, fallback không cần khóa ghép ba raster layer qua
   `BasemapProvider`: Esri `World Imagery`, `World Boundaries and Places` và
   `World Transportation`.
 - Hiển thị đầy đủ attribution Esri và các nhà cung cấp dữ liệu. Không gọi nền này là
   Google và không đưa các tile Esri vào service-worker cache.
-- Dùng Google Map Tiles API chính thức, không dùng `mt1.google.com` hoặc URL tile
-  không có trong tài liệu của nhà cung cấp.
+- Ngoài ngoại lệ `mt1.google.com` nêu trên, không dùng URL Google không có trong tài
+  liệu nhà cung cấp.
 - API server giữ `GOOGLE_MAP_TILES_API_KEY`, tạo session với `mapType=satellite`,
   `layerRoadmap`, `overlay=false`, `language=vi-VN`, `region=VN`. PWA chỉ gọi proxy
   same-origin qua interface `BasemapProvider`.
@@ -44,7 +50,8 @@ công bố chính thức cũng không bảo đảm giấy phép hoặc độ ổ
 
 ## Hệ quả
 
-Với token đang được cấu hình local, người dùng nhận nền Mapbox Satellite Streets
-giống phần nền hợp lệ của La Kinh Vệ Tinh. Esri vẫn bảo đảm bản đồ có ảnh khi thiếu
-token, còn Google chỉ bật khi có tài khoản billing và key chính thức. Các nền ngoài
-đều không hỗ trợ ngoại tuyến; phải theo dõi attribution, điều khoản và độ sẵn sàng.
+Người dùng nhận nền Google hybrid giống hình thức của La Kinh Vệ Tinh mà không cần
+API key. Đổi lại, endpoint không có hợp đồng ổn định trong tài liệu Map Tiles API,
+có thể thay đổi/bị chặn và không cung cấp attribution động theo viewport. Chủ dự án
+chấp nhận rủi ro này; ứng dụng phải giữ fallback và không được coi đây là nền phù
+hợp production cho đến khi pháp lý/điều khoản được xác minh.

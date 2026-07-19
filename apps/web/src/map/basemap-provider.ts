@@ -182,6 +182,32 @@ function esriImageryWithLabelsDescriptor(): BasemapDescriptor {
   }
 }
 
+function directGoogleHybridDescriptor(): BasemapDescriptor {
+  return {
+    attribution: '<a href="https://maps.google.com/">Google Maps</a>',
+    id: 'google-hybrid-direct',
+    label: 'Google vệ tinh + địa danh',
+    style: {
+      version: 8,
+      sources: {
+        'google-hybrid-direct': {
+          type: 'raster',
+          tiles: ['https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}'],
+          tileSize: 256,
+          maxzoom: 22,
+        },
+      },
+      layers: [
+        {
+          id: 'google-hybrid-direct',
+          source: 'google-hybrid-direct',
+          type: 'raster',
+        },
+      ],
+    },
+  }
+}
+
 function googleSatelliteDescriptor(fetcher: Fetcher): BasemapDescriptor {
   const attribution = '<a href="https://maps.google.com/">Google Maps</a>'
   return {
@@ -229,6 +255,7 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
   private readonly remote: BasemapDescriptor | null
   private readonly satellite: BasemapDescriptor | null
   private readonly google: BasemapDescriptor | null
+  private readonly directGoogle = directGoogleHybridDescriptor()
   private readonly esri = esriImageryWithLabelsDescriptor()
   readonly defaultId: string
 
@@ -240,12 +267,13 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
     this.remote = remoteDescriptor(environment)
     this.satellite = mapboxSatelliteDescriptor(environment)
     this.google = capabilities.googleMapTiles ? googleSatelliteDescriptor(fetcher) : null
-    this.defaultId = this.google?.id ?? this.remote?.id ?? this.satellite?.id ?? this.esri.id
+    this.defaultId = this.google?.id ?? this.directGoogle.id
   }
 
   descriptors() {
     return [
       ...(this.google ? [this.google] : []),
+      this.directGoogle,
       this.esri,
       ...(this.satellite ? [this.satellite] : []),
       ...(this.remote ? [this.remote] : []),
@@ -262,6 +290,7 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
       this.remote?.id === id ||
       this.satellite?.id === id ||
       this.google?.id === id ||
+      this.directGoogle.id === id ||
       this.esri.id === id
     )
       return false

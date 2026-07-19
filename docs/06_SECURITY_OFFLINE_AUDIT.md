@@ -39,7 +39,8 @@ Mật khẩu, token, secret, khóa mã hóa. Không xuất, không ghi log, khô
 - Mapbox/Google key được giới hạn theo domain, ứng dụng, API và quota khi có thể.
 - Route request nên đi qua backend để kiểm soát quota và tránh lộ secret không dành cho trình duyệt.
 - Thiết lập ngân sách/cảnh báo và giới hạn theo ngày.
-- Không dùng endpoint tile không chính thức.
+- Endpoint tile không chính thức bị cấm, ngoại trừ `mt1.google.com` được chủ dự án
+  chấp thuận tại ADR-022 và chỉ được gọi qua `BasemapProvider`, không cache/trích xuất.
 - Attribution hiển thị động theo bản đồ nền.
 - Không cache/offline nội dung của nhà cung cấp trái điều khoản; lớp offline dùng nguồn được cấp phép riêng.
 

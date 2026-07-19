@@ -19,6 +19,9 @@ Nếu yêu cầu mới mâu thuẫn với tài liệu, không tự ý chọn. Gh
 - Chia theo mô-đun nghiệp vụ: `cases`, `catalog`, `measurements`, `routing`, `evidence`, `comparison`, `exports`, `audit`, `sync`.
 - Mô-đun giao tiếp qua interface hoặc service công khai; không truy cập bảng dữ liệu của mô-đun khác tùy tiện.
 - Không để component giao diện gọi trực tiếp Mapbox, Google hoặc OSRM. Mọi gọi ngoài phải qua adapter.
+- Ngoại lệ được chủ dự án chấp thuận tại ADR-022: `mt1.google.com` được dùng làm
+  raster basemap qua `BasemapProvider`; component vẫn không được gọi trực tiếp,
+  service worker không được cache và phải luôn có attribution/fallback.
 - Không để công thức nghiệp vụ chỉ tồn tại trong giao diện. Máy chủ là nguồn kết quả chính thức.
 - Không hard-code tên huyện, xã, nhóm dịch vụ, công tác, đơn vị tính hoặc ngưỡng cảnh báo.
 - Mọi cấu hình công thức phải có `version` và được lưu cùng kết quả tính.

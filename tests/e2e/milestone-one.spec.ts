@@ -5,11 +5,10 @@ test.setTimeout(60_000)
 test('creates a case and adds a catalog work item', async ({ page }, testInfo) => {
   await page.context().grantPermissions(['geolocation'])
   await page.context().setGeolocation({ latitude: 20.8, longitude: 104.65 })
-  let configuredStyleRequests = 0
+  let failConfiguredStyle = false
   if (testInfo.project.name === 'chromium') {
     await page.route('**/basemaps/e2e-style.json', (route) => {
-      configuredStyleRequests += 1
-      return configuredStyleRequests <= 2 ? route.continue() : route.abort()
+      return failConfiguredStyle ? route.abort() : route.continue()
     })
   }
   const mapModuleResponses: string[] = []
@@ -67,7 +66,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .getByRole('button', { name: 'Mở bản đồ hiện trường' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
-  await expect(page.getByText('Nền: Nền E2E')).toBeVisible()
+  await expect(page.getByText('Nền: Google vệ tinh + địa danh')).toBeVisible()
   await expect(page.getByText('Chưa có công tác đo')).toBeVisible()
   await page
     .getByRole('button', { name: '← Hồ sơ' })
@@ -99,8 +98,12 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
   await expect.poll(() => mapModuleResponses.length).toBeGreaterThan(0)
-  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('configured-remote')
+  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('google-hybrid-direct')
+  await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Google Maps')
+  await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Nền E2E được cấp phép')
+  await page.getByLabel('Bản đồ nền').selectOption('google-hybrid-direct')
+  await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Google Maps')
   await page.getByText('Import GeoJSON', { exact: true }).press('Enter')
   await page.getByLabel('Tệp GeoJSON').setInputFiles({
     name: 'import-e2e.geojson',
@@ -258,9 +261,10 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   )
   await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
 
-  // Remount the map so Chromium requests the remote style again; the route above
-  // deterministically fails that second request instead of depending on HTTP cache behavior.
+  // Remount the map and explicitly fail the configured remote style without
+  // depending on request counts or HTTP cache behavior.
   if (testInfo.project.name === 'chromium') {
+    failConfiguredStyle = true
     await page.reload()
     await page
       .getByRole('button', { name: new RegExp(caseName) })
@@ -268,6 +272,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     await page
       .getByRole('button', { name: 'Mở bản đồ hiện trường' })
       .evaluate((element: HTMLButtonElement) => element.click())
+    await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
     await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
     await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
     await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()

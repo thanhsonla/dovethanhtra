@@ -95,7 +95,7 @@
 | 19/07/2026 | ADR-019 | Chuẩn hóa topology và supersede địa giới Sơn La                    | Loại phần giao có quy tắc, giữ bản gốc và provenance           |
 | 19/07/2026 | ADR-020 | Sao chép cấu trúc công tác không mang theo kết quả                 | Tái sử dụng cấu hình nhưng không nhân bản chứng cứ              |
 | 19/07/2026 | ADR-021 | Pipeline dữ liệu P1 và vòng đời artifact                          | Import có preview, phục hồi, phân trang và export an toàn       |
-| 19/07/2026 | ADR-022 | Vệ tinh theo La Kinh và Google chính thức tùy chọn               | Mapbox có nhãn; không dùng endpoint Google không chính thức      |
+| 19/07/2026 | ADR-022 | Cho phép Google hybrid trực tiếp theo La Kinh                    | Chủ dự án chấp thuận ngoại lệ mt1 qua adapter                    |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -264,3 +264,8 @@
   dưới label. Ứng dụng áp dụng phần Mapbox được cấp phép và đặt `Vệ tinh Mapbox +
   địa danh` làm mặc định khi public token tồn tại; không sao chép `mt1.google.com`.
   Esri World Imagery + reference layers vẫn là fallback không cần key.
+- Chủ dự án sau đó chấp thuận thay đổi quy tắc để dùng `mt1.google.com`. Adapter
+  thêm nền mặc định `Google vệ tinh + địa danh` bằng `lyrs=y&hl=vi`; component không
+  gọi trực tiếp, service worker không cache và Google chính thức/Mapbox/Esri/local
+  vẫn được giữ làm fallback. Endpoint đã trả tile Sơn La nhưng chưa có bảo đảm API
+  hoặc nghiệm thu điều khoản cho production.

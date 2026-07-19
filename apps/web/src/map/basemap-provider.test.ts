@@ -9,7 +9,7 @@ describe('configured basemap provider', () => {
       VITE_BASEMAP_LABEL: 'Nền kiểm thử',
       VITE_BASEMAP_STYLE_URL: 'https://maps.example.test/style.json',
     })
-    expect(provider.defaultId).toBe('configured-remote')
+    expect(provider.defaultId).toBe('google-hybrid-direct')
     expect(provider.get('configured-remote')).toMatchObject({
       attribution: '© Nhà cung cấp kiểm thử',
       label: 'Nền kiểm thử',
@@ -30,8 +30,8 @@ describe('configured basemap provider', () => {
     },
   ])('rejects incomplete or unsafe remote configuration', (environment) => {
     const provider = new ConfiguredBasemapProvider(environment)
-    expect(provider.defaultId).toBe('esri-imagery-labels')
-    expect(provider.descriptors()).toHaveLength(3)
+    expect(provider.defaultId).toBe('google-hybrid-direct')
+    expect(provider.descriptors()).toHaveLength(4)
   })
 
   it('adds an attributed Mapbox satellite raster layer for a public token', () => {
@@ -39,7 +39,7 @@ describe('configured basemap provider', () => {
       VITE_MAPBOX_PUBLIC_TOKEN: 'pk.public-test-token',
     })
     const satellite = provider.get('mapbox-satellite')
-    expect(provider.defaultId).toBe('mapbox-satellite')
+    expect(provider.defaultId).toBe('google-hybrid-direct')
     expect(provider.supportsOffline('mapbox-satellite')).toBe(false)
     expect(satellite).toMatchObject({
       id: 'mapbox-satellite',
@@ -54,12 +54,24 @@ describe('configured basemap provider', () => {
     const esri = provider.get('esri-imagery-labels')
     const style = JSON.stringify(esri.style)
 
-    expect(provider.defaultId).toBe('esri-imagery-labels')
+    expect(provider.defaultId).toBe('google-hybrid-direct')
     expect(esri.label).toBe('Vệ tinh + địa danh')
     expect(style).toContain('World_Imagery/MapServer/tile/{z}/{y}/{x}')
     expect(style).toContain('World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')
     expect(style).toContain('World_Transportation/MapServer/tile/{z}/{y}/{x}')
     expect(provider.supportsOffline(esri.id)).toBe(false)
+  })
+
+  it('uses the owner-approved direct Google hybrid endpoint through the adapter', () => {
+    const provider = new ConfiguredBasemapProvider({})
+    const google = provider.get('google-hybrid-direct')
+
+    expect(google.label).toBe('Google vệ tinh + địa danh')
+    expect(JSON.stringify(google.style)).toContain(
+      'https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+    )
+    expect(google.attribution).toContain('Google Maps')
+    expect(provider.supportsOffline(google.id)).toBe(false)
   })
 
   it.each(['sk.secret-token', 'pk.invalid&token', ''])('rejects unsafe Mapbox tokens', (token) => {

@@ -28,7 +28,8 @@ Mỗi địa bàn/huyện được quản lý bằng một hoặc nhiều **hồ
 ## 3. Quyết định kiến trúc bắt buộc
 
 - Dùng MapLibre GL JS làm bộ máy hiển thị bản đồ.
-- Bản đồ nền được truy cập qua lớp `BasemapProvider`; không gọi trực tiếp `mt1.google.com`.
+- Bản đồ nền được truy cập qua lớp `BasemapProvider`. Ngoại lệ ADR-022 cho phép
+  adapter dùng `mt1.google.com`; component không được gọi trực tiếp nguồn này.
 - Dùng Mapbox Directions ở giai đoạn đầu qua lớp `RoutingProvider`; có thể thay bằng OSRM/Valhalla.
 - Lưu dữ liệu không gian trong PostgreSQL + PostGIS, hệ tọa độ lưu trữ WGS84/EPSG:4326.
 - Tính toán chính thức ở phía máy chủ bằng PostGIS; phía trình duyệt chỉ tính tạm để phản hồi nhanh.
@@ -119,13 +120,12 @@ Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMA
 nếu tải lỗi, ứng dụng tự trở về nền kỹ thuật local. Không đặt secret thật trong
 `.env.example`; public browser token vẫn phải được giới hạn domain/API/quota.
 
-Khi có `VITE_MAPBOX_PUBLIC_TOKEN`, ứng dụng mặc định dùng **Vệ tinh Mapbox + địa
-danh** từ style `satellite-streets-v12`, tương ứng với nền chính của màn hình La
-Kinh Vệ Tinh trong dự án `Minh Huyen`. Dự án tham chiếu còn chèn trực tiếp tile
-`mt1.google.com`; phần này không được sao chép vì là endpoint Google không chính
-thức, trái quy tắc provider và khó kiểm soát giấy phép/quota. Khi không có token
-Mapbox, ứng dụng fallback sang ảnh Esri World Imagery kèm các lớp reference địa
-danh/giao thông; mọi nền ngoài đều giữ attribution và không được cache ngoại tuyến.
+Theo ngoại lệ được chủ dự án chấp thuận tại ADR-022, ứng dụng mặc định dùng
+**Google vệ tinh + địa danh** từ `mt1.google.com` với lớp hybrid `lyrs=y`, tiếng Việt.
+URL chỉ tồn tại trong `BasemapProvider`, không được component gọi trực tiếp và không
+được service worker cache. Mapbox `satellite-streets-v12`, Esri World Imagery kèm
+reference layers, Google Map Tiles API chính thức và nền kỹ thuật local vẫn được giữ
+làm các lựa chọn/fallback độc lập.
 
 Để bật lớp **Vệ tinh Mapbox**, đặt public token giới hạn domain/API/quota trong tệp
 `.env.local` (tệp này bị Git bỏ qua): `VITE_MAPBOX_PUBLIC_TOKEN=pk...`. Ứng dụng dùng
