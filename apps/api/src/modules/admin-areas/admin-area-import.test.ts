@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import { describe, expect, it } from 'vitest'
 
 import { parseAdminAreaGeoJson } from './admin-area-import.js'
@@ -84,5 +86,25 @@ describe('admin area GeoJSON import', () => {
     const value = JSON.parse(file().toString('utf8')) as Record<string, unknown>
     value.crs = { properties: { name: 'EPSG:3405' }, type: 'name' }
     expect(() => parseAdminAreaGeoJson(Buffer.from(JSON.stringify(value)))).toThrow(/EPSG:4326/)
+  })
+
+  it('accepts the reviewed Sơn La 75-unit boundary package', () => {
+    const content = readFileSync(
+      new URL('../../../../../data/admin-areas/son-la-75-communes-2025.geojson', import.meta.url),
+    )
+    const parsed = parseAdminAreaGeoJson(content)
+
+    expect(parsed.records).toHaveLength(75)
+    expect(new Set(parsed.records.map((record) => record.code)).size).toBe(75)
+    expect(parsed.records.filter((record) => record.areaType === 'commune')).toHaveLength(67)
+    expect(parsed.records.filter((record) => record.areaType === 'ward')).toHaveLength(8)
+    expect(parsed.records.every((record) => record.validFrom === '2025-07-01')).toBe(true)
+    expect(parsed.records.every((record) => record.geometry.type === 'MultiPolygon')).toBe(true)
+    expect(parsed.records.filter((record) => record.normalizationReason !== null)).toMatchObject([
+      { code: '03760' },
+    ])
+    expect(parsed.sourceHash).toBe(
+      '3bf730467596baa1e72f17f88679c008e93ff4fd54ca4e7072ca04fcaa243c39',
+    )
   })
 })

@@ -13,6 +13,7 @@ export interface AdminAreaImportRecord {
   code: string
   geometry: BoundaryGeometry
   name: string
+  normalizationReason: string | null
   source: string
   sourceVersion: string
   validFrom: string
@@ -157,6 +158,14 @@ export function parseAdminAreaGeoJson(content: Buffer): ParsedAdminAreaImport {
       code,
       geometry: geometry(feature.geometry, index),
       name: requiredString(properties.name, `features[${index}].properties.name`),
+      normalizationReason:
+        properties.normalizationReason === null || properties.normalizationReason === undefined
+          ? null
+          : requiredString(
+              properties.normalizationReason,
+              `features[${index}].properties.normalizationReason`,
+              500,
+            ),
       source: requiredString(properties.source, `features[${index}].properties.source`, 500),
       sourceVersion,
       validFrom: validFrom!,
@@ -207,7 +216,10 @@ export async function importAdminAreas(
         ${record.validTo}::date,
         ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(${geometryJson}), 4326)),
         ${record.source}, ${record.sourceVersion}, ${input.sourceHash},
-        ${JSON.stringify({ importedBy: 'admin-area-cli' })}::jsonb
+        ${JSON.stringify({
+          importedBy: 'admin-area-cli',
+          normalizationReason: record.normalizationReason,
+        })}::jsonb
       )
     `.execute(executor)
     inserted += 1

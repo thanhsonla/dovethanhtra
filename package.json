@@ -22,6 +22,7 @@
     "db:migrate:test": "pnpm db:migrate:down && pnpm db:migrate",
     "db:admin-area:import": "pnpm --filter @dove/api db:admin-area:import",
     "db:seed": "pnpm --filter @dove/api db:seed",
+    "data:son-la:prepare": "node scripts/prepare-son-la-admin-areas.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:down": "docker compose down",

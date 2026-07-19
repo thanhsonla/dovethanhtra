@@ -125,6 +125,26 @@ pnpm exec dotenv -e .env.example -- pnpm db:admin-area:import -- /duong/dan/ranh
 ví dụ schema, không phải dữ liệu địa giới chính thức. Import yêu cầu EPSG:4326,
 geometry hợp lệ, metadata nguồn/phiên bản và sẽ lưu SHA-256 của tệp nguồn.
 
+Gói 75 xã, phường Sơn La đã đối chiếu tên/mã theo Nghị quyết
+1681/NQ-UBTVQH15 và Quyết định 19/2025/QĐ-TTg có thể nhập bằng:
+
+```bash
+pnpm exec dotenv -e .env.example -- pnpm db:admin-area:import -- \
+  data/admin-areas/son-la-75-communes-2025.geojson
+```
+
+Hình học trong gói này là dữ liệu tham khảo có nguồn/giấy phép được ghi tại
+`data/admin-areas/NOTICE.md`, không thay thế hồ sơ địa giới pháp lý. Có thể tái tạo
+gói từ bản nguồn đã thẩm định (checksum bị khóa) bằng:
+
+```bash
+pnpm data:son-la:prepare -- /duong/dan/son-la-75-communes.geojson \
+  data/admin-areas/son-la-75-communes-2025.geojson
+```
+
+Kết quả kiểm tra `ST_IsValid`, import lặp và chồng lấn liên xã được lưu tại
+`docs/data/son-la-75-boundary-validation.md`; pipeline không tự động cắt phần giao.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`

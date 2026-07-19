@@ -52,11 +52,14 @@
   style chuyển về nền local. Không có nhà cung cấp thật hoặc token nào được commit.
 - Import địa giới yêu cầu FeatureCollection EPSG:4326, nguồn/phiên bản/ngày hiệu lực,
   lưu SHA-256 byte nguồn và từ chối ghi đè cùng phiên bản nếu hash thay đổi.
+- Danh mục 75 xã, phường Sơn La dùng Nghị quyết 1681/NQ-UBTVQH15 và Quyết định
+  19/2025/QĐ-TTg. Hình học snapshot 11/03/2026 là dữ liệu tham khảo MIT, không thay
+  hồ sơ địa giới pháp lý; phiên bản nhập được chốt tại ADR-018.
 
 ## Chưa chốt
 
 - Nhà cung cấp hosting chính thức.
-- Danh mục huyện/xã và phiên bản ranh giới đưa vào bản chạy đầu tiên.
+- Nguồn hồ sơ địa giới pháp lý thay thế hình học tham khảo của 75 xã, phường Sơn La.
 - Mẫu Excel đầu ra cuối cùng.
 - Ngưỡng sai số GPS theo từng công tác.
 - Ngưỡng cảnh báo chênh lệch mặc định.
@@ -83,6 +86,7 @@
 | 19/07/2026 | ADR-015 | GPS raw, upload xác minh và đồng bộ idempotent                       | Không mất bằng chứng khi lọc/retry hoặc upload dở            |
 | 19/07/2026 | ADR-016 | Đối chiếu theo nguồn, snapshot hash và export qua provider          | Tổng đúng, khóa truy vết và thay được thư viện tạo tệp        |
 | 19/07/2026 | ADR-017 | Cổng phát hành, backup/restore và field trial                       | Chứng minh phục hồi và không giả lập nghiệm thu thực địa      |
+| 19/07/2026 | ADR-018 | Gói địa giới 75 xã, phường Sơn La                                  | Danh mục chính thức, hình học tham khảo có nguồn và version    |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -91,7 +95,12 @@
 - Seed local có 5 nhóm, 15 công tác, một tài khoản giả và một địa bàn fixture có cảnh báo.
 - API và UI đã có đăng nhập, danh sách/tạo hồ sơ, xem/tự thêm loại công tác trong
   danh mục và thêm công tác vào hồ sơ.
-- Chưa có ranh giới hành chính chính thức; fixture hiện tại chỉ dùng kiểm thử kỹ thuật.
+- Đã có danh mục chính thức 75 xã, phường Sơn La và gói hình học tham khảo có
+  checksum/version; chưa có hồ sơ địa giới pháp lý do cơ quan có thẩm quyền bàn giao.
+- Local PostGIS đã nhập đủ 75/75, toàn bộ hợp lệ EPSG:4326 và import lặp bỏ qua đủ
+  75. Nguồn có một one-point spike tại Mường Bám đã chuẩn hóa có lưu bản gốc/lý do.
+  Topology còn 49 cặp chồng lấn trên 1 m², tổng 20.783,40 m²; không tự động cắt và
+  phải thay bằng phiên bản hồ sơ có thẩm quyền khi có.
 
 ## Trạng thái triển khai Mốc 2
 

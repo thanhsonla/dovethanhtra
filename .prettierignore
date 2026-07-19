@@ -12,3 +12,4 @@ node_modules/
 playwright-report/
 pnpm-lock.yaml
 test-results/
+data/admin-areas/*.geojson
