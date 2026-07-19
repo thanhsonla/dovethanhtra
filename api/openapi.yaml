@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: API kiểm tra khối lượng hiện trường
-  version: 0.5.0
-  description: Hợp đồng API đã triển khai đến hết Mốc 4, gồm route, GPS, đồng bộ idempotent và bằng chứng ảnh.
+  version: 0.6.0
+  description: Hợp đồng API đã triển khai đến hết Mốc 5, gồm đối chiếu, snapshot và Excel/GeoJSON.
   license:
     name: Proprietary — sử dụng nội bộ/cá nhân
     identifier: LicenseRef-Proprietary
@@ -507,6 +507,13 @@ paths:
         '201': { description: GPS point mới }
         '200': { description: Kết quả cũ của cùng mutation }
         default: { $ref: '#/components/responses/Error' }
+  /work-items/{workItemId}/attachments:
+    get:
+      tags: [field]
+      summary: Liệt kê ảnh đã xác minh của công tác để liên kết nguồn hoặc giải trình
+      responses:
+        '200': { description: Danh sách attachment completed thuộc công tác }
+        default: { $ref: '#/components/responses/Error' }
   /attachments/presign:
     post:
       security: [{ cookieAuth: [], csrfToken: [] }]
@@ -522,6 +529,69 @@ paths:
       summary: Xác minh object và hoàn tất bằng chứng ảnh
       responses:
         '200': { description: Ảnh đã xác minh SHA-256 }
+        default: { $ref: '#/components/responses/Error' }
+  /work-items/{workItemId}/source-quantities:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [comparison]
+      summary: Thêm khối lượng nguồn cho công tác chưa khóa
+      responses:
+        '201': { description: Khối lượng nguồn đã lưu }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/comparison:
+    get:
+      tags: [comparison]
+      summary: Tổng hợp measurement confirmed và đối chiếu từng nguồn
+      responses:
+        '200': { description: Chi tiết và tổng hợp theo nhóm/hồ sơ }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/comparison-settings:
+    patch:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [comparison]
+      summary: Cấu hình ngưỡng tuyệt đối và tỷ lệ cấp hồ sơ
+      responses:
+        '200': { description: Ngưỡng đã lưu }
+        default: { $ref: '#/components/responses/Error' }
+  /source-quantities/{id}/explanation:
+    put:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [comparison]
+      summary: Lưu giải trình chênh lệch và attachment liên kết nếu có
+      responses:
+        '200': { description: Giải trình đã lưu }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/lock:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [cases]
+      summary: Tạo snapshot hash và khóa hồ sơ với lý do
+      responses:
+        '200': { description: Hồ sơ đã khóa và snapshot }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/unlock:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [cases]
+      summary: Mở khóa hồ sơ với lý do, không xóa snapshot cũ
+      responses:
+        '200': { description: Hồ sơ đã mở khóa }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/exports/excel:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [exports]
+      summary: Xuất hồ sơ đã khóa thành workbook XLSX năm sheet kèm snapshot và SHA-256
+      responses:
+        '200': { description: Tệp XLSX }
+        default: { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/exports/geojson:
+    post:
+      security: [{ cookieAuth: [], csrfToken: [] }]
+      tags: [exports]
+      summary: Xuất hồ sơ đã khóa thành FeatureCollection GeoJSON giữ ID truy vết
+      responses:
+        '200': { description: Tệp GeoJSON }
         default: { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
@@ -758,7 +828,7 @@ components:
         reason: { type: string, maxLength: 1000 }
     Measurement:
       type: object
-      required: [id, caseId, workItemId, code, name, version, supersedesId, method, geometryKind, rawGeometry, normalizedGeometry, baseValue, calculatedQuantity, unit, calculationRuleCode, calculationVersion, calculationInputs, calculationOutput, validationStatus, warnings, status, note, confirmedAt, createdAt, updatedAt]
+      required: [id, caseId, workItemId, code, name, version, supersedesId, method, geometryKind, rawGeometry, normalizedGeometry, gpsAccuracyM, baseValue, calculatedQuantity, unit, calculationRuleCode, calculationVersion, calculationInputs, calculationOutput, validationStatus, warnings, status, note, confirmedAt, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         caseId: { type: string, format: uuid }
@@ -774,6 +844,7 @@ components:
           oneOf:
             - $ref: '#/components/schemas/GeoJsonGeometry'
             - type: 'null'
+        gpsAccuracyM: { type: [number, 'null'], minimum: 0 }
         baseValue: { type: [number, 'null'], minimum: 0 }
         calculatedQuantity: { type: [number, 'null'], minimum: 0 }
         unit: { type: string }

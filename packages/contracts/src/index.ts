@@ -18,7 +18,10 @@ export {
 } from './auth.js'
 export {
   CaseListResponseSchema,
+  CaseSnapshotSchema,
   CaseStatusSchema,
+  CaseTransitionRequestSchema,
+  CaseTransitionResponseSchema,
   CreateCaseRequestSchema,
   CreateWorkItemRequestSchema,
   InspectionCaseSchema,
@@ -27,6 +30,9 @@ export {
   WorkItemStatusSchema,
   type CaseStatus,
   type CaseListResponse,
+  type CaseSnapshot,
+  type CaseTransitionRequest,
+  type CaseTransitionResponse,
   type CreateCaseRequest,
   type CreateWorkItemRequest,
   type InspectionCase,
@@ -76,3 +82,4 @@ export {
 } from './measurements.js'
 export * from './routing.js'
 export * from './field.js'
+export * from './comparison.js'

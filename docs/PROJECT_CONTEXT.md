@@ -4,8 +4,8 @@
 
 - Phiên bản tài liệu: 1.1.
 - Ngày chốt phạm vi: 18/07/2026.
-- Giai đoạn: Mốc 4 — hiện trường và ngoại tuyến đã triển khai trên nền Mốc 2–3;
-  chưa triển khai đối chiếu hoặc xuất báo cáo của Mốc 5.
+- Giai đoạn: Mốc 5 — đối chiếu, snapshot và Excel/GeoJSON đã triển khai trên nền Mốc 1–4;
+  chưa thực hiện ổn định, backup/restore và field test của Mốc 6.
 - Người dùng chính: một cán bộ thực hiện kiểm tra hiện trường; kiến trúc vẫn chuẩn bị cho nhiều người dùng về sau.
 
 ## Quyết định đã chốt
@@ -19,6 +19,10 @@
 - Lưu riêng khối lượng nguồn và khối lượng kiểm tra.
 - Tính chính thức ở máy chủ; trình duyệt chỉ hiển thị tạm.
 - MVP xuất Excel và GeoJSON.
+- Khối lượng kiểm tra chỉ tổng hợp measurement confirmed; đối chiếu từng nguồn,
+  không chia phần trăm khi nguồn bằng 0 và không tự kết luận sai phạm.
+- Export đi qua `ExportProvider`; ExcelJS 4.4.0 được pin sau adapter, mỗi tệp có
+  snapshot/hash/audit và không chứa token hoặc object key.
 - Monorepo dùng pnpm workspace, Node.js 24 LTS và TypeScript strict.
 - Runtime local/CI được khóa bằng `mise.toml`, `.node-version`, `packageManager` và
   kiểm tra qua `pnpm doctor`; phiên bản hiện hành là Node 24.18.0, pnpm 11.9.0.
@@ -75,6 +79,7 @@
 | 19/07/2026 | ADR-013 | Cấu hình basemap và hash nguồn ranh giới                             | Đúng attribution, fallback an toàn và không ghi đè âm thầm  |
 | 19/07/2026 | ADR-014 | RoutingProvider backend và phiên bản route bất biến                  | Giữ token phía server, nguồn cự ly và lịch sử tính lại       |
 | 19/07/2026 | ADR-015 | GPS raw, upload xác minh và đồng bộ idempotent                       | Không mất bằng chứng khi lọc/retry hoặc upload dở            |
+| 19/07/2026 | ADR-016 | Đối chiếu theo nguồn, snapshot hash và export qua provider          | Tổng đúng, khóa truy vết và thay được thư viện tạo tệp        |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -150,3 +155,20 @@
   nháp sau reload, pause/resume nhiều segment và queue tự đồng bộ khi online lại.
 - Chưa field-test GPS trên thiết bị mục tiêu và chưa kiểm tra CORS presigned PUT với
   cấu hình MinIO/staging thực tế; đây là cổng vận hành còn lại trước production.
+
+## Trạng thái triển khai Mốc 5
+
+- Source quantity lưu loại nguồn, tài liệu, kỳ, đơn vị và attachment đã hoàn tất;
+  API không cho nhập sai đơn vị hoặc sửa dữ liệu khi hồ sơ khóa.
+- Comparison chỉ cộng measurement confirmed, tính chênh lệch/tỷ lệ phía server,
+  kế thừa ngưỡng hồ sơ hoặc ghi đè theo công tác và lưu giải trình riêng có audit.
+- Tổng hợp trả theo công tác, nhóm dịch vụ và toàn hồ sơ, tách theo loại nguồn/đơn vị
+  để không cộng các đại lượng hoặc nguồn khác bản chất.
+- Khóa bắt buộc lý do, tạo SHA-256 snapshot từ ID/phiên bản/kết quả/nguồn/hash bằng
+  chứng; mở khóa có lý do và giữ nguyên snapshot/audit cũ.
+- Excel có năm sheet Hồ sơ, Công tác, Phép đo, Khối lượng nguồn, Đối chiếu. GeoJSON
+  giữ measurement/work item ID và thuộc tính nghiệp vụ; mỗi export lưu hash byte,
+  snapshot, actor, thời gian, bộ lọc và audit. Export chỉ chạy khi hồ sơ đã khóa;
+  khóa cũng chặn bắt đầu/hoàn tất attachment để giữ dataset bất biến.
+- XLSX đang tạo trong bộ nhớ phù hợp giới hạn MVP; export 10.000 dòng và thay provider
+  bằng streaming/queue cần được kiểm tra trong Mốc 6 trước production.

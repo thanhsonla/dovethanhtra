@@ -20,6 +20,9 @@ erDiagram
   MEASUREMENT ||--o{ ATTACHMENT : evidences
   MEASUREMENT ||--o| TRANSPORT_ROUTE : extends
   CASE_WORK_ITEM ||--o{ SOURCE_QUANTITY : compares
+  SOURCE_QUANTITY ||--o{ COMPARISON_EXPLANATION : explains
+  INSPECTION_CASE ||--o{ CASE_SNAPSHOT : snapshots
+  INSPECTION_CASE ||--o{ EXPORT_RECORD : exports
   INSPECTION_CASE ||--o{ AUDIT_EVENT : logs
 ```
 
@@ -71,6 +74,24 @@ Không lưu token hoặc toàn bộ response nếu điều kiện nhà cung cấ
 ### `source_quantity`
 
 Số liệu đối chiếu: `case_work_item_id`, `source_kind`, `document_no`, `document_date`, `quantity`, `unit`, `period_start`, `period_end`, `note`, `attachment_id`.
+
+### `comparison_explanation`
+
+Giải trình hiện hành cho từng nguồn: `source_quantity_id`, `explanation`,
+`attachment_id`, `created_by`, `updated_by`, `deleted_at`. Partial unique index trên
+bản ghi chưa xóa bảo đảm mỗi nguồn chỉ có một giải trình hiện hành.
+
+### `case_snapshot`
+
+Ảnh chụp dữ liệu chuẩn hóa tại thời điểm khóa hoặc xuất: `inspection_case_id`,
+`snapshot_type`, `summary`, `snapshot_hash`, `created_by`. Hash tính trên biểu diễn
+JSON xác định và snapshot chỉ thêm mới.
+
+### `export_record`
+
+Vết xuất dữ liệu: `inspection_case_id`, `snapshot_id`, `format`, `file_name`,
+`file_hash`, `size_bytes`, `filters`, `created_by`, `created_at`. Không lưu URL có
+chữ ký hoặc object key trong payload trả về cho người dùng.
 
 ### `attachment`
 

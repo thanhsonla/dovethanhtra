@@ -38,6 +38,19 @@ export const fieldRoutes: FastifyPluginAsync<{
   gps: GpsService
   guards: AuthGuards
 }> = async (app, options) => {
+  app.get<{ Params: { workItemId: string } }>(
+    '/work-items/:workItemId/attachments',
+    {
+      preHandler: options.guards.requireUser,
+      schema: {
+        params: WorkItemParams,
+        response: { 200: Type.Array(AttachmentSchema) },
+        tags: ['field'],
+      },
+    },
+    (request) => options.evidence.listForWork(request.params.workItemId, ownerId(request)),
+  )
+
   app.post<{ Body: CreateGpsPointRequest; Params: { workItemId: string } }>(
     '/work-items/:workItemId/gps-points',
     {

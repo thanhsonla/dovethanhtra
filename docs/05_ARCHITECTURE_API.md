@@ -171,10 +171,14 @@ Nhận snapshot dữ liệu đã kiểm tra và tạo tệp. Export không truy 
 - `GET /cases/{caseId}/comparison`
 - `POST /cases/{caseId}/comparison/recalculate`
 
+Trong Mốc 5, comparison được tính trực tiếp từ measurement `confirmed`, không cần
+cache/recalculate. Ngưỡng công tác ghi đè ngưỡng hồ sơ; nguồn bằng 0 không tính tỷ lệ.
+
 ### Ảnh/tệp
 
 - `POST /attachments/presign`
 - `POST /attachments/complete`
+- `GET /work-items/{workItemId}/attachments` — chỉ ảnh `completed` thuộc công tác.
 - `DELETE /attachments/{attachmentId}` — xóa mềm.
 
 ### Hiện trường và đồng bộ Mốc 4
@@ -196,6 +200,17 @@ Nhận snapshot dữ liệu đã kiểm tra và tạo tệp. Export không truy 
 - `POST /cases/{caseId}/exports/geojson`
 - `GET /exports/{exportId}`
 - `GET /cases/{caseId}/audit-events`
+
+### Snapshot và export Mốc 5
+
+- `POST /cases/{caseId}/lock`, `POST /cases/{caseId}/unlock` — bắt buộc lý do.
+- Khóa tạo snapshot hash trước khi đổi trạng thái; mutation nghiệp vụ bị từ chối khi khóa.
+- `POST /cases/{caseId}/exports/excel` — workbook năm sheet.
+- `POST /cases/{caseId}/exports/geojson` — FeatureCollection dùng geometry chính thức.
+- Chỉ hồ sơ `locked` được xuất để dataset không đổi giữa bước dựng tệp và snapshot.
+- Mỗi tệp có `X-File-Sha256`, export record, snapshot ID và audit; không xuất secret/object key.
+- UI chỉ cho liên kết nguồn/giải trình với attachment `completed` trả về từ công tác;
+  API kiểm tra lại quan hệ và trạng thái trong transaction.
 
 ## 7. Luồng lưu phép đo
 

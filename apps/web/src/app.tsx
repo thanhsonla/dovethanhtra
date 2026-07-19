@@ -9,7 +9,9 @@ import type {
 import { lazy, Suspense, type FormEvent, useEffect, useState } from 'react'
 
 import { api, ApiClientError } from './api.js'
+import { CaseDetail } from './case-detail.js'
 import { CatalogPanel } from './catalog-panel.js'
+import { ComparisonPanel } from './comparison-panel.js'
 
 const MapWorkspace = lazy(() =>
   import('./map/map-workspace.js').then((module) => ({ default: module.MapWorkspace })),
@@ -133,7 +135,7 @@ export function App() {
     <div className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Mốc 4 · Hiện trường và ngoại tuyến</p>
+          <p className="eyebrow">Mốc 5 · Đối chiếu và xuất</p>
           <h1>Kiểm tra khối lượng hiện trường</h1>
         </div>
         <div className="account">
@@ -211,6 +213,20 @@ export function App() {
             onError={setError}
             onOpenMap={() => setMapOpen(true)}
           />
+          {selected && (
+            <ComparisonPanel
+              inspectionCase={selected}
+              workItems={workItems}
+              onError={setError}
+              onCaseChanged={(changed) => {
+                setSelected(changed)
+                setData((current) => ({
+                  ...current,
+                  cases: current.cases.map((item) => (item.id === changed.id ? changed : item)),
+                }))
+              }}
+            />
+          )}
           <CatalogPanel
             groups={data.groups}
             onCreated={(created) =>
@@ -318,89 +334,5 @@ function CreateCaseForm(props: {
         Lưu hồ sơ
       </button>
     </form>
-  )
-}
-
-function CaseDetail(props: {
-  item: InspectionCase | null
-  onCreated(item: WorkItem): void
-  onError(value: string): void
-  onOpenMap(): void
-  workItems: WorkItem[]
-  workTypes: WorkType[]
-}) {
-  if (!props.item)
-    return (
-      <section className="panel detail-panel">
-        <p className="empty">Chọn một hồ sơ để xem chi tiết.</p>
-      </section>
-    )
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const form = event.currentTarget
-    const values = new FormData(form)
-    try {
-      const created = await api.createWorkItem(props.item!.id, {
-        name: field(values, 'name'),
-        workTypeId: field(values, 'workTypeId'),
-      })
-      form.reset()
-      props.onCreated(created)
-    } catch (reason) {
-      props.onError(message(reason))
-    }
-  }
-  return (
-    <section className="panel detail-panel">
-      <p className="section-kicker">Chi tiết hồ sơ</p>
-      <h2>{props.item.name}</h2>
-      <dl>
-        <div>
-          <dt>Kỳ kiểm tra</dt>
-          <dd>
-            {props.item.periodStart} – {props.item.periodEnd}
-          </dd>
-        </div>
-        <div>
-          <dt>Trạng thái</dt>
-          <dd>{statusLabel[props.item.status]}</dd>
-        </div>
-      </dl>
-      <h3>Công tác</h3>
-      <ul className="work-list">
-        {props.workItems.map((item) => (
-          <li key={item.id}>
-            <span>{item.name}</span>
-            <small>
-              {item.workTypeCode} · {item.unit}
-            </small>
-          </li>
-        ))}
-      </ul>
-      {props.workItems.length > 0 && (
-        <button className="button map-open-button" onClick={() => props.onOpenMap()}>
-          Mở bản đồ hiện trường
-        </button>
-      )}
-      <form className="inline-form" onSubmit={(event) => void submit(event)}>
-        <select name="workTypeId" aria-label="Loại công tác" required>
-          <option value="">Chọn loại công tác</option>
-          {props.workTypes.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-        <input
-          name="name"
-          aria-label="Tên công tác"
-          placeholder="Tên công tác trong hồ sơ"
-          required
-        />
-        <button className="button" type="submit">
-          Thêm
-        </button>
-      </form>
-    </section>
   )
 }

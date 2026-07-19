@@ -3,6 +3,7 @@ import type { CreateCaseRequest, CreateWorkItemRequest, UpdateCaseRequest } from
 import { AppError } from '../../platform/app-error.js'
 import type { AppDatabase } from '../../platform/database.js'
 import type { AuditRepository } from '../audit/audit-repository.js'
+import type { SnapshotRepository } from '../exports/snapshot-repository.js'
 import type { CaseListFilters, CaseRepository } from './case-repository.js'
 
 function translateConstraint(error: unknown): never {
@@ -22,6 +23,7 @@ export class CaseService {
     private readonly database: AppDatabase,
     private readonly repository: CaseRepository,
     private readonly audit: AuditRepository,
+    private readonly snapshots: SnapshotRepository,
   ) {}
 
   list(ownerId: string, filters: CaseListFilters) {
@@ -141,6 +143,62 @@ export class CaseService {
         inspectionCaseId: id,
         traceId,
       })
+    })
+  }
+
+  async lock(id: string, reason: string, ownerId: string, traceId: string) {
+    return this.database.transaction().execute(async (transaction) => {
+      if (!(await this.repository.lockForUpdate(transaction, id, ownerId)))
+        throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+      const before = await this.repository.get(transaction, id, ownerId)
+      if (!before) throw new AppError(500, 'CASE_LOCK_FAILED', 'Không thể đọc hồ sơ để khóa.')
+      if (before.status === 'locked')
+        throw new AppError(409, 'CASE_ALREADY_LOCKED', 'Hồ sơ đã khóa.')
+      const summary = await this.snapshots.summary(transaction, id, ownerId)
+      if (!summary) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+      const snapshot = await this.snapshots.create(transaction, id, 'lock', summary, ownerId)
+      if (!(await this.repository.lock(transaction, id, ownerId, reason)))
+        throw new AppError(409, 'CASE_LOCK_CONFLICT', 'Không thể khóa hồ sơ do trạng thái đã đổi.')
+      const inspectionCase = await this.repository.get(transaction, id, ownerId)
+      if (!inspectionCase)
+        throw new AppError(500, 'CASE_LOCK_FAILED', 'Không thể đọc hồ sơ đã khóa.')
+      await this.audit.append(transaction, {
+        action: 'locked',
+        actorId: ownerId,
+        beforeData: before,
+        afterData: { snapshotId: snapshot.id, snapshotHash: snapshot.snapshotHash },
+        entityId: id,
+        entityType: 'inspection_case',
+        inspectionCaseId: id,
+        reason,
+        traceId,
+      })
+      return { inspectionCase, snapshot }
+    })
+  }
+
+  async unlock(id: string, reason: string, ownerId: string, traceId: string) {
+    return this.database.transaction().execute(async (transaction) => {
+      const before = await this.repository.get(transaction, id, ownerId)
+      if (!before) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+      if (before.status !== 'locked') throw new AppError(409, 'CASE_NOT_LOCKED', 'Hồ sơ chưa khóa.')
+      if (!(await this.repository.unlock(transaction, id, ownerId)))
+        throw new AppError(409, 'CASE_UNLOCK_CONFLICT', 'Không thể mở khóa hồ sơ.')
+      const inspectionCase = await this.repository.get(transaction, id, ownerId)
+      if (!inspectionCase)
+        throw new AppError(500, 'CASE_UNLOCK_FAILED', 'Không thể đọc hồ sơ đã mở khóa.')
+      await this.audit.append(transaction, {
+        action: 'unlocked',
+        actorId: ownerId,
+        beforeData: before,
+        afterData: { status: inspectionCase.status },
+        entityId: id,
+        entityType: 'inspection_case',
+        inspectionCaseId: id,
+        reason,
+        traceId,
+      })
+      return { inspectionCase, snapshot: null }
     })
   }
 

@@ -185,6 +185,54 @@ h3 {
   background: #e5e2ee;
   color: #5a4778;
 }
+
+.comparison-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.comparison-form,
+.threshold-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.comparison-table-wrap {
+  overflow-x: auto;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.comparison-aggregates {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.84rem;
+}
+
+.explanation-row {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  .comparison-form,
+  .threshold-form {
+    grid-template-columns: 1fr;
+  }
+}
 .create-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

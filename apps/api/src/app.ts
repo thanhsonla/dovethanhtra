@@ -14,6 +14,14 @@ import { CaseService } from './modules/cases/case-service.js'
 import { CatalogRepository } from './modules/catalog/catalog-repository.js'
 import { catalogRoutes } from './modules/catalog/catalog-routes.js'
 import { CatalogService } from './modules/catalog/catalog-service.js'
+import { ComparisonRepository } from './modules/comparison/comparison-repository.js'
+import { comparisonRoutes } from './modules/comparison/comparison-routes.js'
+import { ComparisonService } from './modules/comparison/comparison-service.js'
+import { ExportRepository } from './modules/exports/export-repository.js'
+import { exportRoutes } from './modules/exports/export-routes.js'
+import { ExportService } from './modules/exports/export-service.js'
+import { LocalExportProvider } from './modules/exports/local-export-provider.js'
+import { SnapshotRepository } from './modules/exports/snapshot-repository.js'
 import { healthRoutes } from './modules/health/health-routes.js'
 import { EvidenceService } from './modules/field/evidence-service.js'
 import { fieldRoutes } from './modules/field/field-routes.js'
@@ -102,7 +110,17 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   const guards = createAuthGuards(identity)
   const audit = new AuditRepository(database)
   const catalogRepository = new CatalogRepository(database)
-  const cases = new CaseService(database, new CaseRepository(database), audit)
+  const snapshots = new SnapshotRepository()
+  const cases = new CaseService(database, new CaseRepository(database), audit, snapshots)
+  const comparison = new ComparisonService(database, new ComparisonRepository(database), audit)
+  const exports = new ExportService(
+    database,
+    new ExportRepository(database),
+    snapshots,
+    comparison,
+    audit,
+    new LocalExportProvider(),
+  )
   const measurementRepository = new MeasurementRepository(database)
   const measurements = new MeasurementService(database, measurementRepository, audit)
   const routing = new RoutingService(
@@ -144,6 +162,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   })
   await app.register(routingRoutes, { guards, prefix: '/api/v1', service: routing })
   await app.register(fieldRoutes, { evidence, gps, guards, prefix: '/api/v1' })
+  await app.register(comparisonRoutes, { guards, prefix: '/api/v1', service: comparison })
+  await app.register(exportRoutes, { guards, prefix: '/api/v1', service: exports })
   await app.register(auditRoutes, {
     guards,
     prefix: '/api/v1/cases/:caseId/audit-events',

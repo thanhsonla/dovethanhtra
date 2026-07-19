@@ -87,10 +87,11 @@ describe('Milestone 4 field workflow', () => {
         periodEnd: '2026-07-31',
       },
     })
+    const caseId = createdCase.json<{ id: string }>().id
     const workResponse = await app.inject({
       headers,
       method: 'POST',
-      url: `/api/v1/cases/${createdCase.json<{ id: string }>().id}/work-items`,
+      url: `/api/v1/cases/${caseId}/work-items`,
       payload: {
         name: 'GPS field test',
         workTypeId: types.find((item) => item.code === 'LIGHTING_CABLE_LENGTH')!.id,
@@ -100,7 +101,7 @@ describe('Milestone 4 field workflow', () => {
     const pointWorkResponse = await app.inject({
       headers,
       method: 'POST',
-      url: `/api/v1/cases/${createdCase.json<{ id: string }>().id}/work-items`,
+      url: `/api/v1/cases/${caseId}/work-items`,
       payload: {
         name: 'GPS point field test',
         workTypeId: types.find((item) => item.measurementKind === 'point')!.id,
@@ -231,6 +232,15 @@ describe('Milestone 4 field workflow', () => {
     })
     expect(complete.statusCode).toBe(200)
     expect(complete.json<Attachment>()).toMatchObject({ uploadStatus: 'completed', sha256 })
+    const completedAttachments = await app.inject({
+      headers,
+      method: 'GET',
+      url: `/api/v1/work-items/${gps.measurement.workItemId}/attachments`,
+    })
+    expect(completedAttachments.statusCode).toBe(200)
+    expect(completedAttachments.json<Attachment[]>()).toEqual([
+      expect.objectContaining({ id: pending.attachment.id, uploadStatus: 'completed' }),
+    ])
 
     const tooLarge = await app.inject({
       headers,
@@ -303,5 +313,21 @@ describe('Milestone 4 field workflow', () => {
     storage.exists = true
     expect(incomplete.statusCode).toBe(409)
     expect(incomplete.json()).toMatchObject({ code: 'ATTACHMENT_UPLOAD_INCOMPLETE' })
+
+    const lock = await app.inject({
+      headers,
+      method: 'POST',
+      url: `/api/v1/cases/${caseId}/lock`,
+      payload: { reason: 'Chốt bằng chứng hiện trường' },
+    })
+    expect(lock.statusCode).toBe(200)
+    const completeAfterLock = await app.inject({
+      headers,
+      method: 'POST',
+      url: '/api/v1/attachments/complete',
+      payload: { attachmentId: incompletePresign.json<PresignAttachmentResponse>().attachment.id },
+    })
+    expect(completeAfterLock.statusCode).toBe(423)
+    expect(completeAfterLock.json()).toMatchObject({ code: 'CASE_LOCKED' })
   })
 })

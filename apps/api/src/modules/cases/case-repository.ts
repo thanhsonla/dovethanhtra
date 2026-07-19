@@ -87,6 +87,13 @@ export class CaseRepository {
     return result.rows[0] ? mapCase(result.rows[0]) : null
   }
 
+  async lockForUpdate(executor: QueryExecutor, id: string, ownerId: string) {
+    const result = await sql<{ id: string }>`SELECT id FROM inspection_case
+      WHERE id=${id}::uuid AND owner_id=${ownerId}::uuid AND deleted_at IS NULL
+      FOR UPDATE`.execute(executor)
+    return Boolean(result.rows[0])
+  }
+
   async getMapContext(id: string, ownerId: string): Promise<CaseMapContext | null> {
     const result = await sql<CaseMapContext>`
       SELECT c.id AS "caseId", ST_AsGeoJSON(c.boundary_snapshot)::json AS boundary
@@ -151,6 +158,22 @@ export class CaseRepository {
       WHERE id = ${id}::uuid AND owner_id = ${ownerId}::uuid
         AND deleted_at IS NULL AND status <> 'locked'
     `.execute(executor)
+    return Number(result.numAffectedRows ?? 0) === 1
+  }
+
+  async lock(executor: QueryExecutor, id: string, ownerId: string, reason: string) {
+    const result = await sql`UPDATE inspection_case SET status='locked', locked_at=now(),
+      locked_by=${ownerId}::uuid, lock_reason=${reason}, version=version+1
+      WHERE id=${id}::uuid AND owner_id=${ownerId}::uuid AND status <> 'locked'
+        AND deleted_at IS NULL`.execute(executor)
+    return Number(result.numAffectedRows ?? 0) === 1
+  }
+
+  async unlock(executor: QueryExecutor, id: string, ownerId: string) {
+    const result = await sql`UPDATE inspection_case SET status='in_progress', locked_at=NULL,
+      locked_by=NULL, lock_reason=NULL, version=version+1
+      WHERE id=${id}::uuid AND owner_id=${ownerId}::uuid AND status='locked'
+        AND deleted_at IS NULL`.execute(executor)
     return Number(result.numAffectedRows ?? 0) === 1
   }
 

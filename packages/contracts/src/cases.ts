@@ -103,7 +103,33 @@ export const CreateWorkItemRequestSchema = Type.Object(
   { additionalProperties: false, $id: 'CreateWorkItemRequest' },
 )
 
+export const CaseTransitionRequestSchema = Type.Object(
+  { reason: Type.String({ minLength: 3, maxLength: 1000 }) },
+  { additionalProperties: false, $id: 'CaseTransitionRequest' },
+)
+
+export const CaseSnapshotSchema = Type.Object(
+  {
+    id: UuidSchema,
+    caseId: UuidSchema,
+    snapshotType: Type.Union([Type.Literal('lock'), Type.Literal('export')]),
+    snapshotHash: Type.String({ minLength: 64, maxLength: 64 }),
+    createdAt: DateTimeSchema,
+  },
+  { additionalProperties: false, $id: 'CaseSnapshot' },
+)
+export const CaseTransitionResponseSchema = Type.Object(
+  {
+    inspectionCase: InspectionCaseSchema,
+    snapshot: Type.Union([CaseSnapshotSchema, Type.Null()]),
+  },
+  { additionalProperties: false, $id: 'CaseTransitionResponse' },
+)
+
 export type CaseStatus = Static<typeof CaseStatusSchema>
+export type CaseSnapshot = Static<typeof CaseSnapshotSchema>
+export type CaseTransitionRequest = Static<typeof CaseTransitionRequestSchema>
+export type CaseTransitionResponse = Static<typeof CaseTransitionResponseSchema>
 export type CaseListResponse = Static<typeof CaseListResponseSchema>
 export type CreateCaseRequest = Static<typeof CreateCaseRequestSchema>
 export type CreateWorkItemRequest = Static<typeof CreateWorkItemRequestSchema>

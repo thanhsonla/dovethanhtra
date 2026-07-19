@@ -1,11 +1,14 @@
 import type {
   AdminArea,
+  CaseComparison,
   CaseMapContext,
   CaseListResponse,
   CreateCaseRequest,
+  CreateSourceQuantityRequest,
   CreateWorkTypeRequest,
   CreateWorkItemRequest,
   InspectionCase,
+  ComparisonThreshold,
   Measurement,
   MeasurementListResponse,
   CreateMeasurementRequest,
@@ -13,6 +16,7 @@ import type {
   SupersedeMeasurementRequest,
   ServiceGroup,
   SessionResponse,
+  SourceQuantity,
   WorkItem,
   WorkType,
   RouteCalculation,
@@ -62,6 +66,24 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T
 }
 
+async function requestFile(path: string) {
+  const response = await fetch(`/api/v1${path}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'x-csrf-token': csrfToken() },
+  })
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string } | null
+    throw new ApiClientError(payload?.message ?? 'Không thể tạo tệp xuất.', response.status)
+  }
+  const disposition = response.headers.get('content-disposition') ?? ''
+  return {
+    blob: await response.blob(),
+    fileName: disposition.match(/filename="([^"]+)"/)?.[1] ?? 'export.bin',
+    sha256: response.headers.get('x-file-sha256'),
+  }
+}
+
 export const api = {
   createCase: (input: CreateCaseRequest) =>
     request<InspectionCase>('/cases', { method: 'POST', body: JSON.stringify(input) }),
@@ -75,6 +97,38 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+  createSourceQuantity: (workItemId: string, input: CreateSourceQuantityRequest) =>
+    request<SourceQuantity>(`/work-items/${workItemId}/source-quantities`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  getComparison: (caseId: string) => request<CaseComparison>(`/cases/${caseId}/comparison`),
+  setCaseComparisonThreshold: (caseId: string, input: ComparisonThreshold) =>
+    request<ComparisonThreshold>(`/cases/${caseId}/comparison-settings`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+  saveComparisonExplanation: (
+    sourceId: string,
+    explanation: string,
+    attachmentId: string | null = null,
+  ) =>
+    request(`/source-quantities/${sourceId}/explanation`, {
+      method: 'PUT',
+      body: JSON.stringify({ explanation, attachmentId }),
+    }),
+  lockCase: (caseId: string, reason: string) =>
+    request<{ inspectionCase: InspectionCase }>(`/cases/${caseId}/lock`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  unlockCase: (caseId: string, reason: string) =>
+    request<{ inspectionCase: InspectionCase }>(`/cases/${caseId}/unlock`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  exportCase: (caseId: string, format: 'excel' | 'geojson') =>
+    requestFile(`/cases/${caseId}/exports/${format}`),
   createMeasurement: (workItemId: string, input: CreateMeasurementRequest) =>
     request<Measurement>(`/work-items/${workItemId}/measurements`, {
       method: 'POST',
@@ -92,6 +146,8 @@ export const api = {
   listCases: () => request<CaseListResponse>('/cases'),
   listMeasurements: (workItemId: string) =>
     request<MeasurementListResponse>(`/work-items/${workItemId}/measurements`),
+  listAttachments: (workItemId: string) =>
+    request<Attachment[]>(`/work-items/${workItemId}/attachments`),
   listServiceGroups: () => request<ServiceGroup[]>('/catalog/service-groups'),
   listWorkItems: (caseId: string) => request<WorkItem[]>(`/cases/${caseId}/work-items`),
   listWorkTypes: () => request<WorkType[]>('/catalog/work-types'),

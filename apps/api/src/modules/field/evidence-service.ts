@@ -52,6 +52,18 @@ export class EvidenceService {
     }
   }
 
+  async listForWork(workItemId: string, ownerId: string): Promise<Attachment[]> {
+    const result = await sql<AttachmentRow>`SELECT ${columns} FROM attachment a
+      LEFT JOIN measurement m ON m.id=a.measurement_id
+      JOIN case_work_item w ON w.id=COALESCE(a.case_work_item_id,m.case_work_item_id)
+      JOIN inspection_case c ON c.id=w.inspection_case_id
+      WHERE w.id=${workItemId}::uuid AND c.owner_id=${ownerId}::uuid
+        AND a.upload_status='completed' AND a.deleted_at IS NULL
+        AND w.deleted_at IS NULL AND c.deleted_at IS NULL
+      ORDER BY a.created_at DESC LIMIT 200`.execute(this.database)
+    return result.rows.map(map)
+  }
+
   async presign(input: PresignAttachmentRequest, ownerId: string, traceId: string) {
     this.requireStorage()
     if (Boolean(input.measurementId) === Boolean(input.workItemId))
@@ -129,14 +141,16 @@ export class EvidenceService {
       const completed = await this.get(transaction, attachmentId, ownerId)
       if (!completed)
         throw new AppError(500, 'ATTACHMENT_COMPLETE_FAILED', 'Không thể hoàn tất ảnh.')
-      const caseId = await this.caseForAttachment(transaction, attachmentId)
+      const caseState = await this.caseForAttachment(transaction, attachmentId, true)
+      if (caseState.status === 'locked')
+        throw new AppError(423, 'CASE_LOCKED', 'Hồ sơ đã khóa và không thể hoàn tất ảnh.')
       await this.audit.append(transaction, {
         action: 'upload_completed',
         actorId: ownerId,
         afterData: { attachmentId, sha256, sizeBytes: stat.size },
         entityId: attachmentId,
         entityType: 'attachment',
-        inspectionCaseId: caseId,
+        inspectionCaseId: caseState.id,
         traceId,
       })
       return map(completed)
@@ -157,24 +171,27 @@ export class EvidenceService {
     const result = input.measurementId
       ? await sql<{
           id: string
-        }>`SELECT c.id FROM measurement m JOIN case_work_item w ON w.id=m.case_work_item_id
+          status: string
+        }>`SELECT c.id,c.status FROM measurement m JOIN case_work_item w ON w.id=m.case_work_item_id
           JOIN inspection_case c ON c.id=w.inspection_case_id WHERE m.id=${input.measurementId}::uuid
-          AND c.owner_id=${ownerId}::uuid AND m.deleted_at IS NULL AND c.deleted_at IS NULL`.execute(
-          executor,
-        )
+          AND c.owner_id=${ownerId}::uuid AND m.deleted_at IS NULL AND c.deleted_at IS NULL
+          FOR UPDATE OF c`.execute(executor)
       : await sql<{
           id: string
-        }>`SELECT c.id FROM case_work_item w JOIN inspection_case c ON c.id=w.inspection_case_id
+          status: string
+        }>`SELECT c.id,c.status FROM case_work_item w JOIN inspection_case c ON c.id=w.inspection_case_id
           WHERE w.id=${input.workItemId ?? null}::uuid AND c.owner_id=${ownerId}::uuid
-          AND w.deleted_at IS NULL AND c.deleted_at IS NULL`.execute(executor)
-    const id = result.rows[0]?.id
-    if (!id)
+          AND w.deleted_at IS NULL AND c.deleted_at IS NULL FOR UPDATE OF c`.execute(executor)
+    const parent = result.rows[0]
+    if (!parent)
       throw new AppError(
         404,
         'ATTACHMENT_PARENT_NOT_FOUND',
         'Không tìm thấy đối tượng liên kết ảnh.',
       )
-    return id
+    if (parent.status === 'locked')
+      throw new AppError(423, 'CASE_LOCKED', 'Hồ sơ đã khóa và không thể thêm ảnh.')
+    return parent.id
   }
 
   private async get(
@@ -192,12 +209,14 @@ export class EvidenceService {
     return result.rows[0] ?? null
   }
 
-  private async caseForAttachment(executor: QueryExecutor, id: string): Promise<string> {
+  private async caseForAttachment(executor: QueryExecutor, id: string, lock = false) {
     const result = await sql<{
       id: string
-    }>`SELECT c.id FROM attachment a LEFT JOIN measurement m ON m.id=a.measurement_id
+      status: string
+    }>`SELECT c.id,c.status FROM attachment a LEFT JOIN measurement m ON m.id=a.measurement_id
       JOIN case_work_item w ON w.id=COALESCE(a.case_work_item_id,m.case_work_item_id)
-      JOIN inspection_case c ON c.id=w.inspection_case_id WHERE a.id=${id}::uuid`.execute(executor)
-    return result.rows[0]!.id
+      JOIN inspection_case c ON c.id=w.inspection_case_id WHERE a.id=${id}::uuid
+      ${lock ? sql`FOR UPDATE OF c` : sql``}`.execute(executor)
+    return result.rows[0]!
   }
 }

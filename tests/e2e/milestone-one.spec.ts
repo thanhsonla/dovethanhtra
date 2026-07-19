@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+test.setTimeout(60_000)
+
 test('creates a case and adds a catalog work item', async ({ page }, testInfo) => {
   await page.context().grantPermissions(['geolocation'])
   await page.context().setGeolocation({ latitude: 20.8, longitude: 104.65 })
@@ -53,15 +55,17 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByLabel('Tên công tác').fill('Công tác E2E')
   await page.getByRole('button', { name: 'Thêm', exact: true }).click()
 
-  await expect(page.getByText('Công tác E2E', { exact: true })).toBeVisible()
+  await expect(page.locator('.work-list').getByText('Công tác E2E', { exact: true })).toBeVisible()
   await page.getByLabel('Loại công tác').selectOption({ label: 'Vận chuyển rác đến khu xử lý' })
   await page.getByLabel('Tên công tác').fill('Route vận chuyển E2E')
   await page.getByRole('button', { name: 'Thêm', exact: true }).click()
-  await expect(page.getByText('Route vận chuyển E2E', { exact: true })).toBeVisible()
+  await expect(
+    page.locator('.work-list').getByText('Route vận chuyển E2E', { exact: true }),
+  ).toBeVisible()
   await page.getByLabel('Loại công tác').selectOption({ label: 'Kiểm tra cột chiếu sáng' })
   await page.getByLabel('Tên công tác').fill('GPS point E2E')
   await page.getByRole('button', { name: 'Thêm', exact: true }).click()
-  await expect(page.getByText('GPS point E2E', { exact: true })).toBeVisible()
+  await expect(page.locator('.work-list').getByText('GPS point E2E', { exact: true })).toBeVisible()
   expect(mapModuleResponses).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
@@ -169,4 +173,37 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
     await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
   }
+
+  await page.getByRole('button', { name: '← Hồ sơ' }).click()
+  await expect(page.getByRole('heading', { name: 'Khối lượng nguồn' })).toBeVisible()
+  await page
+    .locator('.comparison-form select')
+    .first()
+    .selectOption({ label: 'Route vận chuyển E2E' })
+  await page.getByLabel('Khối lượng nguồn', { exact: true }).fill('20')
+  await page.getByLabel('Số tài liệu').fill('NT-E2E-M5')
+  await page.getByRole('button', { name: 'Lưu nguồn' }).click()
+  await expect(page.getByText('Nghiệm thu: 20')).toBeVisible()
+  await page.getByLabel('Ngưỡng tỷ lệ (%)').fill('1')
+  await page.getByRole('button', { name: 'Lưu ngưỡng hồ sơ' }).click()
+  const explanation = page.getByLabel(/Giải trình · Route vận chuyển E2E/)
+  await explanation.fill('Giải trình chênh lệch E2E Mốc 5')
+  await page.getByRole('button', { name: 'Lưu giải trình' }).click()
+
+  await page.getByLabel('Lý do khóa').fill('Chốt hồ sơ E2E Mốc 5')
+  await page.getByRole('button', { name: 'Khóa hồ sơ và tạo snapshot' }).click()
+  await expect(page.locator('.detail-panel').getByText('Đã khóa', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Mở khóa hồ sơ' })).toBeVisible()
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Xuất Excel' }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toMatch(/\.xlsx$/)
+  await expect(page.getByText(/Đã xuất .*\.xlsx/)).toBeVisible()
+
+  await page.getByLabel('Lý do mở khóa').fill('Mở khóa để tiếp tục kiểm thử')
+  await page.getByRole('button', { name: 'Mở khóa hồ sơ' }).click()
+  await expect(
+    page.locator('.detail-panel').getByText('Đang thực hiện', { exact: true }),
+  ).toBeVisible()
 })

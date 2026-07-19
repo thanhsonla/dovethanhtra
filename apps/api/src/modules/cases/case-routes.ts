@@ -1,12 +1,15 @@
 import {
   CaseMapContextSchema,
   CaseListResponseSchema,
+  CaseTransitionRequestSchema,
+  CaseTransitionResponseSchema,
   CaseStatusSchema,
   CreateCaseRequestSchema,
   CreateWorkItemRequestSchema,
   InspectionCaseSchema,
   WorkItemSchema,
   type CaseStatus,
+  type CaseTransitionRequest,
   type CreateCaseRequest,
   type CreateWorkItemRequest,
   type UpdateCaseRequest,
@@ -153,6 +156,28 @@ export const caseRoutes: FastifyPluginAsync<CaseRouteOptions> = async (app, opti
       return reply.code(204).send()
     },
   )
+
+  for (const action of ['lock', 'unlock'] as const) {
+    app.post<{ Body: CaseTransitionRequest; Params: { caseId: string } }>(
+      `/:caseId/${action}`,
+      {
+        preHandler: options.guards.requireMutation,
+        schema: {
+          body: CaseTransitionRequestSchema,
+          params: CaseParams,
+          response: { 200: CaseTransitionResponseSchema },
+          tags: ['cases'],
+        },
+      },
+      (request) =>
+        options.service[action](
+          request.params.caseId,
+          request.body.reason,
+          ownerId(request),
+          request.id,
+        ),
+    )
+  }
 
   app.get<{ Params: { caseId: string } }>(
     '/:caseId/work-items',
