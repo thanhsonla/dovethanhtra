@@ -82,7 +82,7 @@ cài dependency hoặc chạy kiểm thử.
 
 `pnpm dev` dùng cấu hình giả dành riêng cho local trong `.env.example`, khởi động
 PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 5 (Mốc 6 không đổi schema) và seed dữ liệu local, sau đó mở API tại cổng
-`3000` và web tại cổng `5173`. Đăng nhập local bằng tài khoản giả trong
+`3000` và web tại cổng `5180`. Đăng nhập local bằng tài khoản giả trong
 `.env.example`. Không dùng các giá trị này cho staging hoặc production.
 
 Mốc 2 bổ sung không gian MapLibre ba vùng, hai nền kỹ thuật local qua
