@@ -53,6 +53,60 @@ export class CaseService {
             'Địa bàn không tồn tại hoặc không có hiệu lực trong kỳ hồ sơ.',
           )
         }
+        let copiedStructure: {
+          copiedWorkItemIds: string[]
+          sourceCaseId: string
+          sourceWorkItemIds: string[]
+        } | null = null
+        if (input.copyStructure) {
+          const source = await this.repository.get(
+            transaction,
+            input.copyStructure.sourceCaseId,
+            ownerId,
+          )
+          if (!source) {
+            throw new AppError(404, 'SOURCE_CASE_NOT_FOUND', 'Không tìm thấy hồ sơ mẫu.')
+          }
+          const availableWorkItemIds = await this.repository.listWorkItemIds(
+            transaction,
+            source.id,
+            ownerId,
+          )
+          const sourceWorkItemIds = input.copyStructure.workItemIds ?? availableWorkItemIds
+          if (sourceWorkItemIds.length > 200) {
+            throw new AppError(
+              422,
+              'SOURCE_WORK_ITEM_LIMIT_EXCEEDED',
+              'Mỗi lần chỉ được sao chép tối đa 200 công tác.',
+            )
+          }
+          if (sourceWorkItemIds.some((id) => !availableWorkItemIds.includes(id))) {
+            throw new AppError(
+              422,
+              'SOURCE_WORK_ITEMS_INVALID',
+              'Một hoặc nhiều công tác mẫu không thuộc hồ sơ nguồn.',
+            )
+          }
+          const copied = await this.repository.copyWorkItems(
+            transaction,
+            id,
+            source.id,
+            ownerId,
+            sourceWorkItemIds,
+          )
+          if (copied.length !== sourceWorkItemIds.length) {
+            throw new AppError(
+              422,
+              'SOURCE_WORK_ITEMS_INVALID',
+              'Một hoặc nhiều công tác mẫu không thuộc hồ sơ nguồn.',
+            )
+          }
+          copiedStructure = {
+            copiedWorkItemIds: copied,
+            sourceCaseId: source.id,
+            sourceWorkItemIds,
+          }
+        }
         const created = await this.repository.get(transaction, id, ownerId)
         if (!created) throw new AppError(500, 'CASE_CREATE_FAILED', 'Không thể đọc hồ sơ vừa tạo.')
         await this.audit.append(transaction, {
@@ -64,6 +118,20 @@ export class CaseService {
           inspectionCaseId: created.id,
           traceId,
         })
+        if (copiedStructure) {
+          await this.audit.append(transaction, {
+            action: 'structure_copied',
+            actorId: ownerId,
+            afterData: {
+              ...copiedStructure,
+              copiedWorkItemCount: copiedStructure.copiedWorkItemIds.length,
+            },
+            entityId: id,
+            entityType: 'inspection_case',
+            inspectionCaseId: id,
+            traceId,
+          })
+        }
         return created
       })
     } catch (error) {

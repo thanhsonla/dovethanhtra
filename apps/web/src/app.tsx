@@ -12,6 +12,7 @@ import { api, ApiClientError } from './api.js'
 import { CaseDetail } from './case-detail.js'
 import { CatalogPanel } from './catalog-panel.js'
 import { ComparisonPanel } from './comparison-panel.js'
+import { CreateCaseForm } from './create-case-form.js'
 
 const MapWorkspace = lazy(() =>
   import('./map/map-workspace.js').then((module) => ({ default: module.MapWorkspace })),
@@ -170,6 +171,7 @@ export function App() {
           {showCreate && (
             <CreateCaseForm
               areas={data.adminAreas}
+              cases={data.cases}
               onCreated={async (created) => {
                 setData((current) => ({ ...current, cases: [created, ...current.cases] }))
                 setShowCreate(false)
@@ -275,64 +277,5 @@ function Login(props: { error: string; onLogin(email: string, password: string):
         </button>
       </form>
     </main>
-  )
-}
-
-function CreateCaseForm(props: {
-  areas: AdminArea[]
-  onCreated(item: InspectionCase): Promise<void>
-  onError(value: string): void
-}) {
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const form = event.currentTarget
-    const values = new FormData(form)
-    try {
-      const created = await api.createCase({
-        adminAreaId: field(values, 'adminAreaId'),
-        caseCode: field(values, 'caseCode'),
-        name: field(values, 'name'),
-        periodEnd: field(values, 'periodEnd'),
-        periodStart: field(values, 'periodStart'),
-      })
-      form.reset()
-      await props.onCreated(created)
-    } catch (reason) {
-      props.onError(message(reason))
-    }
-  }
-  return (
-    <form className="create-form" onSubmit={(event) => void submit(event)}>
-      <label>
-        Mã hồ sơ
-        <input name="caseCode" required pattern="[A-Za-z0-9._/-]+" />
-      </label>
-      <label className="wide">
-        Tên hồ sơ
-        <input name="name" required />
-      </label>
-      <label>
-        Địa bàn
-        <select name="adminAreaId" required>
-          <option value="">Chọn địa bàn</option>
-          {props.areas.map((area) => (
-            <option key={area.id} value={area.id}>
-              {area.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Từ ngày
-        <input name="periodStart" type="date" required />
-      </label>
-      <label>
-        Đến ngày
-        <input name="periodEnd" type="date" required />
-      </label>
-      <button className="button" type="submit">
-        Lưu hồ sơ
-      </button>
-    </form>
   )
 }

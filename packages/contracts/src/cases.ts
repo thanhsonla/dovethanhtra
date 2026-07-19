@@ -39,6 +39,17 @@ export const CreateCaseRequestSchema = Type.Object(
     periodEnd: DateSchema,
     inspectedEntity: Type.Optional(Type.Union([Type.String({ maxLength: 500 }), Type.Null()])),
     description: Type.Optional(Type.Union([Type.String({ maxLength: 5000 }), Type.Null()])),
+    copyStructure: Type.Optional(
+      Type.Object(
+        {
+          sourceCaseId: UuidSchema,
+          workItemIds: Type.Optional(
+            Type.Array(UuidSchema, { minItems: 1, maxItems: 200, uniqueItems: true }),
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
   },
   { additionalProperties: false, $id: 'CreateCaseRequest' },
 )

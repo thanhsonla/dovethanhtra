@@ -91,6 +91,7 @@
 | 19/07/2026 | ADR-017 | Cổng phát hành, backup/restore và field trial                       | Chứng minh phục hồi và không giả lập nghiệm thu thực địa      |
 | 19/07/2026 | ADR-018 | Gói địa giới 75 xã, phường Sơn La                                  | Danh mục chính thức, hình học tham khảo có nguồn và version    |
 | 19/07/2026 | ADR-019 | Chuẩn hóa topology và supersede địa giới Sơn La                    | Loại phần giao có quy tắc, giữ bản gốc và provenance           |
+| 19/07/2026 | ADR-020 | Sao chép cấu trúc công tác không mang theo kết quả                 | Tái sử dụng cấu hình nhưng không nhân bản chứng cứ              |
 
 ## Trạng thái triển khai Mốc 1
 
@@ -204,3 +205,15 @@
 - Chưa được phép đánh dấu production-ready: field test thiết bị/iPad, route/GPS thật,
   restore staging, địa giới/cơ sở xử lý chính thức và key provider giới hạn chưa có
   bằng chứng nghiệm thu trong repository.
+
+## Trạng thái backlog P1 giai đoạn 2
+
+- Đã triển khai sao chép chọn lọc cấu trúc công tác ngay trong luồng tạo hồ sơ.
+  Snapshot công thức, đơn vị và ngưỡng được giữ; công tác đích về `draft` và bỏ kỳ cũ.
+- Transaction kiểm quyền owner và rollback toàn bộ khi hồ sơ/công tác mẫu không hợp
+  lệ. Audit ghi liên kết nguồn/đích; phép đo, route/GPS, ảnh, nguồn, comparison và
+  audit cũ không được nhân bản.
+- Integration bao phủ sao chép chọn lọc, không mang phép đo và rollback; E2E bao phủ
+  chọn hồ sơ mẫu/công tác trên Chromium và WebKit iPad.
+- Các P1 còn lại (import preview/schema, phục hồi xóa mềm/conflict UI, bbox/pagination,
+  queued export và malware/thumbnail lifecycle) chưa được triển khai.

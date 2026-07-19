@@ -125,6 +125,53 @@ export class CaseRepository {
     return result.rows[0]?.id ?? null
   }
 
+  async copyWorkItems(
+    executor: QueryExecutor,
+    targetCaseId: string,
+    sourceCaseId: string,
+    ownerId: string,
+    workItemIds: string[],
+  ): Promise<string[]> {
+    if (workItemIds.length === 0) return []
+    const result = await sql<{ id: string }>`
+      INSERT INTO case_work_item (
+        inspection_case_id, work_type_id, name, period_start, period_end,
+        unit, formula_snapshot, warning_threshold, status
+      )
+      SELECT ${targetCaseId}::uuid, source.work_type_id, source.name, NULL, NULL,
+        source.unit, source.formula_snapshot, source.warning_threshold, 'draft'
+      FROM case_work_item source
+      JOIN inspection_case source_case ON source_case.id = source.inspection_case_id
+      JOIN inspection_case target_case ON target_case.id = ${targetCaseId}::uuid
+      WHERE source.inspection_case_id = ${sourceCaseId}::uuid
+        AND source_case.owner_id = ${ownerId}::uuid
+        AND target_case.owner_id = ${ownerId}::uuid
+        AND source_case.deleted_at IS NULL AND target_case.deleted_at IS NULL
+        AND source.deleted_at IS NULL
+        AND source.id = ANY(${workItemIds}::uuid[])
+      ORDER BY source.created_at, source.id
+      RETURNING id
+    `.execute(executor)
+    return result.rows.map((row) => row.id)
+  }
+
+  async listWorkItemIds(
+    executor: QueryExecutor,
+    caseId: string,
+    ownerId: string,
+  ): Promise<string[]> {
+    const result = await sql<{ id: string }>`
+      SELECT source.id
+      FROM case_work_item source
+      JOIN inspection_case source_case ON source_case.id = source.inspection_case_id
+      WHERE source.inspection_case_id = ${caseId}::uuid
+        AND source_case.owner_id = ${ownerId}::uuid
+        AND source_case.deleted_at IS NULL AND source.deleted_at IS NULL
+      ORDER BY source.created_at, source.id
+    `.execute(executor)
+    return result.rows.map((row) => row.id)
+  }
+
   async update(
     executor: QueryExecutor,
     id: string,

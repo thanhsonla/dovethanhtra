@@ -242,6 +242,28 @@ h3 {
   border-radius: 14px;
   background: #f3f7f4;
 }
+.copy-structure {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid #c9d8d0;
+  border-radius: 10px;
+}
+.copy-structure__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.copy-structure__item input {
+  width: 18px;
+  min-height: 18px;
+  margin: 0;
+}
+.copy-structure > small,
+.copy-structure__item small {
+  color: #6a7a73;
+}
 label {
   display: grid;
   gap: 7px;

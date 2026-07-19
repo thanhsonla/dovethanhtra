@@ -107,6 +107,29 @@ describe('Milestone 6 security release gates', () => {
     })
     expect(audit.statusCode).toBe(200)
     expect(audit.json()).toEqual([])
+
+    const copyAttemptCode = `M6-COPY-IDOR-${suffix}`
+    const copyAttempt = await app.inject({
+      headers: other.headers,
+      method: 'POST',
+      url: '/api/v1/cases',
+      payload: {
+        adminAreaId: areas[0]!.id,
+        caseCode: copyAttemptCode,
+        name: 'Không được sao chép hồ sơ khác owner',
+        periodEnd: '2026-07-31',
+        periodStart: '2026-07-01',
+        copyStructure: { sourceCaseId: caseId },
+      },
+    })
+    expect(copyAttempt.statusCode).toBe(404)
+    expect(copyAttempt.json()).toMatchObject({ code: 'SOURCE_CASE_NOT_FOUND' })
+    const rolledBackCopy = await app.inject({
+      headers: { cookie: other.cookie },
+      method: 'GET',
+      url: `/api/v1/cases?search=${copyAttemptCode}`,
+    })
+    expect(rolledBackCopy.json<{ items: unknown[] }>().items).toHaveLength(0)
   })
 
   it('applies defensive headers and limits repeated login attempts', async () => {

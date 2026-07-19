@@ -136,6 +136,11 @@ Nhận snapshot dữ liệu đã kiểm tra và tạo tệp. Export không truy 
 - `POST /cases/{caseId}/lock`
 - `POST /cases/{caseId}/unlock`
 
+`POST /cases` có thể nhận `copyStructure.sourceCaseId` và danh sách
+`copyStructure.workItemIds` để tạo hồ sơ cùng cấu trúc công tác trong một transaction.
+Chỉ snapshot cấu hình được sao chép; kỳ công tác, phép đo, tuyến, ảnh, nguồn, kết quả
+đối chiếu và audit của hồ sơ nguồn không được sao chép. Chi tiết tại ADR-020.
+
 ### Danh mục và công tác
 
 - `GET /service-groups`

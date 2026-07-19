@@ -3,7 +3,8 @@
 ## Ưu tiên P1
 
 - Import GeoJSON có preview/schema/giới hạn kích thước và audit đầy đủ.
-- Sao chép cấu trúc hồ sơ, phục hồi bản ghi xóa mềm và conflict UI chi tiết.
+- Sao chép cấu trúc hồ sơ (đã hoàn thành theo ADR-020); phục hồi bản ghi xóa mềm và
+  conflict UI chi tiết còn lại.
 - Pagination/bbox server-side cho hồ sơ vượt 5.000 geometry và virtualized list.
 - Streaming/queued export, lưu artifact trong object storage và tải xuống có quyền.
 - Quét malware, thumbnail pipeline và lifecycle/versioning object storage.
