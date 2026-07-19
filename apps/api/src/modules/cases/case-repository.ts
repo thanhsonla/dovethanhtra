@@ -14,9 +14,10 @@ import { isoDate, isoDateTime } from '../../platform/serialization.js'
 
 interface CaseRow extends Omit<
   InspectionCase,
-  'createdAt' | 'periodEnd' | 'periodStart' | 'updatedAt'
+  'createdAt' | 'deletedAt' | 'periodEnd' | 'periodStart' | 'updatedAt'
 > {
   createdAt: Date | string
+  deletedAt: Date | string | null
   periodEnd: Date | string
   periodStart: Date | string
   updatedAt: Date | string
@@ -28,6 +29,7 @@ interface WorkItemRow extends Omit<WorkItem, 'periodEnd' | 'periodStart'> {
 }
 
 export interface CaseListFilters {
+  cursor?: { id: string; timestamp: string }
   limit: number
   search?: string
   status?: CaseStatus
@@ -38,12 +40,13 @@ const caseColumns = sql.raw(`
   a.name AS "adminAreaName", c.period_start AS "periodStart", c.period_end AS "periodEnd",
   c.inspected_entity AS "inspectedEntity", c.description, c.status,
   count(w.id)::integer AS "workItemCount", c.version,
-  c.created_at AS "createdAt", c.updated_at AS "updatedAt"
+  c.deleted_at AS "deletedAt", c.created_at AS "createdAt", c.updated_at AS "updatedAt"
 `)
 
 const mapCase = (row: CaseRow): InspectionCase => ({
   ...row,
   createdAt: isoDateTime(row.createdAt),
+  deletedAt: row.deletedAt ? isoDateTime(row.deletedAt) : null,
   periodEnd: isoDate(row.periodEnd),
   periodStart: isoDate(row.periodStart),
   updatedAt: isoDateTime(row.updatedAt),
@@ -58,8 +61,13 @@ const mapWorkItem = (row: WorkItemRow): WorkItem => ({
 export class CaseRepository {
   constructor(private readonly database: AppDatabase) {}
 
-  async list(ownerId: string, filters: CaseListFilters): Promise<InspectionCase[]> {
+  async list(
+    ownerId: string,
+    filters: CaseListFilters,
+  ): Promise<{ items: InspectionCase[]; nextCursor: { id: string; timestamp: string } | null }> {
     const search = filters.search ? `%${filters.search}%` : null
+    const cursorTimestamp = filters.cursor?.timestamp ?? null
+    const cursorId = filters.cursor?.id ?? null
     const result = await sql<CaseRow>`
       SELECT ${caseColumns}
       FROM inspection_case c
@@ -68,9 +76,32 @@ export class CaseRepository {
       WHERE c.owner_id = ${ownerId}::uuid AND c.deleted_at IS NULL
         AND (${filters.status ?? null}::case_status IS NULL OR c.status = ${filters.status ?? null}::case_status)
         AND (${search}::text IS NULL OR c.case_code ILIKE ${search} OR c.name ILIKE ${search})
+        AND (${cursorTimestamp}::timestamptz IS NULL OR
+          (date_trunc('milliseconds',c.updated_at), c.id) <
+            (${cursorTimestamp}::timestamptz, ${cursorId}::uuid))
       GROUP BY c.id, a.name
-      ORDER BY c.updated_at DESC, c.id DESC
-      LIMIT ${filters.limit}
+      ORDER BY date_trunc('milliseconds',c.updated_at) DESC, c.id DESC
+      LIMIT ${filters.limit + 1}
+    `.execute(this.database)
+    const hasMore = result.rows.length > filters.limit
+    const rows = result.rows.slice(0, filters.limit)
+    const last = rows.at(-1)
+    return {
+      items: rows.map(mapCase),
+      nextCursor: hasMore && last ? { id: last.id, timestamp: isoDateTime(last.updatedAt) } : null,
+    }
+  }
+
+  async listDeleted(ownerId: string, limit: number): Promise<InspectionCase[]> {
+    const result = await sql<CaseRow>`
+      SELECT ${caseColumns}
+      FROM inspection_case c
+      JOIN admin_area a ON a.id = c.admin_area_id
+      LEFT JOIN case_work_item w ON w.inspection_case_id = c.id AND w.deleted_at IS NULL
+      WHERE c.owner_id = ${ownerId}::uuid AND c.deleted_at IS NOT NULL
+      GROUP BY c.id, a.name
+      ORDER BY c.deleted_at DESC, c.id DESC
+      LIMIT ${limit}
     `.execute(this.database)
     return result.rows.map(mapCase)
   }
@@ -205,6 +236,29 @@ export class CaseRepository {
       WHERE id = ${id}::uuid AND owner_id = ${ownerId}::uuid
         AND deleted_at IS NULL AND status <> 'locked'
     `.execute(executor)
+    return Number(result.numAffectedRows ?? 0) === 1
+  }
+
+  async getDeleted(
+    executor: QueryExecutor,
+    id: string,
+    ownerId: string,
+  ): Promise<InspectionCase | null> {
+    const result = await sql<CaseRow>`
+      SELECT ${caseColumns}
+      FROM inspection_case c
+      JOIN admin_area a ON a.id = c.admin_area_id
+      LEFT JOIN case_work_item w ON w.inspection_case_id = c.id AND w.deleted_at IS NULL
+      WHERE c.id = ${id}::uuid AND c.owner_id = ${ownerId}::uuid AND c.deleted_at IS NOT NULL
+      GROUP BY c.id, a.name
+    `.execute(executor)
+    return result.rows[0] ? mapCase(result.rows[0]) : null
+  }
+
+  async restore(executor: QueryExecutor, id: string, ownerId: string): Promise<boolean> {
+    const result = await sql`UPDATE inspection_case SET deleted_at=NULL, version=version+1
+      WHERE id=${id}::uuid AND owner_id=${ownerId}::uuid AND deleted_at IS NOT NULL
+        AND status <> 'locked'`.execute(executor)
     return Number(result.numAffectedRows ?? 0) === 1
   }
 

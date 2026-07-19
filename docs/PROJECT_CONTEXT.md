@@ -33,6 +33,8 @@
 - Kiểm thử dùng Vitest và Playwright; CI dùng GitHub Actions.
 - Mốc 6 dùng benchmark tách riêng cho 10.000 geometry/XLSX; backup PostgreSQL/MinIO
   có SHA-256 manifest và restore drill chỉ dùng database/bucket tạm.
+- Pipeline P1 giai đoạn 2 dùng import preview/commit, cursor+bbox, phục hồi xóa mềm,
+  export job bền qua restart và quét ClamAV trước khi ảnh trở thành bằng chứng.
 - CI áp ngân sách raw/gzip cho bundle; MapLibre được lazy-load và E2E xác nhận chưa
   tải mô-đun bản đồ trước thao tác mở bản đồ.
 - Hồ sơ dùng owner authorization, xóa mềm và optimistic concurrency bằng
@@ -216,4 +218,18 @@
 - Integration bao phủ sao chép chọn lọc, không mang phép đo và rollback; E2E bao phủ
   chọn hồ sơ mẫu/công tác trên Chromium và WebKit iPad.
 - Các P1 còn lại (import preview/schema, phục hồi xóa mềm/conflict UI, bbox/pagination,
-  queued export và malware/thumbnail lifecycle) chưa được triển khai.
+  queued export và malware/thumbnail lifecycle) đã được triển khai theo ADR-021.
+- GeoJSON import giới hạn 5 MB/1.000 feature, phát hiện schema, kiểm hash preview và
+  commit nguyên transaction; batch cùng từng phép đo đều có audit.
+- Danh sách hồ sơ/phép đo dùng cursor ổn định; phép đo nhận bbox EPSG:4326. UI nạp
+  trang 200 bản ghi, dùng `content-visibility` và có thao tác nạp tiếp.
+- Hồ sơ, phép đo và ảnh có danh sách xóa mềm/phục hồi kèm lý do, owner/lock check và
+  audit. Lỗi API hiển thị mã, trace ID và nút nạp lại dữ liệu.
+- Export UI dùng job pending/processing/completed/failed, artifact lưu MinIO và tải
+  qua API có kiểm quyền. Job pending được nhận lại khi API restart; processing quá
+  15 phút được trả về hàng đợi.
+- Ảnh mới fail-closed nếu ClamAV lỗi, chỉ completed khi scan clean; Sharp tạo WebP
+  tối đa 480 px. MinIO local bật versioning, chỉ `exports/` hết hạn sau 90 ngày;
+  evidence và thumbnail không có lifecycle xóa tự động.
+- Local đã xác minh ClamAV 1.4.5 bằng EICAR và dữ liệu sạch. Node 24.18.0 được cài ở
+  phạm vi người dùng; `pnpm doctor:services` kiểm thêm ClamAV.

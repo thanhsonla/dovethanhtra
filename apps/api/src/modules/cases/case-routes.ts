@@ -7,11 +7,13 @@ import {
   CreateCaseRequestSchema,
   CreateWorkItemRequestSchema,
   InspectionCaseSchema,
+  RestoreRecordRequestSchema,
   WorkItemSchema,
   type CaseStatus,
   type CaseTransitionRequest,
   type CreateCaseRequest,
   type CreateWorkItemRequest,
+  type RestoreRecordRequest,
   type UpdateCaseRequest,
   UpdateCaseRequestSchema,
 } from '@dove/contracts'
@@ -49,7 +51,7 @@ function expectedVersion(header: string | string[] | undefined): number {
 
 export const caseRoutes: FastifyPluginAsync<CaseRouteOptions> = async (app, options) => {
   app.get<{
-    Querystring: { limit?: number; search?: string; status?: CaseStatus }
+    Querystring: { cursor?: string; limit?: number; search?: string; status?: CaseStatus }
   }>(
     '/',
     {
@@ -57,6 +59,7 @@ export const caseRoutes: FastifyPluginAsync<CaseRouteOptions> = async (app, opti
       schema: {
         querystring: Type.Object({
           limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          cursor: Type.Optional(Type.String({ maxLength: 500 })),
           search: Type.Optional(Type.String({ maxLength: 200 })),
           status: Type.Optional(CaseStatusSchema),
         }),
@@ -64,14 +67,28 @@ export const caseRoutes: FastifyPluginAsync<CaseRouteOptions> = async (app, opti
         tags: ['cases'],
       },
     },
-    async (request) => ({
-      items: await options.service.list(ownerId(request), {
+    async (request) =>
+      options.service.list(ownerId(request), {
         limit: request.query.limit ?? 50,
+        ...(request.query.cursor ? { cursor: request.query.cursor } : {}),
         ...(request.query.search ? { search: request.query.search } : {}),
         ...(request.query.status ? { status: request.query.status } : {}),
       }),
-      nextCursor: null,
-    }),
+  )
+
+  app.get<{ Querystring: { limit?: number } }>(
+    '/deleted',
+    {
+      preHandler: options.guards.requireUser,
+      schema: {
+        querystring: Type.Object({
+          limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+        }),
+        response: { 200: Type.Array(InspectionCaseSchema) },
+        tags: ['cases'],
+      },
+    },
+    (request) => options.service.listDeleted(ownerId(request), request.query.limit ?? 50),
   )
 
   app.post<{ Body: CreateCaseRequest }>(
@@ -155,6 +172,26 @@ export const caseRoutes: FastifyPluginAsync<CaseRouteOptions> = async (app, opti
       await options.service.remove(request.params.caseId, ownerId(request), request.id)
       return reply.code(204).send()
     },
+  )
+
+  app.post<{ Body: RestoreRecordRequest; Params: { caseId: string } }>(
+    '/:caseId/restore',
+    {
+      preHandler: options.guards.requireMutation,
+      schema: {
+        body: RestoreRecordRequestSchema,
+        params: CaseParams,
+        response: { 200: InspectionCaseSchema },
+        tags: ['cases'],
+      },
+    },
+    (request) =>
+      options.service.restore(
+        request.params.caseId,
+        request.body.reason,
+        ownerId(request),
+        request.id,
+      ),
   )
 
   for (const action of ['lock', 'unlock'] as const) {

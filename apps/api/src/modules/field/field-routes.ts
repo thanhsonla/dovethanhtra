@@ -11,6 +11,8 @@ import {
   type CreateGpsPointRequest,
   type CreateGpsTrackRequest,
   type PresignAttachmentRequest,
+  RestoreRecordRequestSchema,
+  type RestoreRecordRequest,
 } from '@dove/contracts'
 import { Type } from '@sinclair/typebox'
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
@@ -21,6 +23,7 @@ import type { EvidenceService } from './evidence-service.js'
 import type { GpsService } from './gps-service.js'
 
 const WorkItemParams = Type.Object({ workItemId: Type.String({ format: 'uuid' }) })
+const AttachmentParams = Type.Object({ attachmentId: Type.String({ format: 'uuid' }) })
 const ownerId = (request: FastifyRequest) => {
   if (!request.currentUser) throw new AppError(401, 'AUTH_REQUIRED', 'Bạn cần đăng nhập.')
   return request.currentUser.id
@@ -49,6 +52,18 @@ export const fieldRoutes: FastifyPluginAsync<{
       },
     },
     (request) => options.evidence.listForWork(request.params.workItemId, ownerId(request)),
+  )
+  app.get<{ Params: { workItemId: string } }>(
+    '/work-items/:workItemId/attachments/deleted',
+    {
+      preHandler: options.guards.requireUser,
+      schema: {
+        params: WorkItemParams,
+        response: { 200: Type.Array(AttachmentSchema) },
+        tags: ['field'],
+      },
+    },
+    (request) => options.evidence.listDeletedForWork(request.params.workItemId, ownerId(request)),
   )
 
   app.post<{ Body: CreateGpsPointRequest; Params: { workItemId: string } }>(
@@ -126,5 +141,46 @@ export const fieldRoutes: FastifyPluginAsync<{
       },
     },
     (request) => options.evidence.complete(request.body.attachmentId, ownerId(request), request.id),
+  )
+  app.get<{ Params: { attachmentId: string } }>(
+    '/attachments/:attachmentId/thumbnail',
+    {
+      preHandler: options.guards.requireUser,
+      schema: { params: AttachmentParams, tags: ['field'] },
+    },
+    async (request, reply) =>
+      reply
+        .header('content-type', 'image/webp')
+        .send(await options.evidence.thumbnail(request.params.attachmentId, ownerId(request))),
+  )
+  app.delete<{ Params: { attachmentId: string } }>(
+    '/attachments/:attachmentId',
+    {
+      preHandler: options.guards.requireMutation,
+      schema: { params: AttachmentParams, tags: ['field'] },
+    },
+    async (request, reply) => {
+      await options.evidence.remove(request.params.attachmentId, ownerId(request), request.id)
+      return reply.code(204).send()
+    },
+  )
+  app.post<{ Body: RestoreRecordRequest; Params: { attachmentId: string } }>(
+    '/attachments/:attachmentId/restore',
+    {
+      preHandler: options.guards.requireMutation,
+      schema: {
+        body: RestoreRecordRequestSchema,
+        params: AttachmentParams,
+        response: { 200: AttachmentSchema },
+        tags: ['field'],
+      },
+    },
+    (request) =>
+      options.evidence.restore(
+        request.params.attachmentId,
+        request.body.reason,
+        ownerId(request),
+        request.id,
+      ),
   )
 }

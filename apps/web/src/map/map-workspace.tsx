@@ -24,7 +24,9 @@ import {
 import { MeasurementMap, type MapMode, type Position } from './measurement-map.js'
 import { geometryFromPositions, temporaryValue } from './map-geometry.js'
 import { MeasurementInspector } from './measurement-inspector.js'
+import { MeasurementLayerTree } from './measurement-layer-tree.js'
 import { RoutePlanner } from './route-planner.js'
+import { DataToolsPanel } from './data-tools-panel.js'
 
 const basemaps = createBasemapProvider()
 const emptyPositions = createHistory<Position[]>([])
@@ -35,14 +37,6 @@ const modeLabels: Record<MapMode, string> = {
   point: 'Vẽ điểm',
   view: 'Xem',
 }
-const statusLabels: Record<string, string> = {
-  confirmed: 'Đã xác nhận',
-  draft: 'Nháp',
-  needs_attention: 'Cần chú ý',
-  pending_validation: 'Chờ kiểm tra',
-  superseded: 'Đã thay thế',
-}
-
 function kindForWork(item: WorkItem, workTypes: WorkType[]): MeasurementGeometryKind | null {
   const kind = workTypes.find((type) => type.id === item.workTypeId)?.measurementKind
   return kind === 'point' || kind === 'line' || kind === 'area' || kind === 'route' ? kind : null
@@ -77,7 +71,7 @@ export function MapWorkspace(props: {
     basemaps.defaultId
 
   const refreshWork = async (workItemId: string) => {
-    const summary = await api.listMeasurements(workItemId)
+    const summary = await api.listMeasurements(workItemId, { limit: 200 })
     setSummaries((current) => ({ ...current, [workItemId]: summary }))
     return summary
   }
@@ -86,7 +80,7 @@ export function MapWorkspace(props: {
     void Promise.all([
       api.getCaseMapContext(props.inspectionCase.id),
       api.listTreatmentFacilities(),
-      ...measurable.map((item) => api.listMeasurements(item.id)),
+      ...measurable.map((item) => api.listMeasurements(item.id, { limit: 200 })),
     ])
       .then(([context, treatmentFacilities, ...items]) => {
         setBoundary(context.boundary)
@@ -203,80 +197,47 @@ export function MapWorkspace(props: {
         </div>
       )}
       <section className="map-layout">
-        <aside className="layer-tree">
-          <p className="section-kicker">Cây lớp dữ liệu</p>
-          <h2>Công tác và phép đo</h2>
-          {props.groups.map((group) => {
-            const groupTypeIds = new Set(
-              props.workTypes
-                .filter((type) => type.serviceGroupId === group.id)
-                .map((type) => type.id),
-            )
-            const work = measurable.filter((item) => groupTypeIds.has(item.workTypeId))
-            if (!work.length) return null
-            return (
-              <div className="layer-group" key={group.id}>
-                <h3>
-                  <span className="catalog-dot" style={{ background: group.color ?? '#63736c' }} />
-                  {group.name}
-                </h3>
-                {work.map((item) => (
-                  <div className="layer-work" key={item.id}>
-                    <div className="layer-work__row">
-                      <input
-                        aria-label={`Hiển thị ${item.name}`}
-                        type="checkbox"
-                        checked={!hidden.has(item.id)}
-                        onChange={() =>
-                          setHidden((current) => {
-                            const next = new Set(current)
-                            if (next.has(item.id)) next.delete(item.id)
-                            else next.add(item.id)
-                            return next
-                          })
-                        }
-                      />
-                      <button
-                        className={
-                          selectedWorkId === item.id
-                            ? 'layer-button layer-button--active'
-                            : 'layer-button'
-                        }
-                        onClick={() => {
-                          setSelectedWorkId(item.id)
-                          setSelectedId(null)
-                          cancelDraft()
-                        }}
-                      >
-                        {item.name}
-                      </button>
-                    </div>
-                    <ul>
-                      {(summaries[item.id]?.items ?? []).map((measurement) => (
-                        <li key={measurement.id}>
-                          <button
-                            className={
-                              selectedId === measurement.id
-                                ? 'measurement-link measurement-link--active'
-                                : 'measurement-link'
-                            }
-                            onClick={() => selectMeasurement(measurement.id)}
-                          >
-                            <span>{measurement.name}</span>
-                            <small>
-                              v{measurement.version} ·{' '}
-                              {statusLabels[measurement.status] ?? measurement.status}
-                            </small>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )
-          })}
-        </aside>
+        <MeasurementLayerTree
+          groups={props.groups}
+          hidden={hidden}
+          measurable={measurable}
+          onLoadMore={(workItemId, cursor) =>
+            void api
+              .listMeasurements(workItemId, { cursor, limit: 200 })
+              .then((page) =>
+                setSummaries((current) => ({
+                  ...current,
+                  [workItemId]: {
+                    ...page,
+                    items: [...current[workItemId]!.items, ...page.items],
+                  },
+                })),
+              )
+              .catch((reason) =>
+                setError(
+                  reason instanceof Error ? reason.message : 'Không nạp được trang tiếp theo.',
+                ),
+              )
+          }
+          onSelectMeasurement={selectMeasurement}
+          onSelectWork={(item) => {
+            setSelectedWorkId(item.id)
+            setSelectedId(null)
+            cancelDraft()
+          }}
+          onToggleWork={(id) =>
+            setHidden((current) => {
+              const next = new Set(current)
+              if (next.has(id)) next.delete(id)
+              else next.add(id)
+              return next
+            })
+          }
+          selectedId={selectedId}
+          selectedWorkId={selectedWorkId}
+          summaries={summaries}
+          workTypes={props.workTypes}
+        />
 
         <section className="map-stage">
           <div className="map-toolbar" aria-label="Công cụ đo">
@@ -387,6 +348,15 @@ export function MapWorkspace(props: {
             onChanged={async (measurement) => {
               setSelectedId(measurement.id)
               await refreshWork(measurement.workItemId)
+            }}
+          />
+          <DataToolsPanel
+            allowImport={drawableKind !== null}
+            onError={setError}
+            workItem={selectedWork}
+            onChanged={async (measurement) => {
+              if (measurement) setSelectedId(measurement.id)
+              if (selectedWork) await refreshWork(selectedWork.id)
             }}
           />
         </aside>

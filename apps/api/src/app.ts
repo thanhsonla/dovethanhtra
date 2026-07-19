@@ -26,6 +26,8 @@ import { healthRoutes } from './modules/health/health-routes.js'
 import { EvidenceService } from './modules/field/evidence-service.js'
 import { fieldRoutes } from './modules/field/field-routes.js'
 import { GpsService } from './modules/field/gps-service.js'
+import { UnavailableMalwareScanner, type MalwareScanner } from './modules/field/malware-scanner.js'
+import { SharpThumbnailer, type Thumbnailer } from './modules/field/thumbnailer.js'
 import { createAuthGuards } from './modules/identity/auth-guards.js'
 import { IdentityRepository } from './modules/identity/identity-repository.js'
 import { identityRoutes } from './modules/identity/identity-routes.js'
@@ -55,6 +57,7 @@ export interface BuildAppOptions {
     requestsPerMinute?: number
   }
   security?: { loginRequestsPerMinute?: number }
+  evidence?: { malwareScanner?: MalwareScanner; thumbnailer?: Thumbnailer }
 }
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
@@ -123,7 +126,9 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     comparison,
     audit,
     new LocalExportProvider(),
+    options.dependencies.objectStorage,
   )
+  await exports.resumePending()
   const measurementRepository = new MeasurementRepository(database)
   const measurements = new MeasurementService(database, measurementRepository, audit)
   const routing = new RoutingService(
@@ -135,7 +140,13 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     options.routing?.requestsPerMinute ?? 30,
   )
   const gps = new GpsService(database, measurementRepository, audit)
-  const evidence = new EvidenceService(database, options.dependencies.objectStorage, audit)
+  const evidence = new EvidenceService(
+    database,
+    options.dependencies.objectStorage,
+    audit,
+    options.evidence?.malwareScanner ?? new UnavailableMalwareScanner(),
+    options.evidence?.thumbnailer ?? new SharpThumbnailer(),
+  )
 
   await app.register(healthRoutes, {
     dependencies: options.dependencies,

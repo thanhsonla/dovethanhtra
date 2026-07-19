@@ -47,13 +47,31 @@ services:
       - -c
       - >-
         mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
-        mc mb --ignore-existing "local/$${MINIO_BUCKET}"
+        mc mb --ignore-existing "local/$${MINIO_BUCKET}" &&
+        mc version enable "local/$${MINIO_BUCKET}" &&
+        (mc ilm rule add --expire-days 90 --prefix exports/ "local/$${MINIO_BUCKET}" || true)
     environment:
       MINIO_BUCKET: ${MINIO_BUCKET:-dove-evidence-local}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-local-only-change-me-too}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-dove_local}
     restart: 'no'
 
+  clamav:
+    image: clamav/clamav:1.4.5
+    platform: linux/amd64
+    ports:
+      - '127.0.0.1:3310:3310'
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ['CMD-SHELL', 'printf "zPING\\0" | nc 127.0.0.1 3310 | grep -q PONG']
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+    restart: unless-stopped
+
 volumes:
+  clamav-data:
   minio-data:
   postgis-data:

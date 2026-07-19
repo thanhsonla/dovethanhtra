@@ -65,7 +65,7 @@ export function CreateCaseForm(props: {
     <form className="create-form" onSubmit={(event) => void submit(event)}>
       <label>
         Mã hồ sơ
-        <input name="caseCode" required pattern="[A-Za-z0-9._/-]+" />
+        <input name="caseCode" required pattern={'[A-Za-z0-9._/\\u002D]+'} />
       </label>
       <label className="wide">
         Tên hồ sơ

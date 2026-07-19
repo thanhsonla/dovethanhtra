@@ -22,6 +22,7 @@ export interface AppConfig {
     timeoutMs: number
   }
   security: { loginRequestsPerMinute: number }
+  malwareScanner: { host: string; port: number; timeoutMs: number; version: string }
 }
 
 function required(environment: NodeJS.ProcessEnv, name: string): string {
@@ -73,6 +74,12 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     },
     security: {
       loginRequestsPerMinute: positiveInteger(environment, 'LOGIN_REQUESTS_PER_MINUTE', 5),
+    },
+    malwareScanner: {
+      host: environment.CLAMAV_HOST ?? '127.0.0.1',
+      port: port(environment, 'CLAMAV_PORT', 3310),
+      timeoutMs: positiveInteger(environment, 'CLAMAV_TIMEOUT_MS', 30000),
+      version: environment.CLAMAV_VERSION ?? '1.4.5',
     },
   }
 }

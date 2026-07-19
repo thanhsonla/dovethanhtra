@@ -79,8 +79,20 @@ export function ComparisonPanel(props: {
 
   const download = async (format: 'excel' | 'geojson') => {
     try {
-      setExportState('Đang tạo tệp…')
-      const result = await api.exportCase(props.inspectionCase.id, format)
+      setExportState('Đã xếp hàng tạo tệp…')
+      let job = await api.exportCase(props.inspectionCase.id, format)
+      for (
+        let attempt = 0;
+        attempt < 120 && ['pending', 'processing'].includes(job.status);
+        attempt += 1
+      ) {
+        await new Promise((resolve) => window.setTimeout(resolve, 250))
+        job = await api.getExportJob(job.id)
+        setExportState(`Export ${job.status}…`)
+      }
+      if (job.status !== 'completed')
+        throw new Error(job.errorMessage ?? 'Export job không hoàn tất.')
+      const result = await api.downloadExport(job.id)
       const url = URL.createObjectURL(result.blob)
       const anchor = document.createElement('a')
       anchor.href = url

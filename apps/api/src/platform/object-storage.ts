@@ -6,6 +6,7 @@ export interface ObjectStorageHandle {
   check(): Promise<boolean>
   getObject?(objectKey: string): Promise<NodeJS.ReadableStream>
   presignPut?(objectKey: string, expiresSeconds: number): Promise<string>
+  putObject?(objectKey: string, bytes: Buffer, contentType: string): Promise<void>
   remove?(objectKey: string): Promise<void>
   stat?(objectKey: string): Promise<{ size: number; contentType: string | null }>
 }
@@ -24,6 +25,11 @@ export function createObjectStorage(config: AppConfig['objectStorage']): ObjectS
     getObject: (objectKey) => client.getObject(config.bucket, objectKey),
     presignPut: (objectKey, expiresSeconds) =>
       client.presignedPutObject(config.bucket, objectKey, expiresSeconds),
+    async putObject(objectKey, bytes, contentType) {
+      await client.putObject(config.bucket, objectKey, bytes, bytes.length, {
+        'content-type': contentType,
+      })
+    },
     remove: (objectKey) => client.removeObject(config.bucket, objectKey),
     async stat(objectKey) {
       const result = await client.statObject(config.bucket, objectKey)

@@ -1,6 +1,7 @@
 import type { CreateCaseRequest, CreateWorkItemRequest, UpdateCaseRequest } from '@dove/contracts'
 
 import { AppError } from '../../platform/app-error.js'
+import { decodeCursor, encodeCursor } from '../../platform/cursor.js'
 import type { AppDatabase } from '../../platform/database.js'
 import type { AuditRepository } from '../audit/audit-repository.js'
 import type { SnapshotRepository } from '../exports/snapshot-repository.js'
@@ -26,8 +27,19 @@ export class CaseService {
     private readonly snapshots: SnapshotRepository,
   ) {}
 
-  list(ownerId: string, filters: CaseListFilters) {
-    return this.repository.list(ownerId, filters)
+  list(ownerId: string, filters: Omit<CaseListFilters, 'cursor'> & { cursor?: string }) {
+    const { cursor: rawCursor, ...baseFilters } = filters
+    const cursor = decodeCursor(rawCursor)
+    return this.repository
+      .list(ownerId, { ...baseFilters, ...(cursor ? { cursor } : {}) })
+      .then((result) => ({
+        items: result.items,
+        nextCursor: result.nextCursor ? encodeCursor(result.nextCursor) : null,
+      }))
+  }
+
+  listDeleted(ownerId: string, limit: number) {
+    return this.repository.listDeleted(ownerId, limit)
   }
 
   async get(id: string, ownerId: string) {
@@ -211,6 +223,30 @@ export class CaseService {
         inspectionCaseId: id,
         traceId,
       })
+    })
+  }
+
+  async restore(id: string, reason: string, ownerId: string, traceId: string) {
+    return this.database.transaction().execute(async (transaction) => {
+      const before = await this.repository.getDeleted(transaction, id, ownerId)
+      if (!before) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ đã xóa.')
+      if (!(await this.repository.restore(transaction, id, ownerId))) {
+        throw new AppError(409, 'CASE_RESTORE_CONFLICT', 'Không thể phục hồi hồ sơ này.')
+      }
+      const restored = await this.repository.get(transaction, id, ownerId)
+      if (!restored) throw new AppError(500, 'CASE_RESTORE_FAILED', 'Không thể đọc hồ sơ phục hồi.')
+      await this.audit.append(transaction, {
+        action: 'restored',
+        actorId: ownerId,
+        beforeData: before,
+        afterData: restored,
+        entityId: id,
+        entityType: 'inspection_case',
+        inspectionCaseId: id,
+        reason,
+        traceId,
+      })
+      return restored
     })
   }
 

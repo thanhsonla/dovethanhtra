@@ -1,4 +1,5 @@
 import type {
+  Attachment,
   CreateGpsPointRequest,
   CreateGpsTrackRequest,
   GpsPoint,
@@ -8,33 +9,11 @@ import type {
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { api } from '../api.js'
+import { pointFromPosition } from './gps-position.js'
 import { deviceId, offlineStore, type QueuedGpsMutation } from './offline-store.js'
 
 const hex = (buffer: ArrayBuffer) =>
   [...new Uint8Array(buffer)].map((value) => value.toString(16).padStart(2, '0')).join('')
-
-function pointFromPosition(position: GeolocationPosition): GpsPoint {
-  const now = Date.now()
-  const timestamp =
-    Number.isFinite(position.timestamp) &&
-    position.timestamp >= Date.UTC(2000, 0, 1) &&
-    position.timestamp <= now + 60_000
-      ? position.timestamp
-      : now
-  return {
-    position: [position.coords.longitude, position.coords.latitude],
-    recordedAt: new Date(timestamp).toISOString(),
-    accuracyM: Number.isFinite(position.coords.accuracy)
-      ? Math.min(10000, Math.max(0, position.coords.accuracy))
-      : 1000,
-    ...(typeof position.coords.altitude === 'number' && Number.isFinite(position.coords.altitude)
-      ? { altitudeM: position.coords.altitude }
-      : {}),
-    ...(typeof position.coords.speed === 'number' && Number.isFinite(position.coords.speed)
-      ? { speedMps: Math.max(0, position.coords.speed) }
-      : {}),
-  }
-}
 
 export function FieldPanel(props: {
   measurement: Measurement | null
@@ -48,12 +27,34 @@ export function FieldPanel(props: {
   const [paused, setPaused] = useState(false)
   const [syncState, setSyncState] = useState('synced')
   const [photoState, setPhotoState] = useState('')
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [deletedAttachments, setDeletedAttachments] = useState<Attachment[]>([])
   const watchId = useRef<number | null>(null)
   const pausedRef = useRef(false)
   const pointCount = useMemo(
     () => segments.reduce((sum, segment) => sum + segment.length, 0),
     [segments],
   )
+
+  const refreshAttachments = async () => {
+    if (!props.workItem) {
+      setAttachments([])
+      setDeletedAttachments([])
+      return
+    }
+    const [active, deleted] = await Promise.all([
+      api.listAttachments(props.workItem.id),
+      api.listDeletedAttachments(props.workItem.id),
+    ])
+    setAttachments(active)
+    setDeletedAttachments(deleted)
+  }
+
+  useEffect(() => {
+    void refreshAttachments().catch((reason) =>
+      props.onError(reason instanceof Error ? reason.message : 'Không tải được danh sách ảnh.'),
+    )
+  }, [props.workItem?.id])
 
   useEffect(() => {
     if (!props.workItem || props.gpsKind !== 'line') return
@@ -257,6 +258,7 @@ export function FieldPanel(props: {
       if (!upload.ok) throw new Error('MinIO từ chối upload ảnh.')
       const completed = await api.completeAttachment(presigned.attachment.id)
       setPhotoState(`Đã lưu ảnh · ${completed.sha256?.slice(0, 12)}…`)
+      await refreshAttachments()
     } catch (reason) {
       setPhotoState('Ảnh chưa hoàn tất')
       props.onError(reason instanceof Error ? reason.message : 'Không thể tải ảnh.')
@@ -312,6 +314,68 @@ export function FieldPanel(props: {
           />
           {photoState && <small>{photoState}</small>}
         </label>
+      )}
+      {attachments.length > 0 && (
+        <div className="evidence-list">
+          <strong>Ảnh hoàn tất</strong>
+          {attachments.map((attachment) => (
+            <article key={attachment.id}>
+              {attachment.thumbnailAvailable && (
+                <img
+                  alt={`Thumbnail ${attachment.originalName}`}
+                  loading="lazy"
+                  src={`/api/v1/attachments/${attachment.id}/thumbnail`}
+                />
+              )}
+              <span>{attachment.originalName}</span>
+              <small>
+                {attachment.scanStatus} · {attachment.sizeBytes ?? 0} byte
+              </small>
+              <button
+                className="button button--quiet"
+                onClick={() =>
+                  void api
+                    .removeAttachment(attachment.id)
+                    .then(refreshAttachments)
+                    .catch((reason) =>
+                      props.onError(
+                        reason instanceof Error ? reason.message : 'Không xóa được ảnh.',
+                      ),
+                    )
+                }
+              >
+                Xóa mềm
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
+      {deletedAttachments.length > 0 && (
+        <div className="evidence-list evidence-list--deleted">
+          <strong>Ảnh đã xóa</strong>
+          {deletedAttachments.map((attachment) => (
+            <article key={attachment.id}>
+              <span>{attachment.originalName}</span>
+              <button
+                className="button button--quiet"
+                onClick={() => {
+                  const reason = window.prompt('Lý do phục hồi ảnh:')?.trim()
+                  if (!reason) return
+                  void api
+                    .restoreAttachment(attachment.id, reason)
+                    .then(refreshAttachments)
+                    .catch((error) =>
+                      props.onError(
+                        error instanceof Error ? error.message : 'Không phục hồi được ảnh.',
+                      ),
+                    )
+                }}
+              >
+                Phục hồi
+              </button>
+            </article>
+          ))}
+        </div>
       )}
     </section>
   )

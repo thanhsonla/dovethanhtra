@@ -31,14 +31,21 @@ import type {
   GpsTrackResponse,
   PresignAttachmentRequest,
   PresignAttachmentResponse,
+  GeoJsonImportRequest,
+  GeoJsonImportPreview,
+  GeoJsonImportCommitResponse,
+  ExportJob,
 } from '@dove/contracts'
 
 export class ApiClientError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly code: string | null = null,
+    public readonly details: unknown = null,
+    public readonly traceId: string | null = null,
   ) {
-    super(message)
+    super(`${code ? `[${code}] ` : ''}${message}${traceId ? ` · trace ${traceId}` : ''}`)
   }
 }
 
@@ -59,22 +66,29 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   })
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { message?: string } | null
-    throw new ApiClientError(payload?.message ?? 'Yêu cầu không thành công.', response.status)
+    const payload = (await response.json().catch(() => null)) as {
+      code?: string
+      details?: unknown
+      message?: string
+      traceId?: string
+    } | null
+    throw new ApiClientError(
+      payload?.message ?? 'Yêu cầu không thành công.',
+      response.status,
+      payload?.code ?? null,
+      payload?.details ?? null,
+      payload?.traceId ?? null,
+    )
   }
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
-async function requestFile(path: string) {
-  const response = await fetch(`/api/v1${path}`, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'x-csrf-token': csrfToken() },
-  })
+async function downloadFile(path: string) {
+  const response = await fetch(`/api/v1${path}`, { credentials: 'same-origin' })
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { message?: string } | null
-    throw new ApiClientError(payload?.message ?? 'Không thể tạo tệp xuất.', response.status)
+    throw new ApiClientError(payload?.message ?? 'Không thể tải artifact.', response.status)
   }
   const disposition = response.headers.get('content-disposition') ?? ''
   return {
@@ -128,7 +142,12 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
   exportCase: (caseId: string, format: 'excel' | 'geojson') =>
-    requestFile(`/cases/${caseId}/exports/${format}`),
+    request<ExportJob>(`/cases/${caseId}/export-jobs/${format === 'excel' ? 'xlsx' : 'geojson'}`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  getExportJob: (exportId: string) => request<ExportJob>(`/exports/${exportId}`),
+  downloadExport: (exportId: string) => downloadFile(`/exports/${exportId}/download`),
   createMeasurement: (workItemId: string, input: CreateMeasurementRequest) =>
     request<Measurement>(`/work-items/${workItemId}/measurements`, {
       method: 'POST',
@@ -143,11 +162,54 @@ export const api = {
     request<void>(`/measurements/${measurementId}`, { method: 'DELETE' }),
   getCaseMapContext: (caseId: string) => request<CaseMapContext>(`/cases/${caseId}/map-context`),
   listAdminAreas: () => request<AdminArea[]>('/admin-areas'),
-  listCases: () => request<CaseListResponse>('/cases'),
-  listMeasurements: (workItemId: string) =>
-    request<MeasurementListResponse>(`/work-items/${workItemId}/measurements`),
+  listCases: (cursor?: string) =>
+    request<CaseListResponse>(`/cases${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+  listDeletedCases: () => request<InspectionCase[]>('/cases/deleted'),
+  restoreCase: (caseId: string, reason: string) =>
+    request<InspectionCase>(`/cases/${caseId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  listMeasurements: (
+    workItemId: string,
+    options: { bbox?: string; cursor?: string; limit?: number } = {},
+  ) => {
+    const query = new URLSearchParams()
+    if (options.bbox) query.set('bbox', options.bbox)
+    if (options.cursor) query.set('cursor', options.cursor)
+    if (options.limit) query.set('limit', String(options.limit))
+    return request<MeasurementListResponse>(
+      `/work-items/${workItemId}/measurements${query.size ? `?${query}` : ''}`,
+    )
+  },
+  listDeletedMeasurements: (workItemId: string) =>
+    request<Measurement[]>(`/work-items/${workItemId}/measurements/deleted`),
+  restoreMeasurement: (measurementId: string, reason: string) =>
+    request<Measurement>(`/measurements/${measurementId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  previewGeoJsonImport: (workItemId: string, input: GeoJsonImportRequest) =>
+    request<GeoJsonImportPreview>(`/work-items/${workItemId}/imports/geojson/preview`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  commitGeoJsonImport: (workItemId: string, input: GeoJsonImportRequest) =>
+    request<GeoJsonImportCommitResponse>(`/work-items/${workItemId}/imports/geojson/commit`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
   listAttachments: (workItemId: string) =>
     request<Attachment[]>(`/work-items/${workItemId}/attachments`),
+  listDeletedAttachments: (workItemId: string) =>
+    request<Attachment[]>(`/work-items/${workItemId}/attachments/deleted`),
+  removeAttachment: (attachmentId: string) =>
+    request<void>(`/attachments/${attachmentId}`, { method: 'DELETE' }),
+  restoreAttachment: (attachmentId: string, reason: string) =>
+    request<Attachment>(`/attachments/${attachmentId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
   listServiceGroups: () => request<ServiceGroup[]>('/catalog/service-groups'),
   listWorkItems: (caseId: string) => request<WorkItem[]>(`/cases/${caseId}/work-items`),
   listWorkTypes: () => request<WorkType[]>('/catalog/work-types'),

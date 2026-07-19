@@ -24,6 +24,7 @@ export const InspectionCaseSchema = Type.Object(
     status: CaseStatusSchema,
     workItemCount: Type.Integer({ minimum: 0 }),
     version: Type.Integer({ minimum: 1 }),
+    deletedAt: Type.Union([DateTimeSchema, Type.Null()]),
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
   },
@@ -77,6 +78,11 @@ export const CaseListResponseSchema = Type.Object(
     nextCursor: Type.Union([Type.String(), Type.Null()]),
   },
   { additionalProperties: false, $id: 'CaseListResponse' },
+)
+
+export const RestoreRecordRequestSchema = Type.Object(
+  { reason: Type.String({ minLength: 3, maxLength: 1000 }) },
+  { additionalProperties: false, $id: 'RestoreRecordRequest' },
 )
 
 export const WorkItemStatusSchema = Type.Union([
@@ -145,5 +151,6 @@ export type CaseListResponse = Static<typeof CaseListResponseSchema>
 export type CreateCaseRequest = Static<typeof CreateCaseRequestSchema>
 export type CreateWorkItemRequest = Static<typeof CreateWorkItemRequestSchema>
 export type InspectionCase = Static<typeof InspectionCaseSchema>
+export type RestoreRecordRequest = Static<typeof RestoreRecordRequestSchema>
 export type UpdateCaseRequest = Static<typeof UpdateCaseRequestSchema>
 export type WorkItem = Static<typeof WorkItemSchema>

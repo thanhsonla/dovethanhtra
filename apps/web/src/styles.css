@@ -107,6 +107,39 @@ h3 {
   justify-content: space-between;
   gap: 18px;
 }
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.deleted-records {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 14px;
+  border: 1px dashed #bdcec5;
+  border-radius: 12px;
+}
+.deleted-record,
+.deleted-record span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.deleted-record span {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+}
+.load-more {
+  margin-top: 14px;
+}
+.case-row,
+.measurement-link {
+  content-visibility: auto;
+  contain-intrinsic-size: 72px;
+}
 .button {
   min-height: 42px;
   padding: 9px 17px;

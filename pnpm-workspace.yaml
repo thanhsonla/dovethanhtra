@@ -4,6 +4,7 @@ packages:
 
 allowBuilds:
   esbuild: true
+  sharp: true
 
 catalog:
   '@sinclair/typebox': 0.34.52
@@ -16,3 +17,4 @@ minimumReleaseAgeExclude:
 
 overrides:
   shell-quote: 1.8.4
+  uuid: 11.1.1

@@ -56,7 +56,7 @@ if (checkServices && docker.status === 0 && compose.status === 0) {
     .split('\n')
     .filter(Boolean)
     .map((line) => JSON.parse(line))
-  for (const service of ['postgis', 'minio']) {
+  for (const service of ['postgis', 'minio', 'clamav']) {
     const row = rows.find((item) => item.Service === service)
     const healthy = row?.State === 'running' && row.Health === 'healthy'
     report(

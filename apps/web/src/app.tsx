@@ -51,6 +51,10 @@ export function App() {
   const [selected, setSelected] = useState<InspectionCase | null>(null)
   const [workItems, setWorkItems] = useState<WorkItem[]>([])
   const [showCreate, setShowCreate] = useState(false)
+  const [showDeleted, setShowDeleted] = useState(false)
+  const [deletedCases, setDeletedCases] = useState<InspectionCase[]>([])
+  const [restoreReason, setRestoreReason] = useState('Phục hồi theo yêu cầu người dùng')
+  const [caseCursor, setCaseCursor] = useState<string | null>(null)
   const [mapOpen, setMapOpen] = useState(false)
   const [error, setError] = useState('')
 
@@ -62,6 +66,7 @@ export function App() {
       api.listWorkTypes(),
     ])
     setData({ adminAreas, cases: caseResponse.items, groups, workTypes })
+    setCaseCursor(caseResponse.nextCursor)
   }
 
   useEffect(() => {
@@ -152,7 +157,20 @@ export function App() {
 
       {error && (
         <div className="alert" role="alert">
-          {error}
+          <span>{error}</span>
+          <button
+            className="button button--quiet"
+            onClick={() =>
+              void Promise.all([
+                loadWorkspace(),
+                selected ? api.listWorkItems(selected.id).then(setWorkItems) : Promise.resolve(),
+              ])
+                .then(() => setError(''))
+                .catch((reason) => setError(message(reason)))
+            }
+          >
+            Nạp lại dữ liệu
+          </button>
         </div>
       )}
 
@@ -163,9 +181,25 @@ export function App() {
               <p className="section-kicker">Không gian công việc</p>
               <h2 id="cases-title">Hồ sơ kiểm tra</h2>
             </div>
-            <button className="button" onClick={() => setShowCreate((value) => !value)}>
-              {showCreate ? 'Đóng' : 'Tạo hồ sơ'}
-            </button>
+            <div className="panel-actions">
+              <button
+                className="button button--quiet"
+                onClick={() => {
+                  const next = !showDeleted
+                  setShowDeleted(next)
+                  if (next)
+                    void api
+                      .listDeletedCases()
+                      .then(setDeletedCases)
+                      .catch((reason) => setError(message(reason)))
+                }}
+              >
+                {showDeleted ? 'Ẩn đã xóa' : 'Hồ sơ đã xóa'}
+              </button>
+              <button className="button" onClick={() => setShowCreate((value) => !value)}>
+                {showCreate ? 'Đóng' : 'Tạo hồ sơ'}
+              </button>
+            </div>
           </div>
 
           {showCreate && (
@@ -179,6 +213,47 @@ export function App() {
               }}
               onError={setError}
             />
+          )}
+
+          {showDeleted && (
+            <section className="deleted-records" aria-label="Hồ sơ đã xóa mềm">
+              <label>
+                Lý do phục hồi
+                <input
+                  value={restoreReason}
+                  onChange={(event) => setRestoreReason(event.target.value)}
+                />
+              </label>
+              {deletedCases.length === 0 && <p className="empty">Không có hồ sơ đã xóa.</p>}
+              {deletedCases.map((item) => (
+                <div className="deleted-record" key={item.id}>
+                  <span>
+                    <strong>{item.name}</strong>
+                    <small>{item.caseCode}</small>
+                  </span>
+                  <button
+                    className="button button--quiet"
+                    disabled={restoreReason.trim().length < 3}
+                    onClick={() =>
+                      void api
+                        .restoreCase(item.id, restoreReason)
+                        .then((restored) => {
+                          setDeletedCases((current) =>
+                            current.filter((entry) => entry.id !== item.id),
+                          )
+                          setData((current) => ({
+                            ...current,
+                            cases: [restored, ...current.cases],
+                          }))
+                        })
+                        .catch((reason) => setError(message(reason)))
+                    }
+                  >
+                    Phục hồi
+                  </button>
+                </div>
+              ))}
+            </section>
           )}
 
           <div className="case-list">
@@ -204,6 +279,22 @@ export function App() {
               </button>
             ))}
           </div>
+          {caseCursor && (
+            <button
+              className="button button--quiet load-more"
+              onClick={() =>
+                void api
+                  .listCases(caseCursor)
+                  .then((page) => {
+                    setData((current) => ({ ...current, cases: [...current.cases, ...page.items] }))
+                    setCaseCursor(page.nextCursor)
+                  })
+                  .catch((reason) => setError(message(reason)))
+              }
+            >
+              Nạp thêm hồ sơ
+            </button>
+          )}
         </section>
 
         <aside className="side-column">

@@ -13,3 +13,5 @@ phát hành, backup/restore và field trial. ADR-001 đến ADR-004 được ghi
 
 `ADR-018` chốt danh mục pháp lý và gói hình học tham khảo cho 75 xã, phường Sơn La;
 `ADR-019` chốt quy tắc chuẩn hóa 49 cặp chồng lấn và vòng đời supersession.
+`ADR-020` chốt sao chép chọn lọc cấu trúc công tác; `ADR-021` chốt các pipeline dữ
+liệu P1 giai đoạn 2 gồm import, phân trang/phục hồi, export queue và quét bằng chứng.

@@ -88,6 +88,7 @@ export const MeasurementSchema = Type.Object(
     status: MeasurementStatusSchema,
     note: Type.Union([Type.String(), Type.Null()]),
     confirmedAt: Type.Union([DateTimeSchema, Type.Null()]),
+    deletedAt: Type.Union([DateTimeSchema, Type.Null()]),
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
   },
@@ -129,6 +130,7 @@ export const MeasurementListResponseSchema = Type.Object(
     items: Type.Array(MeasurementSchema),
     confirmedTotal: Type.Number({ minimum: 0 }),
     unit: Type.String(),
+    nextCursor: Type.Union([Type.String(), Type.Null()]),
   },
   { additionalProperties: false, $id: 'MeasurementListResponse' },
 )

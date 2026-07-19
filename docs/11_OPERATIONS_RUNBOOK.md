@@ -47,6 +47,14 @@ chạy cùng quy trình trên staging và ghi thời gian thực tế vào check
 
 - Theo dõi `/api/v1/health/live` và `/api/v1/health/ready`.
 - Khi database/object storage chưa sẵn sàng, dừng mutation và giữ queue local.
+- `pnpm doctor:services` phải báo PostGIS, MinIO và ClamAV đều healthy. Scanner lỗi
+  không chặn nghiệp vụ không có tệp nhưng attachment completion sẽ fail-closed.
+- Xác minh MinIO bucket bật versioning và lifecycle chỉ áp dụng prefix `exports/`
+  trong 90 ngày; không đặt expiry cho `evidence/` hoặc thumbnail.
+- Job export `processing` quá 15 phút được trả về pending khi API khởi động. Nếu job
+  tiếp tục failed, giữ DB record/snapshot/hash và kiểm log theo trace ID.
+- Attachment `not_scanned_legacy` không được coi là đã quét sạch; lập batch quét lại
+  trước khi đưa dữ liệu legacy sang staging/production.
 - Không đưa token, tọa độ chi tiết hoặc URL ký vào ticket/log.
 - Khi nghi mất toàn vẹn, khóa hồ sơ liên quan, giữ snapshot/export/hash và sao lưu
   trước khi sửa.
@@ -61,4 +69,5 @@ chạy cùng quy trình trên staging và ghi thời gian thực tế vào check
 - [ ] HTTPS, secure cookie, CSP/CORS và upload policy được xác minh.
 - [ ] Mapbox/basemap key đã giới hạn và có quota/cảnh báo.
 - [ ] Không có Critical/High từ dependency và secret scan.
+- [ ] ClamAV nhận EICAR, cho qua mẫu sạch; MinIO versioning/lifecycle đã được kiểm.
 - [ ] Backup scheduler, retention và người nhận cảnh báo đã được phân công.

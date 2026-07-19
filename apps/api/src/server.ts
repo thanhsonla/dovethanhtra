@@ -4,6 +4,7 @@ import { createDatabase } from './platform/database.js'
 import { createObjectStorage } from './platform/object-storage.js'
 import { LocalRoutingProvider } from './modules/routing/local-routing-provider.js'
 import { MapboxRoutingProvider } from './modules/routing/mapbox-routing-provider.js'
+import { ClamAvScanner } from './modules/field/malware-scanner.js'
 
 const config = loadConfig()
 const database = createDatabase(config.databaseUrl)
@@ -18,6 +19,14 @@ const routingProvider =
 const app = await buildApp({
   auth: config.auth,
   dependencies: { database, objectStorage },
+  evidence: {
+    malwareScanner: new ClamAvScanner(
+      config.malwareScanner.host,
+      config.malwareScanner.port,
+      config.malwareScanner.timeoutMs,
+      config.malwareScanner.version,
+    ),
+  },
   logger: { level: config.logLevel },
   routing: { provider: routingProvider, requestsPerMinute: config.routing.requestsPerMinute },
   security: config.security,

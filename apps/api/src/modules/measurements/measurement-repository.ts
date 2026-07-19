@@ -54,13 +54,20 @@ export interface PersistMeasurementInput {
 
 interface MeasurementRow extends Omit<
   Measurement,
-  'baseValue' | 'calculatedQuantity' | 'gpsAccuracyM' | 'confirmedAt' | 'createdAt' | 'updatedAt'
+  | 'baseValue'
+  | 'calculatedQuantity'
+  | 'gpsAccuracyM'
+  | 'confirmedAt'
+  | 'createdAt'
+  | 'deletedAt'
+  | 'updatedAt'
 > {
   baseValue: number | string | null
   calculatedQuantity: number | string | null
   gpsAccuracyM: number | string | null
   confirmedAt: Date | string | null
   createdAt: Date | string
+  deletedAt: Date | string | null
   updatedAt: Date | string
 }
 
@@ -76,7 +83,7 @@ const measurementColumns = sql.raw(`
   m.calculation_version AS "calculationVersion", m.calculation_inputs AS "calculationInputs",
   m.calculation_output AS "calculationOutput", m.validation_status AS "validationStatus",
   m.warnings, m.status, m.note, m.confirmed_at AS "confirmedAt",
-  m.created_at AS "createdAt", m.updated_at AS "updatedAt"
+  m.deleted_at AS "deletedAt", m.created_at AS "createdAt", m.updated_at AS "updatedAt"
 `)
 
 function mapMeasurement(row: MeasurementRow): Measurement {
@@ -87,6 +94,7 @@ function mapMeasurement(row: MeasurementRow): Measurement {
     gpsAccuracyM: row.gpsAccuracyM === null ? null : Number(row.gpsAccuracyM),
     confirmedAt: row.confirmedAt ? isoDateTime(row.confirmedAt) : null,
     createdAt: isoDateTime(row.createdAt),
+    deletedAt: row.deletedAt ? isoDateTime(row.deletedAt) : null,
     updatedAt: isoDateTime(row.updatedAt),
   }
 }
@@ -227,7 +235,16 @@ export class MeasurementRepository {
     return result.rows[0] ? mapMeasurement(result.rows[0]) : null
   }
 
-  async list(workItemId: string, ownerId: string): Promise<Measurement[]> {
+  async list(
+    workItemId: string,
+    ownerId: string,
+    filters: {
+      bbox?: [number, number, number, number]
+      cursor?: { id: string; timestamp: string }
+      limit: number
+    },
+  ): Promise<{ items: Measurement[]; nextCursor: { id: string; timestamp: string } | null }> {
+    const bbox = filters.bbox ?? null
     const result = await sql<MeasurementRow>`
       SELECT ${measurementColumns}
       FROM measurement m
@@ -235,9 +252,32 @@ export class MeasurementRepository {
       JOIN inspection_case c ON c.id = w.inspection_case_id
       WHERE m.case_work_item_id = ${workItemId}::uuid AND c.owner_id = ${ownerId}::uuid
         AND c.deleted_at IS NULL AND w.deleted_at IS NULL AND m.deleted_at IS NULL
-      ORDER BY m.created_at, m.version
-      LIMIT 1000
+        AND (${bbox}::double precision[] IS NULL OR ST_Intersects(
+          COALESCE(m.normalized_geometry,m.raw_geometry),
+          ST_MakeEnvelope(${bbox?.[0] ?? null},${bbox?.[1] ?? null},
+            ${bbox?.[2] ?? null},${bbox?.[3] ?? null},4326)))
+        AND (${filters.cursor?.timestamp ?? null}::timestamptz IS NULL OR
+          (date_trunc('milliseconds',m.created_at),m.id) >
+            (${filters.cursor?.timestamp ?? null}::timestamptz,${filters.cursor?.id ?? null}::uuid))
+      ORDER BY date_trunc('milliseconds',m.created_at), m.id
+      LIMIT ${filters.limit + 1}
     `.execute(this.database)
+    const hasMore = result.rows.length > filters.limit
+    const rows = result.rows.slice(0, filters.limit)
+    const last = rows.at(-1)
+    return {
+      items: rows.map(mapMeasurement),
+      nextCursor: hasMore && last ? { id: last.id, timestamp: isoDateTime(last.createdAt) } : null,
+    }
+  }
+
+  async listDeleted(workItemId: string, ownerId: string): Promise<Measurement[]> {
+    const result = await sql<MeasurementRow>`SELECT ${measurementColumns}
+      FROM measurement m JOIN case_work_item w ON w.id=m.case_work_item_id
+      JOIN inspection_case c ON c.id=w.inspection_case_id
+      WHERE m.case_work_item_id=${workItemId}::uuid AND c.owner_id=${ownerId}::uuid
+        AND m.deleted_at IS NOT NULL AND c.deleted_at IS NULL AND w.deleted_at IS NULL
+      ORDER BY m.deleted_at DESC LIMIT 200`.execute(this.database)
     return result.rows.map(mapMeasurement)
   }
 
@@ -309,9 +349,29 @@ export class MeasurementRepository {
 
   async softDelete(executor: QueryExecutor, id: string): Promise<boolean> {
     const result = await sql`
-      UPDATE measurement SET status = 'deleted', deleted_at = now()
+      UPDATE measurement SET status_before_delete=status, status = 'deleted', deleted_at = now()
       WHERE id = ${id}::uuid AND deleted_at IS NULL AND status <> 'superseded'
     `.execute(executor)
+    return Number(result.numAffectedRows ?? 0) === 1
+  }
+
+  async getDeleted(
+    executor: QueryExecutor,
+    id: string,
+    ownerId: string,
+  ): Promise<Measurement | null> {
+    const result = await sql<MeasurementRow>`SELECT ${measurementColumns}
+      FROM measurement m JOIN case_work_item w ON w.id=m.case_work_item_id
+      JOIN inspection_case c ON c.id=w.inspection_case_id
+      WHERE m.id=${id}::uuid AND c.owner_id=${ownerId}::uuid AND m.deleted_at IS NOT NULL
+        AND c.deleted_at IS NULL AND w.deleted_at IS NULL`.execute(executor)
+    return result.rows[0] ? mapMeasurement(result.rows[0]) : null
+  }
+
+  async restore(executor: QueryExecutor, id: string): Promise<boolean> {
+    const result = await sql`UPDATE measurement SET status=COALESCE(status_before_delete,'draft'),
+      status_before_delete=NULL,deleted_at=NULL WHERE id=${id}::uuid AND deleted_at IS NOT NULL
+      AND COALESCE(status_before_delete,'draft') <> 'superseded'`.execute(executor)
     return Number(result.numAffectedRows ?? 0) === 1
   }
 }

@@ -25,6 +25,7 @@ export {
   CreateCaseRequestSchema,
   CreateWorkItemRequestSchema,
   InspectionCaseSchema,
+  RestoreRecordRequestSchema,
   UpdateCaseRequestSchema,
   WorkItemSchema,
   WorkItemStatusSchema,
@@ -36,6 +37,7 @@ export {
   type CreateCaseRequest,
   type CreateWorkItemRequest,
   type InspectionCase,
+  type RestoreRecordRequest,
   type UpdateCaseRequest,
   type WorkItem,
 } from './cases.js'
@@ -83,3 +85,5 @@ export {
 export * from './routing.js'
 export * from './field.js'
 export * from './comparison.js'
+export * from './imports.js'
+export * from './export-jobs.js'

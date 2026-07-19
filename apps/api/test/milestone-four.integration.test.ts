@@ -14,6 +14,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../src/app.js'
 import { createDatabase, type DatabaseHandle } from '../src/platform/database.js'
 import type { ObjectStorageHandle } from '../src/platform/object-storage.js'
+import type { MalwareScanner } from '../src/modules/field/malware-scanner.js'
+import type { Thumbnailer } from '../src/modules/field/thumbnailer.js'
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required for integration tests.')
@@ -36,6 +38,14 @@ class FakeStorage implements ObjectStorageHandle {
   async getObject() {
     return Readable.from(this.current)
   }
+  async putObject() {}
+}
+
+const cleanScanner: MalwareScanner = {
+  scan: async () => ({ provider: 'test-scanner', signature: null, status: 'clean', version: '1' }),
+}
+const testThumbnailer: Thumbnailer = {
+  create: async () => ({ bytes: Buffer.from('thumbnail'), contentType: 'image/webp' }),
 }
 
 let database: DatabaseHandle
@@ -47,6 +57,7 @@ beforeAll(async () => {
   app = await buildApp({
     auth: { cookieSecure: false, sessionTtlHours: 1 },
     dependencies: { database, objectStorage: storage },
+    evidence: { malwareScanner: cleanScanner, thumbnailer: testThumbnailer },
   })
 })
 afterAll(async () => {
@@ -231,7 +242,12 @@ describe('Milestone 4 field workflow', () => {
       payload: { attachmentId: pending.attachment.id },
     })
     expect(complete.statusCode).toBe(200)
-    expect(complete.json<Attachment>()).toMatchObject({ uploadStatus: 'completed', sha256 })
+    expect(complete.json<Attachment>()).toMatchObject({
+      uploadStatus: 'completed',
+      sha256,
+      scanStatus: 'clean',
+      thumbnailAvailable: true,
+    })
     const completedAttachments = await app.inject({
       headers,
       method: 'GET',
@@ -241,6 +257,27 @@ describe('Milestone 4 field workflow', () => {
     expect(completedAttachments.json<Attachment[]>()).toEqual([
       expect.objectContaining({ id: pending.attachment.id, uploadStatus: 'completed' }),
     ])
+    const removedAttachment = await app.inject({
+      headers,
+      method: 'DELETE',
+      url: `/api/v1/attachments/${pending.attachment.id}`,
+    })
+    expect(removedAttachment.statusCode).toBe(204)
+    const deletedAttachments = await app.inject({
+      headers: { cookie },
+      method: 'GET',
+      url: `/api/v1/work-items/${gps.measurement.workItemId}/attachments/deleted`,
+    })
+    expect(deletedAttachments.json<Attachment[]>()).toEqual([
+      expect.objectContaining({ id: pending.attachment.id }),
+    ])
+    const restoredAttachment = await app.inject({
+      headers,
+      method: 'POST',
+      url: `/api/v1/attachments/${pending.attachment.id}/restore`,
+      payload: { reason: 'Phục hồi ảnh kiểm thử' },
+    })
+    expect(restoredAttachment.statusCode).toBe(200)
 
     const tooLarge = await app.inject({
       headers,

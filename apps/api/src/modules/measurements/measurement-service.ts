@@ -4,162 +4,29 @@ import type {
   ConfirmMeasurementRequest,
   CreateMeasurementRequest,
   Measurement,
-  MeasurementWarning,
   SupersedeMeasurementRequest,
+  GeoJsonImportRequest,
 } from '@dove/contracts'
+import { sql } from 'kysely'
 
 import { AppError } from '../../platform/app-error.js'
-import type { AppDatabase, QueryExecutor } from '../../platform/database.js'
+import { decodeCursor, encodeCursor } from '../../platform/cursor.js'
+import type { AppDatabase } from '../../platform/database.js'
 import type { AuditRepository } from '../audit/audit-repository.js'
-import { calculateMeasurement } from './calculation-engine.js'
-import { validateGeoJsonInput } from './geometry-validation.js'
-import type {
-  PersistMeasurementInput,
-  MeasurementRepository,
-  WorkMeasurementContext,
-} from './measurement-repository.js'
-
-function auditSummary(measurement: Measurement): Record<string, unknown> {
-  return {
-    baseValue: measurement.baseValue,
-    calculatedQuantity: measurement.calculatedQuantity,
-    code: measurement.code,
-    id: measurement.id,
-    status: measurement.status,
-    validationStatus: measurement.validationStatus,
-    version: measurement.version,
-    warningCodes: measurement.warnings.map((warning) => warning.code),
-    workItemId: measurement.workItemId,
-  }
-}
+import { measurementAuditSummary as auditSummary } from './measurement-audit.js'
+import { parseMeasurementImport } from './measurement-import.js'
+import { MeasurementPreparation } from './measurement-preparation.js'
+import type { MeasurementRepository } from './measurement-repository.js'
 
 export class MeasurementService {
+  private readonly preparation: MeasurementPreparation
+
   constructor(
     private readonly database: AppDatabase,
     private readonly repository: MeasurementRepository,
     private readonly audit: AuditRepository,
-  ) {}
-
-  private async requireContext(
-    executor: QueryExecutor,
-    workItemId: string,
-    ownerId: string,
-  ): Promise<WorkMeasurementContext> {
-    const context = await this.repository.getWorkContext(executor, workItemId, ownerId)
-    if (!context) throw new AppError(404, 'WORK_ITEM_NOT_FOUND', 'Không tìm thấy công tác.')
-    if (context.caseStatus === 'locked') {
-      throw new AppError(423, 'CASE_LOCKED', 'Hồ sơ đã khóa và không thể sửa phép đo.')
-    }
-    return context
-  }
-
-  private async prepare(
-    executor: QueryExecutor,
-    workItemId: string,
-    ownerId: string,
-    input: CreateMeasurementRequest,
-    identity: { code: string; createdBy: string; supersedesId?: string; version: number },
-    excludeId?: string,
-  ): Promise<PersistMeasurementInput & { caseId: string }> {
-    validateGeoJsonInput(input.geometry, input.geometryKind)
-    if (
-      Object.values(input.calculationInputs ?? {}).some(
-        (value) => !Number.isFinite(value) || value < 0,
-      )
-    ) {
-      throw new AppError(
-        422,
-        'CALCULATION_INPUT_INVALID',
-        'Đầu vào công thức phải là số hữu hạn không âm.',
-      )
-    }
-    const context = await this.requireContext(executor, workItemId, ownerId)
-    if (context.expectedKind !== input.geometryKind) {
-      throw new AppError(
-        422,
-        'WORK_TYPE_GEOMETRY_MISMATCH',
-        'Kiểu đo không khớp cấu hình loại công tác.',
-        { expected: context.expectedKind, received: input.geometryKind },
-      )
-    }
-    const analysis = await this.repository.analyzeGeometry(
-      executor,
-      workItemId,
-      input.geometry,
-      input.geometryKind,
-      excludeId,
-    )
-    const warnings: MeasurementWarning[] = []
-    if (!analysis.valid) {
-      warnings.push({
-        code: 'GEOMETRY_INVALID',
-        severity: 'error',
-        message: 'Hình học không hợp lệ và chưa thể xác nhận.',
-        details: { reason: analysis.validReason },
-      })
-    }
-    if (analysis.outsideValue > 0.01) {
-      warnings.push({
-        code: 'OUTSIDE_CASE_BOUNDARY',
-        severity: 'warning',
-        message: 'Một phần hình học nằm ngoài ranh giới snapshot của hồ sơ.',
-        details: {
-          outsideValue: analysis.outsideValue,
-          unit: input.geometryKind === 'area' ? 'm2' : input.geometryKind === 'line' ? 'm' : 'điểm',
-        },
-      })
-    }
-    if (analysis.overlapCount > 0) {
-      warnings.push({
-        code: 'OVERLAP_DETECTED',
-        severity: 'warning',
-        message: 'Hình học chồng lặp với phép đo hiện hành trong cùng công tác.',
-        details: { count: analysis.overlapCount },
-      })
-    }
-
-    const calculation = calculateMeasurement(
-      analysis.baseValue,
-      input.geometryKind,
-      input.calculationInputs ?? {},
-      context.formulaSnapshot,
-    )
-    warnings.push(...calculation.warnings)
-    const hasError = warnings.some((warning) => warning.severity === 'error')
-    const validationStatus = hasError
-      ? 'invalid'
-      : warnings.length > 0
-        ? 'needs_attention'
-        : 'valid'
-
-    return {
-      baseValue: analysis.baseValue,
-      calculatedQuantity: calculation.quantity,
-      calculationInputs: input.calculationInputs ?? {},
-      calculationOutput: {
-        baseValue: analysis.baseValue,
-        expression: calculation.expression,
-        quantity: calculation.quantity,
-      },
-      calculationRuleCode: calculation.ruleCode,
-      calculationVersion: calculation.calculationVersion,
-      caseId: context.caseId,
-      code: identity.code,
-      createdBy: identity.createdBy,
-      geometryKind: input.geometryKind,
-      method: input.method ?? 'map_draw',
-      name: input.name,
-      normalizedGeometry: analysis.normalizedGeometry,
-      note: input.note ?? null,
-      rawGeometry: input.geometry,
-      status: warnings.length > 0 ? 'needs_attention' : 'draft',
-      ...(identity.supersedesId ? { supersedesId: identity.supersedesId } : {}),
-      unit: context.unit,
-      validationStatus,
-      version: identity.version,
-      warnings,
-      workItemId,
-    }
+  ) {
+    this.preparation = new MeasurementPreparation(repository)
   }
 
   async create(
@@ -169,7 +36,7 @@ export class MeasurementService {
     traceId: string,
   ) {
     return this.database.transaction().execute(async (transaction) => {
-      const prepared = await this.prepare(transaction, workItemId, ownerId, input, {
+      const prepared = await this.preparation.prepare(transaction, workItemId, ownerId, input, {
         code: `M-${randomUUID().slice(0, 8).toUpperCase()}`,
         createdBy: ownerId,
         version: 1,
@@ -191,14 +58,139 @@ export class MeasurementService {
     })
   }
 
-  async list(workItemId: string, ownerId: string) {
+  async previewImport(workItemId: string, input: GeoJsonImportRequest, ownerId: string) {
+    const parsed = parseMeasurementImport(input.collection, input.nameProperty)
     const context = await this.repository.getWorkContext(this.database, workItemId, ownerId)
     if (!context) throw new AppError(404, 'WORK_ITEM_NOT_FOUND', 'Không tìm thấy công tác.')
-    const [items, confirmedTotal] = await Promise.all([
-      this.repository.list(workItemId, ownerId),
+    if (context.caseStatus === 'locked') throw new AppError(423, 'CASE_LOCKED', 'Hồ sơ đã khóa.')
+    if (context.expectedKind !== parsed.geometryKind) {
+      throw new AppError(
+        422,
+        'WORK_TYPE_GEOMETRY_MISMATCH',
+        'Kiểu geometry import không khớp công tác.',
+        {
+          expected: context.expectedKind,
+          received: parsed.geometryKind,
+        },
+      )
+    }
+    return {
+      detectedSchema: parsed.detectedSchema,
+      featureCount: parsed.features.length,
+      geometryKind: parsed.geometryKind,
+      sampleNames: parsed.features.slice(0, 10).map((feature) => feature.name),
+      sizeBytes: parsed.sizeBytes,
+      sourceHash: parsed.sourceHash,
+    }
+  }
+
+  async commitImport(
+    workItemId: string,
+    input: GeoJsonImportRequest,
+    ownerId: string,
+    traceId: string,
+  ) {
+    const parsed = parseMeasurementImport(input.collection, input.nameProperty)
+    if (!input.expectedHash || input.expectedHash !== parsed.sourceHash) {
+      throw new AppError(
+        409,
+        'IMPORT_HASH_MISMATCH',
+        'GeoJSON đã khác bản preview; hãy preview lại.',
+      )
+    }
+    return this.database.transaction().execute(async (transaction) => {
+      const duplicate = await sql<{ id: string }>`SELECT id FROM measurement_import_batch
+        WHERE case_work_item_id=${workItemId}::uuid AND source_hash=${parsed.sourceHash}`.execute(
+        transaction,
+      )
+      if (duplicate.rows[0])
+        throw new AppError(
+          409,
+          'IMPORT_ALREADY_COMMITTED',
+          'GeoJSON này đã được import vào công tác.',
+        )
+      const measurements: Measurement[] = []
+      for (const feature of parsed.features) {
+        const prepared = await this.preparation.prepare(
+          transaction,
+          workItemId,
+          ownerId,
+          {
+            geometry: feature.geometry,
+            geometryKind: parsed.geometryKind,
+            method: 'import_geojson',
+            name: feature.name,
+          },
+          { code: `M-${randomUUID().slice(0, 8).toUpperCase()}`, createdBy: ownerId, version: 1 },
+        )
+        const id = await this.repository.insert(transaction, prepared)
+        const created = await this.repository.get(transaction, id, ownerId)
+        if (!created)
+          throw new AppError(500, 'IMPORT_MEASUREMENT_FAILED', 'Không thể đọc phép đo import.')
+        measurements.push(created)
+        await this.audit.append(transaction, {
+          action: 'imported',
+          actorId: ownerId,
+          afterData: auditSummary(created),
+          entityId: id,
+          entityType: 'measurement',
+          inspectionCaseId: prepared.caseId,
+          traceId,
+        })
+      }
+      const batchId = randomUUID()
+      await sql`INSERT INTO measurement_import_batch (id,case_work_item_id,source_name,
+        source_hash,size_bytes,feature_count,detected_schema,imported_measurement_ids,created_by)
+        VALUES (${batchId}::uuid,${workItemId}::uuid,${input.sourceName},${parsed.sourceHash},
+          ${parsed.sizeBytes},${parsed.features.length},${JSON.stringify(parsed.detectedSchema)}::jsonb,
+          ${measurements.map((item) => item.id)}::uuid[],${ownerId}::uuid)`.execute(transaction)
+      const caseId = measurements[0]!.caseId
+      await this.audit.append(transaction, {
+        action: 'import_committed',
+        actorId: ownerId,
+        afterData: {
+          batchId,
+          featureCount: measurements.length,
+          sourceHash: parsed.sourceHash,
+          sourceName: input.sourceName,
+        },
+        entityId: batchId,
+        entityType: 'measurement_import_batch',
+        inspectionCaseId: caseId,
+        traceId,
+      })
+      return { batchId, measurements, sourceHash: parsed.sourceHash }
+    })
+  }
+
+  async list(
+    workItemId: string,
+    ownerId: string,
+    filters: { bbox?: [number, number, number, number]; cursor?: string; limit: number },
+  ) {
+    const context = await this.repository.getWorkContext(this.database, workItemId, ownerId)
+    if (!context) throw new AppError(404, 'WORK_ITEM_NOT_FOUND', 'Không tìm thấy công tác.')
+    const { cursor: rawCursor, ...baseFilters } = filters
+    const cursor = decodeCursor(rawCursor)
+    const [page, confirmedTotal] = await Promise.all([
+      this.repository.list(workItemId, ownerId, {
+        ...baseFilters,
+        ...(cursor ? { cursor } : {}),
+      }),
       this.repository.confirmedTotal(workItemId, ownerId),
     ])
-    return { items, confirmedTotal, unit: context.unit }
+    return {
+      items: page.items,
+      confirmedTotal,
+      unit: context.unit,
+      nextCursor: page.nextCursor ? encodeCursor(page.nextCursor) : null,
+    }
+  }
+
+  async listDeleted(workItemId: string, ownerId: string) {
+    const context = await this.repository.getWorkContext(this.database, workItemId, ownerId)
+    if (!context) throw new AppError(404, 'WORK_ITEM_NOT_FOUND', 'Không tìm thấy công tác.')
+    return this.repository.listDeleted(workItemId, ownerId)
   }
 
   async get(measurementId: string, ownerId: string) {
@@ -225,7 +217,7 @@ export class MeasurementService {
           'Chỉ phép đo chưa xác nhận mới được kiểm tra lại.',
         )
       }
-      const prepared = await this.prepare(
+      const prepared = await this.preparation.prepare(
         transaction,
         before.workItemId,
         ownerId,
@@ -267,7 +259,7 @@ export class MeasurementService {
     return this.database.transaction().execute(async (transaction) => {
       const before = await this.repository.get(transaction, measurementId, ownerId)
       if (!before) throw new AppError(404, 'MEASUREMENT_NOT_FOUND', 'Không tìm thấy phép đo.')
-      await this.requireContext(transaction, before.workItemId, ownerId)
+      await this.preparation.requireContext(transaction, before.workItemId, ownerId)
       if (before.warnings.some((warning) => warning.severity === 'error')) {
         throw new AppError(422, 'MEASUREMENT_HAS_ERRORS', 'Phép đo còn lỗi và chưa thể xác nhận.')
       }
@@ -312,7 +304,7 @@ export class MeasurementService {
           'Chỉ phép đo đã xác nhận mới tạo phiên bản hiệu chỉnh.',
         )
       }
-      const prepared = await this.prepare(
+      const prepared = await this.preparation.prepare(
         transaction,
         before.workItemId,
         ownerId,
@@ -351,7 +343,7 @@ export class MeasurementService {
     return this.database.transaction().execute(async (transaction) => {
       const before = await this.repository.get(transaction, measurementId, ownerId)
       if (!before) throw new AppError(404, 'MEASUREMENT_NOT_FOUND', 'Không tìm thấy phép đo.')
-      await this.requireContext(transaction, before.workItemId, ownerId)
+      await this.preparation.requireContext(transaction, before.workItemId, ownerId)
       if (!(await this.repository.softDelete(transaction, before.id))) {
         throw new AppError(409, 'MEASUREMENT_DELETE_CONFLICT', 'Không thể xóa mềm phép đo này.')
       }
@@ -364,6 +356,33 @@ export class MeasurementService {
         inspectionCaseId: before.caseId,
         traceId,
       })
+    })
+  }
+
+  async restore(measurementId: string, reason: string, ownerId: string, traceId: string) {
+    return this.database.transaction().execute(async (transaction) => {
+      const before = await this.repository.getDeleted(transaction, measurementId, ownerId)
+      if (!before)
+        throw new AppError(404, 'MEASUREMENT_NOT_FOUND', 'Không tìm thấy phép đo đã xóa.')
+      await this.preparation.requireContext(transaction, before.workItemId, ownerId)
+      if (!(await this.repository.restore(transaction, measurementId))) {
+        throw new AppError(409, 'MEASUREMENT_RESTORE_CONFLICT', 'Không thể phục hồi phép đo này.')
+      }
+      const restored = await this.repository.get(transaction, measurementId, ownerId)
+      if (!restored)
+        throw new AppError(500, 'MEASUREMENT_RESTORE_FAILED', 'Không thể đọc phép đo phục hồi.')
+      await this.audit.append(transaction, {
+        action: 'restored',
+        actorId: ownerId,
+        beforeData: auditSummary(before),
+        afterData: auditSummary(restored),
+        entityId: restored.id,
+        entityType: 'measurement',
+        inspectionCaseId: restored.caseId,
+        reason,
+        traceId,
+      })
+      return restored
     })
   }
 }
