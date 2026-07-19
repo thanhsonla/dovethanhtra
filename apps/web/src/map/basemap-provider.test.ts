@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { StyleSpecification } from 'maplibre-gl'
 
-import { ConfiguredBasemapProvider } from './basemap-provider.js'
+import { ConfiguredBasemapProvider, prepareUprightGoogleHybridStyle } from './basemap-provider.js'
 
 describe('configured basemap provider', () => {
   it('uses only attributed HTTPS styles and retains the local fallback', () => {
@@ -39,7 +40,10 @@ describe('configured basemap provider', () => {
       VITE_MAPBOX_PUBLIC_TOKEN: 'pk.public-test-token',
     })
     const satellite = provider.get('mapbox-satellite')
-    expect(provider.defaultId).toBe('google-hybrid-direct')
+    const upright = provider.get('google-hybrid-upright')
+    expect(provider.defaultId).toBe('google-hybrid-upright')
+    expect(upright.label).toBe('Google vệ tinh · chữ luôn thẳng')
+    expect(upright.loadStyle).toBeTypeOf('function')
     expect(provider.supportsOffline('mapbox-satellite')).toBe(false)
     expect(satellite).toMatchObject({
       id: 'mapbox-satellite',
@@ -47,6 +51,43 @@ describe('configured basemap provider', () => {
     })
     expect(satellite.attribution).toContain('© Mapbox')
     expect(JSON.stringify(satellite.style)).toContain('satellite-streets-v12')
+  })
+
+  it('places Google imagery below screen-aligned Mapbox vector labels', () => {
+    const sourceStyle = {
+      version: 8 as const,
+      name: 'Thuộc tính riêng của Mapbox',
+      sprite: 'mapbox://sprites/mapbox/satellite-streets-v12',
+      glyphs: 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf',
+      sources: {
+        'mapbox-satellite': { type: 'raster' as const, url: 'mapbox://mapbox.satellite' },
+        composite: { type: 'vector' as const, url: 'mapbox://mapbox.mapbox-streets-v8' },
+      },
+      layers: [
+        { id: 'satellite', type: 'raster' as const, source: 'mapbox-satellite' },
+        {
+          id: 'place-label',
+          type: 'symbol' as const,
+          source: 'composite',
+          'source-layer': 'place_label',
+          layout: { 'text-field': ['get', 'name'] },
+        },
+      ],
+    } as StyleSpecification
+
+    const style = prepareUprightGoogleHybridStyle(sourceStyle, 'pk.public-test-token')
+    const label = style.layers.find((layer) => layer.id === 'place-label')
+
+    expect(JSON.stringify(sourceStyle.layers[0])).toContain('mapbox-satellite')
+    expect(JSON.stringify(style.layers[0])).toContain('google-satellite-upright')
+    expect(JSON.stringify(style.sources)).toContain('mt1.google.com/vt/lyrs=s')
+    expect(JSON.stringify(style.sources)).toContain('api.mapbox.com/v4/mapbox.mapbox-streets-v8')
+    expect(style).not.toHaveProperty('name')
+    expect(label?.layout).toMatchObject({
+      'text-keep-upright': true,
+      'text-pitch-alignment': 'viewport',
+      'text-rotation-alignment': 'viewport',
+    })
   })
 
   it('provides an Esri imagery plus reference-layer fallback without a token', () => {

@@ -269,3 +269,6 @@
   gọi trực tiếp, service worker không cache và Google chính thức/Mapbox/Esri/local
   vẫn được giữ làm fallback. Endpoint đã trả tile Sơn La nhưng chưa có bảo đảm API
   hoặc nghiệm thu điều khoản cho production.
+- Nền có public token Mapbox được tách thành ảnh Google `lyrs=s` và nhãn vector
+  Mapbox. Tất cả symbol label căn theo `viewport`, nên giữ hướng nằm ngang khi người
+  dùng xoay/nghiêng bản đồ; Google hybrid raster là fallback nếu lớp nhãn lỗi.

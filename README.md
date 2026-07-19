@@ -127,6 +127,12 @@ URL chỉ tồn tại trong `BasemapProvider`, không được component gọi t
 reference layers, Google Map Tiles API chính thức và nền kỹ thuật local vẫn được giữ
 làm các lựa chọn/fallback độc lập.
 
+Khi có `VITE_MAPBOX_PUBLIC_TOKEN`, lựa chọn mặc định đổi thành **Google vệ tinh ·
+chữ luôn thẳng**: adapter dùng ảnh Google `lyrs=s` ở dưới và các lớp nhãn vector của
+Mapbox Satellite Streets ở trên. Nhãn được đặt `text-rotation-alignment: viewport`
+và `text-pitch-alignment: viewport`, vì vậy vẫn nằm ngang theo màn hình khi xoay hoặc
+nghiêng bản đồ. Nếu style nhãn không tải được, ứng dụng trở về Google hybrid raster.
+
 Để bật lớp **Vệ tinh Mapbox**, đặt public token giới hạn domain/API/quota trong tệp
 `.env.local` (tệp này bị Git bỏ qua): `VITE_MAPBOX_PUBLIC_TOKEN=pk...`. Ứng dụng dùng
 Mapbox Satellite Streets qua `BasemapProvider`, hiển thị attribution Mapbox/

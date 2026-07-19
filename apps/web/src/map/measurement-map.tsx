@@ -189,6 +189,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const markers = useRef<Marker[]>([])
   const attributionControl = useRef<AttributionControl | null>(null)
   const attributionRequest = useRef(0)
+  const styleRequest = useRef(0)
   const fallbackRequested = useRef(false)
   const activeBasemapId = useRef(props.basemapId)
   const latest = useRef(props)
@@ -229,54 +230,68 @@ export function MeasurementMap(props: MeasurementMapProps) {
   useEffect(() => {
     if (!container.current) return
     const descriptor = props.basemapProvider.get(props.basemapId)
-    const map = new maplibregl.Map({
-      attributionControl: false,
-      center: [104.685, 20.805],
-      container: container.current,
-      doubleClickZoom: false,
-      style: descriptor.style,
-      zoom: 11.5,
-    })
-    map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-    replaceAttribution(map, descriptor.attribution)
-    map.on('style.load', () => {
-      syncData(map, latest.current)
-      refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId))
-    })
-    map.on('moveend', () =>
-      refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId)),
-    )
-    map.on('click', (event) => {
-      const current = latest.current
-      if (['point', 'line', 'area'].includes(current.mode)) {
-        current.onAddPosition([event.lngLat.lng, event.lngLat.lat])
-        return
-      }
-      const hit = map.queryRenderedFeatures(event.point, {
-        layers: ['measurement-areas', 'measurement-lines', 'measurement-points'],
-      })[0]
-      const id: unknown = hit?.properties?.id
-      if (typeof id === 'string') current.onSelect(id)
-    })
-    map.on('dblclick', (event) => {
-      if (['line', 'area'].includes(latest.current.mode)) {
-        event.preventDefault()
-        latest.current.onFinishDrawing()
-      }
-    })
-    map.on('error', () => {
-      const current = latest.current
-      const active = current.basemapProvider.get(current.basemapId)
-      if (!current.basemapProvider.supportsOffline(active.id) && !fallbackRequested.current) {
-        fallbackRequested.current = true
-        current.onBasemapFallback()
-      }
-    })
-    mapRef.current = map
+    let disposed = false
+    const requestId = ++styleRequest.current
+    void (descriptor.loadStyle?.() ?? Promise.resolve(descriptor.style))
+      .then((style) => {
+        if (disposed || requestId !== styleRequest.current || !container.current) return
+        const map = new maplibregl.Map({
+          attributionControl: false,
+          center: [104.685, 20.805],
+          container: container.current,
+          doubleClickZoom: false,
+          style,
+          zoom: 11.5,
+        })
+        map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
+        replaceAttribution(map, descriptor.attribution)
+        map.on('style.load', () => {
+          syncData(map, latest.current)
+          refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId))
+        })
+        map.on('moveend', () =>
+          refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId)),
+        )
+        map.on('click', (event) => {
+          const current = latest.current
+          if (['point', 'line', 'area'].includes(current.mode)) {
+            current.onAddPosition([event.lngLat.lng, event.lngLat.lat])
+            return
+          }
+          const hit = map.queryRenderedFeatures(event.point, {
+            layers: ['measurement-areas', 'measurement-lines', 'measurement-points'],
+          })[0]
+          const id: unknown = hit?.properties?.id
+          if (typeof id === 'string') current.onSelect(id)
+        })
+        map.on('dblclick', (event) => {
+          if (['line', 'area'].includes(latest.current.mode)) {
+            event.preventDefault()
+            latest.current.onFinishDrawing()
+          }
+        })
+        map.on('error', () => {
+          const current = latest.current
+          const active = current.basemapProvider.get(current.basemapId)
+          if (!current.basemapProvider.supportsOffline(active.id) && !fallbackRequested.current) {
+            fallbackRequested.current = true
+            current.onBasemapFallback()
+          }
+        })
+        mapRef.current = map
+      })
+      .catch(() => {
+        if (!disposed && !fallbackRequested.current) {
+          fallbackRequested.current = true
+          latest.current.onBasemapFallback()
+        }
+      })
     return () => {
+      disposed = true
+      styleRequest.current += 1
       attributionRequest.current += 1
       markers.current.forEach((marker) => marker.remove())
-      map.remove()
+      mapRef.current?.remove()
       attributionControl.current = null
       mapRef.current = null
     }
@@ -299,8 +314,19 @@ export function MeasurementMap(props: MeasurementMapProps) {
     activeBasemapId.current = props.basemapId
     fallbackRequested.current = false
     const descriptor = props.basemapProvider.get(props.basemapId)
-    map.setStyle(descriptor.style)
-    refreshAttribution(map, descriptor)
+    const requestId = ++styleRequest.current
+    void (descriptor.loadStyle?.() ?? Promise.resolve(descriptor.style))
+      .then((style) => {
+        if (requestId !== styleRequest.current || mapRef.current !== map) return
+        map.setStyle(style)
+        refreshAttribution(map, descriptor)
+      })
+      .catch(() => {
+        if (!fallbackRequested.current) {
+          fallbackRequested.current = true
+          latest.current.onBasemapFallback()
+        }
+      })
   }, [props.basemapId, props.basemapProvider])
 
   useEffect(() => {

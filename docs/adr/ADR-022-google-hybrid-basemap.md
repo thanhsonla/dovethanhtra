@@ -25,6 +25,10 @@ công bố chính thức cũng không bảo đảm giấy phép hoặc độ ổ
 - Cho phép `BasemapProvider` dùng trực tiếp
   `https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}` và đặt làm nền mặc
   định. Dùng `lyrs=y` để ảnh vệ tinh và nhãn địa danh nằm trong cùng raster tile.
+- Khi có public token Mapbox, ưu tiên biến thể `google-hybrid-upright`: dùng Google
+  `lyrs=s` làm ảnh nền, giữ lớp đường/nhãn vector từ Mapbox Satellite Streets và ép
+  `text-rotation-alignment`/`text-pitch-alignment` về `viewport`. Nhãn vì thế luôn
+  hướng thẳng theo màn hình trong khi ảnh bản đồ vẫn xoay bình thường.
 - Ngoại lệ không cho phép component gọi trực tiếp, không mở rộng sang endpoint khác,
   không cache/offline, không trích xuất hoặc phân tích dữ liệu từ tile.
 - Google Map Tiles API chính thức vẫn được giữ làm lựa chọn ưu tiên khi backend có
@@ -55,3 +59,8 @@ API key. Đổi lại, endpoint không có hợp đồng ổn định trong tài
 có thể thay đổi/bị chặn và không cung cấp attribution động theo viewport. Chủ dự án
 chấp nhận rủi ro này; ứng dụng phải giữ fallback và không được coi đây là nền phù
 hợp production cho đến khi pháp lý/điều khoản được xác minh.
+
+Biến thể nhãn luôn thẳng phụ thuộc thêm vào public token và style Mapbox. Token phải
+được giới hạn domain/API/quota; attribution Google, Mapbox và OpenStreetMap cùng được
+hiển thị. Nếu thiếu token, Google hybrid raster vẫn hoạt động nhưng chữ đã ghép trong
+ảnh sẽ xoay cùng bản đồ do giới hạn kỹ thuật của raster tile.

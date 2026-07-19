@@ -298,8 +298,14 @@ export function MapWorkspace(props: {
             }
             onFinishDrawing={finishDrawing}
             onBasemapFallback={() => {
-              setBasemapId(localFallbackId)
-              setError('Không tải được nền đã cấu hình; đã chuyển sang nền kỹ thuật local.')
+              const fallbackId =
+                basemapId === 'google-hybrid-upright' ? 'google-hybrid-direct' : localFallbackId
+              setBasemapId(fallbackId)
+              setError(
+                fallbackId === 'google-hybrid-direct'
+                  ? 'Không tải được lớp nhãn thẳng; đã chuyển sang Google hybrid raster.'
+                  : 'Không tải được nền đã cấu hình; đã chuyển sang nền kỹ thuật local.',
+              )
             }}
             onSelect={selectMeasurement}
             selectedId={selectedId}

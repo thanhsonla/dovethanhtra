@@ -12,6 +12,7 @@ export interface BasemapDescriptor {
   attribution: string
   id: string
   label: string
+  loadStyle?: () => Promise<StyleSpecification>
   style: StyleSpecification | string
   viewportAttribution?: (viewport: BasemapViewport) => Promise<string>
 }
@@ -29,7 +30,6 @@ export interface BasemapEnvironment {
   VITE_BASEMAP_STYLE_URL?: string | undefined
   VITE_MAPBOX_PUBLIC_TOKEN?: string | undefined
 }
-
 export interface BasemapCapabilities {
   googleMapTiles?: boolean
 }
@@ -140,6 +140,90 @@ function mapboxSatelliteDescriptor(environment: BasemapEnvironment): BasemapDesc
   }
 }
 
+function mapboxApiUrl(url: string, token: string): string {
+  const mapId = url.replace('mapbox://', '')
+  return `https://api.mapbox.com/v4/${mapId}.json?secure&access_token=${encodeURIComponent(token)}`
+}
+export function prepareUprightGoogleHybridStyle(
+  input: StyleSpecification,
+  token: string,
+): StyleSpecification {
+  const style = JSON.parse(JSON.stringify(input)) as StyleSpecification
+  const styleRecord = style as unknown as Record<string, unknown>
+  const sources = style.sources as Record<string, { type: string; url?: string }>
+  for (const property of [
+    'created',
+    'draft',
+    'fog',
+    'id',
+    'modified',
+    'name',
+    'owner',
+    'projection',
+    'visibility',
+  ]) {
+    delete styleRecord[property]
+  }
+  delete sources['mapbox-satellite']
+  for (const source of Object.values(sources)) {
+    if (source.url?.startsWith('mapbox://')) source.url = mapboxApiUrl(source.url, token)
+  }
+  style.sources['google-satellite-upright'] = {
+    type: 'raster',
+    tiles: ['https://mt1.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}'],
+    tileSize: 256,
+    maxzoom: 22,
+  }
+  style.sprite =
+    `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/sprite` +
+    `?access_token=${encodeURIComponent(token)}`
+  style.glyphs =
+    `https://api.mapbox.com/fonts/v1/mapbox/{fontstack}/{range}.pbf` +
+    `?access_token=${encodeURIComponent(token)}`
+  style.layers = style.layers.map((layer) => {
+    if (layer.id === 'satellite' && layer.type === 'raster') {
+      return { ...layer, source: 'google-satellite-upright' }
+    }
+    if (layer.type !== 'symbol') return layer
+    return {
+      ...layer,
+      layout: {
+        ...layer.layout,
+        'icon-pitch-alignment': 'viewport',
+        'icon-rotation-alignment': 'viewport',
+        'text-keep-upright': true,
+        'text-pitch-alignment': 'viewport',
+        'text-rotation-alignment': 'viewport',
+      },
+    }
+  })
+  return style
+}
+
+function uprightGoogleHybridDescriptor(
+  environment: BasemapEnvironment,
+  fetcher: Fetcher,
+): BasemapDescriptor | null {
+  const token = environment.VITE_MAPBOX_PUBLIC_TOKEN?.trim()
+  if (!token || !/^pk\.[A-Za-z0-9._-]+$/.test(token) || token.length > 500) return null
+  const styleUrl =
+    'https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12' +
+    `?access_token=${encodeURIComponent(token)}`
+  return {
+    attribution:
+      '<a href="https://maps.google.com/">Google Maps</a> · ' +
+      '<a href="https://www.mapbox.com/about/maps/">© Mapbox</a> · ' +
+      '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a>',
+    id: 'google-hybrid-upright',
+    label: 'Google vệ tinh · chữ luôn thẳng',
+    style: technicalStyle('#18211d'),
+    loadStyle: async () => {
+      const response = await fetcher(styleUrl)
+      if (!response.ok) throw new Error('Không tải được style nhãn bản đồ.')
+      return prepareUprightGoogleHybridStyle((await response.json()) as StyleSpecification, token)
+    },
+  }
+}
 function esriImageryWithLabelsDescriptor(): BasemapDescriptor {
   const serviceRoot = 'https://server.arcgisonline.com/ArcGIS/rest/services'
   return {
@@ -254,6 +338,7 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
   private readonly local = new LocalTechnicalBasemapProvider()
   private readonly remote: BasemapDescriptor | null
   private readonly satellite: BasemapDescriptor | null
+  private readonly uprightGoogle: BasemapDescriptor | null
   private readonly google: BasemapDescriptor | null
   private readonly directGoogle = directGoogleHybridDescriptor()
   private readonly esri = esriImageryWithLabelsDescriptor()
@@ -266,12 +351,14 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
   ) {
     this.remote = remoteDescriptor(environment)
     this.satellite = mapboxSatelliteDescriptor(environment)
+    this.uprightGoogle = uprightGoogleHybridDescriptor(environment, fetcher)
     this.google = capabilities.googleMapTiles ? googleSatelliteDescriptor(fetcher) : null
-    this.defaultId = this.google?.id ?? this.directGoogle.id
+    this.defaultId = this.uprightGoogle?.id ?? this.google?.id ?? this.directGoogle.id
   }
 
   descriptors() {
     return [
+      ...(this.uprightGoogle ? [this.uprightGoogle] : []),
       ...(this.google ? [this.google] : []),
       this.directGoogle,
       this.esri,
@@ -289,6 +376,7 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
     if (
       this.remote?.id === id ||
       this.satellite?.id === id ||
+      this.uprightGoogle?.id === id ||
       this.google?.id === id ||
       this.directGoogle.id === id ||
       this.esri.id === id
