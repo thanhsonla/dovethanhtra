@@ -33,4 +33,24 @@ describe('configured basemap provider', () => {
     expect(provider.defaultId).toBe('technical-light')
     expect(provider.descriptors()).toHaveLength(2)
   })
+
+  it('adds an attributed Mapbox satellite raster layer for a public token', () => {
+    const provider = new ConfiguredBasemapProvider({
+      VITE_MAPBOX_PUBLIC_TOKEN: 'pk.public-test-token',
+    })
+    const satellite = provider.get('mapbox-satellite')
+    expect(provider.defaultId).toBe('mapbox-satellite')
+    expect(provider.supportsOffline('mapbox-satellite')).toBe(false)
+    expect(satellite).toMatchObject({
+      id: 'mapbox-satellite',
+      label: 'Vệ tinh Mapbox',
+    })
+    expect(satellite.attribution).toContain('© Mapbox')
+    expect(JSON.stringify(satellite.style)).toContain('satellite-streets-v12')
+  })
+
+  it.each(['sk.secret-token', 'pk.invalid&token', ''])('rejects unsafe Mapbox tokens', (token) => {
+    const provider = new ConfiguredBasemapProvider({ VITE_MAPBOX_PUBLIC_TOKEN: token })
+    expect(provider.descriptors().map((item) => item.id)).not.toContain('mapbox-satellite')
+  })
 })

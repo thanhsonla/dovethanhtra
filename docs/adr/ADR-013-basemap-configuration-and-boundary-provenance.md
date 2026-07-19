@@ -15,6 +15,10 @@ nhúng secret, thiếu attribution hoặc thay dữ liệu cùng phiên bản m�
   Chỉ chấp nhận HTTPS, ngoại trừ HTTP trên localhost; URL có user/password bị từ chối.
 - Public browser token, nếu nhà cung cấp yêu cầu, được truyền qua biến môi trường và
   phải giới hạn domain/API/quota. Không ghi token thật vào repository hoặc log.
+- Khi có `VITE_MAPBOX_PUBLIC_TOKEN` dạng public token, adapter thêm nền raster
+  Mapbox Satellite Streets và đặt làm mặc định. Token chỉ nằm trong `.env.local` bị
+  Git bỏ qua; attribution Mapbox/OpenStreetMap luôn hiển thị và tile không được đưa
+  vào cache ngoại tuyến của service worker.
 - Nếu style cấu hình không tải được trước khi hoàn tất, giao diện chuyển về nền kỹ
   thuật local và thông báo rõ; lớp phép đo không phụ thuộc vòng đời của style nền.
 - Ranh giới chính thức được nhập bằng GeoJSON `FeatureCollection` EPSG:4326. Mỗi

@@ -119,6 +119,11 @@ Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMA
 nếu tải lỗi, ứng dụng tự trở về nền kỹ thuật local. Không đặt secret thật trong
 `.env.example`; public browser token vẫn phải được giới hạn domain/API/quota.
 
+Để bật lớp **Vệ tinh Mapbox**, đặt public token giới hạn domain/API/quota trong tệp
+`.env.local` (tệp này bị Git bỏ qua): `VITE_MAPBOX_PUBLIC_TOKEN=pk...`. Ứng dụng dùng
+Mapbox Satellite Streets qua `BasemapProvider`, hiển thị attribution Mapbox/
+OpenStreetMap và không cache tile vệ tinh trong service worker.
+
 Nhập ranh giới chính thức sau khi migration đã chạy:
 
 ```bash

@@ -4,6 +4,7 @@ interface ImportMetaEnv {
   readonly VITE_BASEMAP_ATTRIBUTION?: string
   readonly VITE_BASEMAP_LABEL?: string
   readonly VITE_BASEMAP_STYLE_URL?: string
+  readonly VITE_MAPBOX_PUBLIC_TOKEN?: string
 }
 
 interface ImportMeta {

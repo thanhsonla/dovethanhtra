@@ -249,3 +249,6 @@
 - Bản đồ hiện trường luôn mở được ngay cả khi hồ sơ chưa có công tác để người dùng
   xem ranh giới và nền bản đồ. Cây lớp và panel thuộc tính hướng dẫn quay lại thêm
   công tác trước khi đo; nút bản đồ không còn bị ẩn gây nhầm là chưa có chức năng.
+- Đã bổ sung nền `Vệ tinh Mapbox` qua raster Satellite Streets trong
+  `BasemapProvider`. Public token chỉ được đọc từ `.env.local`, attribution được giữ
+  trên bản đồ và nền kỹ thuật local vẫn là fallback khi token/tiles không khả dụng.
