@@ -5,6 +5,7 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1100,
   },
+  envDir: '../..',
   plugins: [react()],
   server: {
     port: 5180,
