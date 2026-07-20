@@ -5,7 +5,7 @@ import type { CaptureClassificationPanel as CaptureClassificationPanelType } fro
 import { MapDetailsPanel } from './map-details-panel.js'
 import { MapDrawer } from './map-drawer.js'
 import { MapQuickWorkflow } from './map-quick-workflow.js'
-import { MeasurementLayerTree } from './measurement-layer-tree.js'
+import type { MapFeatureFilterPanel as MapFeatureFilterPanelType } from './map-feature-filter-panel.js'
 
 type PanelName = 'capture' | 'classification' | 'data' | 'details' | 'filters'
 const CaptureDraftPanel = lazy(async () => ({
@@ -14,6 +14,9 @@ const CaptureDraftPanel = lazy(async () => ({
 const CaptureClassificationPanel = lazy(async () => ({
   default: (await import('./capture-classification-panel.js')).CaptureClassificationPanel,
 }))
+const MapFeatureFilterPanel = lazy(async () => ({
+  default: (await import('./map-feature-filter-panel.js')).MapFeatureFilterPanel,
+}))
 
 export function MapWorkspaceDrawers(props: {
   activePanel: PanelName | null
@@ -21,7 +24,7 @@ export function MapWorkspaceDrawers(props: {
   classification: ComponentProps<typeof CaptureClassificationPanelType> | null
   data: ComponentProps<typeof MapQuickWorkflow>
   details: ComponentProps<typeof MapDetailsPanel>
-  filters: ComponentProps<typeof MeasurementLayerTree>
+  filters: ComponentProps<typeof MapFeatureFilterPanelType>
   onClose: () => void
 }) {
   if (!props.activePanel) return null
@@ -67,7 +70,9 @@ export function MapWorkspaceDrawers(props: {
   if (props.activePanel === 'filters') {
     return (
       <MapDrawer id="map-filter-drawer" label="Bộ lọc và lớp dữ liệu" onClose={props.onClose}>
-        <MeasurementLayerTree {...props.filters} />
+        <Suspense fallback={<p role="status">Đang mở bộ lọc…</p>}>
+          <MapFeatureFilterPanel {...props.filters} />
+        </Suspense>
       </MapDrawer>
     )
   }

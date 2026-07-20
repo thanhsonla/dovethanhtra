@@ -142,8 +142,12 @@
   con trong classify transaction, tự chọn rule đúng geometry và giữ phần nâng cao
   thu gọn. ETag/device/idempotency được giữ xuyên retry; 409/423 cho tải lại server
   version, cảnh báo PostGIS phải được đọc trước khi đóng hoặc tiếp tục đo. Công tác
-  mới và measurement được nạp lại vào cây dữ liệu ngay sau khi lưu. Task 8 (lọc đa
-  cấp/chọn feature/chi tiết) là bước tiếp theo.
+  mới và measurement được nạp lại vào cây dữ liệu ngay sau khi lưu. Task 8 đã bổ
+  sung API/UI lọc đa cấp theo khu vực, lĩnh vực, công tác, mục con, công cụ và
+  trạng thái; truy vấn bbox/cursor server-side chỉ tổng hợp dữ liệu đã xác nhận.
+  Chọn feature trên bản đồ sẽ highlight/zoom và hiện thẻ chi tiết gọn; dữ liệu
+  ngoài vùng nhìn được nạp thêm theo cursor. Task 9 (mở, tải xuống và chỉnh sửa)
+  là bước tiếp theo.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

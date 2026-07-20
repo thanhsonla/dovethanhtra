@@ -1,6 +1,7 @@
 import type {
   GeoJsonGeometry,
   MeasurementListResponse,
+  ManagementZone,
   TreatmentFacility,
   WorkItem,
 } from '@dove/contracts'
@@ -11,7 +12,7 @@ import { createBasemapProvider } from './basemap-provider.js'
 
 export function useMapWorkspaceResources(
   caseId: string,
-  measurable: WorkItem[],
+  _measurable: WorkItem[],
   onError: (message: string) => void,
 ) {
   const [basemaps, setBasemaps] = useState(() => createBasemapProvider())
@@ -19,6 +20,7 @@ export function useMapWorkspaceResources(
   const [boundary, setBoundary] = useState<GeoJsonGeometry | null>(null)
   const [facilities, setFacilities] = useState<TreatmentFacility[]>([])
   const [summaries, setSummaries] = useState<Record<string, MeasurementListResponse>>({})
+  const [zones, setZones] = useState<ManagementZone[]>([])
 
   useEffect(() => {
     void api
@@ -36,14 +38,12 @@ export function useMapWorkspaceResources(
     void Promise.all([
       api.getCaseMapContext(caseId),
       api.listTreatmentFacilities(),
-      ...measurable.map((item) => api.listMeasurements(item.id, { limit: 200 })),
+      api.listManagementZones(),
     ])
-      .then(([context, treatmentFacilities, ...items]) => {
+      .then(([context, treatmentFacilities, managementZones]) => {
         setBoundary(context.boundary)
         setFacilities(treatmentFacilities)
-        setSummaries(
-          Object.fromEntries(measurable.map((workItem, index) => [workItem.id, items[index]!])),
-        )
+        setZones(managementZones)
       })
       .catch((reason: unknown) =>
         onError(reason instanceof Error ? reason.message : 'Không tải được bản đồ.'),
@@ -65,5 +65,6 @@ export function useMapWorkspaceResources(
     setBasemapId,
     setSummaries,
     summaries,
+    zones,
   }
 }

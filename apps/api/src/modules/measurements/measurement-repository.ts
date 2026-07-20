@@ -54,7 +54,7 @@ export interface PersistMeasurementInput {
   workComponentId?: string
 }
 
-interface MeasurementRow extends Omit<
+export interface MeasurementRow extends Omit<
   Measurement,
   | 'baseValue'
   | 'calculatedQuantity'
@@ -73,7 +73,7 @@ interface MeasurementRow extends Omit<
   updatedAt: Date | string
 }
 
-const measurementColumns = sql.raw(`
+export const measurementColumns = sql.raw(`
   m.id, c.id AS "caseId", m.case_work_item_id AS "workItemId",
   m.work_component_id AS "workComponentId", m.capture_draft_id AS "captureDraftId",
   m.code, m.name,
@@ -90,7 +90,7 @@ const measurementColumns = sql.raw(`
   m.deleted_at AS "deletedAt", m.created_at AS "createdAt", m.updated_at AS "updatedAt"
 `)
 
-function mapMeasurement(row: MeasurementRow): Measurement {
+export function mapMeasurement(row: MeasurementRow): Measurement {
   return {
     ...row,
     baseValue: row.baseValue === null ? null : Number(row.baseValue),

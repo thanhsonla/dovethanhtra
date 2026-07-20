@@ -15,6 +15,7 @@ import {
   ensureCrosshairImage,
   syncDraftData,
 } from './draft-drawing-layer.js'
+import { geometryExtent } from './map-selection.js'
 
 export type MapMode = 'view' | 'point' | 'line' | 'area' | 'edit'
 export type Position = [number, number]
@@ -38,6 +39,7 @@ interface MeasurementMapProps {
   onFinishDrawing(): void
   onSelectDraftVertex(index: number): void
   onSelect(id: string): void
+  onViewportChange(bbox: string): void
   selectedId: string | null
 }
 
@@ -170,6 +172,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const attributionRequest = useRef(0)
   const styleRequest = useRef(0)
   const fallbackRequested = useRef(false)
+  const lastZoomedId = useRef<string | null>(null)
   const activeBasemapId = useRef(props.basemapId)
   const latest = useRef(props)
   latest.current = props
@@ -210,6 +213,15 @@ export function MeasurementMap(props: MeasurementMapProps) {
       .catch(() => undefined)
   }
 
+  const reportViewport = (map: MapLibreMap) => {
+    const bounds = map.getBounds()
+    latest.current.onViewportChange(
+      [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
+        .map((value) => value.toFixed(6))
+        .join(','),
+    )
+  }
+
   useEffect(() => {
     if (!container.current) return
     const descriptor = props.basemapProvider.get(props.basemapId)
@@ -231,10 +243,12 @@ export function MeasurementMap(props: MeasurementMapProps) {
         map.on('style.load', () => {
           syncData(map, latest.current)
           refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId))
+          reportViewport(map)
         })
-        map.on('moveend', () =>
-          refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId)),
-        )
+        map.on('moveend', () => {
+          refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId))
+          reportViewport(map)
+        })
         map.on('click', (event) => {
           const current = latest.current
           if (['point', 'line', 'area'].includes(current.mode)) {
@@ -321,6 +335,35 @@ export function MeasurementMap(props: MeasurementMapProps) {
         }
       })
   }, [props.basemapId, props.basemapProvider])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !props.selectedId || lastZoomedId.current === props.selectedId) return
+    const measurement = props.measurements.find((item) => item.id === props.selectedId)
+    if (!measurement) return
+    const extent = geometryExtent(measurement.normalizedGeometry ?? measurement.rawGeometry)
+    if (!extent) return
+    lastZoomedId.current = props.selectedId
+    if (extent.west === extent.east && extent.south === extent.north) {
+      map.easeTo({
+        center: [extent.west, extent.south],
+        duration: 450,
+        zoom: Math.max(map.getZoom(), 16),
+      })
+    } else {
+      map.fitBounds(
+        [
+          [extent.west, extent.south],
+          [extent.east, extent.north],
+        ],
+        {
+          duration: 450,
+          maxZoom: 17,
+          padding: 90,
+        },
+      )
+    }
+  }, [props.measurements, props.selectedId])
 
   useEffect(() => {
     markers.current.forEach((marker) => marker.remove())

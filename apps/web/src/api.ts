@@ -43,6 +43,9 @@ import type {
   CreateCaptureDraftRequest,
   ManagementZone,
   WorkComponent,
+  MapFeatureListResponse,
+  MeasurementGeometryKind,
+  MeasurementStatus,
 } from '@dove/contracts'
 
 export class ApiClientError extends Error {
@@ -218,6 +221,28 @@ export const api = {
     if (options.limit) query.set('limit', String(options.limit))
     return request<MeasurementListResponse>(
       `/work-items/${workItemId}/measurements${query.size ? `?${query}` : ''}`,
+    )
+  },
+  listMapFeatures: (
+    caseId: string,
+    options: {
+      bbox?: string
+      componentId?: string
+      cursor?: string
+      geometryKind?: MeasurementGeometryKind
+      limit?: number
+      managementZoneId?: string
+      serviceGroupId?: string
+      status?: MeasurementStatus
+      workItemId?: string
+    } = {},
+  ) => {
+    const query = new URLSearchParams()
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== '') query.set(key, String(value))
+    }
+    return request<MapFeatureListResponse>(
+      `/cases/${caseId}/map-features${query.size ? `?${query}` : ''}`,
     )
   },
   listDeletedMeasurements: (workItemId: string) =>

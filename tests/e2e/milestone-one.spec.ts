@@ -114,6 +114,8 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByLabel('Tên công tác khi phân loại').fill(classifiedWorkName)
   await page.getByLabel('Mục con khi phân loại').selectOption('new')
   await page.getByLabel('Tên mục con khi phân loại').fill('Đường kiểm tra E2E')
+  const classifiedMeasurementName = `Tuyến lọc E2E ${suffix}`
+  await page.getByLabel('Tên phép đo khi phân loại').fill(classifiedMeasurementName)
   const classificationResponse = page.waitForResponse(
     (response) => response.request().method() === 'POST' && response.url().endsWith('/classify'),
   )
@@ -162,7 +164,17 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByText('Nháp chưa phân loại · Đã đồng bộ')).toBeVisible()
 
   await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
-  await expect(page.getByRole('button', { name: classifiedWorkName, exact: true })).toBeVisible()
+  await page.getByLabel('Công tác').selectOption({ label: classifiedWorkName })
+  await expect(page.getByLabel('Mục con')).toContainText('Đường kiểm tra E2E')
+  await page.getByLabel('Mục con').selectOption({ label: 'Đường kiểm tra E2E' })
+  await page.getByLabel('Công cụ', { exact: true }).selectOption('line')
+  await page.getByLabel('Trạng thái').selectOption('draft')
+  const filteredFeature = page.getByRole('button', { name: new RegExp(classifiedMeasurementName) })
+  await expect(filteredFeature).toBeVisible()
+  await filteredFeature.click()
+  await expect(page.getByLabel('Thông tin đối tượng đã chọn')).toContainText(
+    classifiedMeasurementName,
+  )
   await page.getByRole('button', { name: 'Đóng bộ lọc và lớp dữ liệu' }).click()
   await expect(page.locator('.map-drawer')).toHaveCount(0)
   await expect(page.locator('.measurement-panel')).toHaveCount(0)
@@ -225,9 +237,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByLabel('Bản đồ nền').selectOption('google-hybrid-direct')
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Google Maps')
   await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
-  await page
-    .getByRole('button', { name: 'Công tác E2E', exact: true })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByLabel('Công tác').selectOption({ label: 'Công tác E2E' })
   await page.getByRole('button', { name: 'Mở nâng cao' }).click()
   await page.getByText('Import GeoJSON', { exact: true }).press('Enter')
   await page.getByLabel('Tệp GeoJSON').setInputFiles({

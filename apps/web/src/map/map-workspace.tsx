@@ -5,8 +5,9 @@ import type {
   ServiceGroup,
   WorkItem,
   WorkType,
+  WorkComponent,
 } from '@dove/contracts'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { api } from '../api.js'
 import { DrawingToolbar, type MapPanelName } from './drawing-toolbar.js'
@@ -17,12 +18,11 @@ import {
   undoHistory,
   type HistoryState,
 } from './geometry-history.js'
-import { geometryFromPositions, positionsFromGeometry, temporaryValue } from './map-geometry.js'
+import { geometryFromPositions, positionsFromGeometry } from './map-geometry.js'
 import { MapWorkspaceHeader } from './map-workspace-header.js'
-import { mapModeLabel } from './map-quick-tool.js'
-import { MapCaptureStatus } from './map-capture-status.js'
 import { inheritedCalculationInputs, nextMeasurementName } from './measurement-entry-defaults.js'
 import { MeasurementMap } from './measurement-map.js'
+import { MapWorkspaceOverlays } from './map-workspace-overlays.js'
 import { activeWorkId, measurementKindForWork, rememberActiveWork } from './map-workspace-state.js'
 import { MapWorkspaceDrawers } from './map-workspace-drawers.js'
 import { useMapDrawingWorkflow } from './use-map-drawing-workflow.js'
@@ -31,7 +31,7 @@ import {
   classificationPanelProps,
   useClassificationSelection,
 } from './use-capture-classification.js'
-
+import { useMapFeatures } from './use-map-features.js'
 export function MapWorkspace(props: {
   groups: ServiceGroup[]
   inspectionCase: InspectionCase
@@ -45,21 +45,14 @@ export function MapWorkspace(props: {
     [props.workItems, props.workTypes],
   )
   const [error, setError] = useState('')
-  const {
-    basemapId,
-    basemaps,
-    boundary,
-    facilities,
-    refreshWork,
-    setBasemapId,
-    setSummaries,
-    summaries,
-  } = useMapWorkspaceResources(props.inspectionCase.id, measurable, setError)
+  const { basemapId, basemaps, boundary, facilities, refreshWork, setBasemapId, summaries, zones } =
+    useMapWorkspaceResources(props.inspectionCase.id, measurable, setError)
   const [selectedWorkId, setSelectedWorkId] = useState(() =>
     activeWorkId(props.inspectionCase.id, measurable),
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const hidden = useMemo(() => new Set<string>(), [])
+  const [components, setComponents] = useState<WorkComponent[]>([])
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [routePreview, setRoutePreview] = useState<GeoJsonGeometry | null>(null)
   const [activePanel, setActivePanel] = useState<MapPanelName | null>(null)
@@ -83,9 +76,12 @@ export function MapWorkspace(props: {
     setMode,
   } = drawingWorkflow
   const selectedBasemap = basemaps.get(basemapId)
+  const mapFeatures = useMapFeatures(props.inspectionCase.id, setError)
   const classificationDraft = classificationSelection.find(drawingWorkflow.captureSync.drafts)
-  const allMeasurements = Object.values(summaries).flatMap((summary) => summary.items)
-  const selected = allMeasurements.find((item) => item.id === selectedId) ?? null
+  const allMeasurements = mapFeatures.items.map((feature) => feature.measurement)
+  const selectedFeature =
+    mapFeatures.items.find((item) => item.measurement.id === selectedId) ?? null
+  const selected = selectedFeature?.measurement ?? null
   const selectedWork = measurable.find((item) => item.id === selectedWorkId) ?? null
   const selectedSummary = selectedWork ? summaries[selectedWork.id] : undefined
   const selectedKind = selectedWork ? measurementKindForWork(selectedWork, props.workTypes) : null
@@ -124,6 +120,28 @@ export function MapWorkspace(props: {
     selectedSummary?.items ?? [],
   )
 
+  const refreshMeasurementData = async (workItemId: string) => {
+    const summary = await refreshWork(workItemId)
+    await mapFeatures.refresh()
+    return summary
+  }
+
+  useEffect(() => {
+    if (selectedWorkId && !summaries[selectedWorkId])
+      void refreshWork(selectedWorkId).catch(() => undefined)
+  }, [selectedWorkId])
+
+  useEffect(() => {
+    if (!mapFeatures.filters.workItemId) {
+      setComponents([])
+      return
+    }
+    void api
+      .listWorkComponents(mapFeatures.filters.workItemId)
+      .then(setComponents)
+      .catch(() => setComponents([]))
+  }, [mapFeatures.filters.workItemId])
+
   const startDrawing = (nextMode: DrawableMeasurementGeometryKind, workItemId: string) => {
     setSelectedWorkId(workItemId)
     rememberActiveWork(props.inspectionCase.id, workItemId)
@@ -132,19 +150,16 @@ export function MapWorkspace(props: {
     setRoutePreview(null)
     setSelectedId(null)
   }
-
   const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind) => {
     if (!drawingWorkflow.start(nextMode, 'capture')) return
     setEditHistory(null)
     setRoutePreview(null)
     setSelectedId(null)
   }
-
   const cancelDraft = () => {
     drawingWorkflow.cancel()
     setEditHistory(null)
   }
-
   const selectWork = (item: WorkItem) => {
     setSelectedWorkId(item.id)
     rememberActiveWork(props.inspectionCase.id, item.id)
@@ -152,7 +167,6 @@ export function MapWorkspace(props: {
     cancelDraft()
     setActivePanel(measurementKindForWork(item, props.workTypes) === 'route' ? 'details' : null)
   }
-
   const changeHistory = (direction: 'undo' | 'redo') => {
     if (editHistory) {
       setEditHistory(direction === 'undo' ? undoHistory(editHistory) : redoHistory(editHistory))
@@ -160,7 +174,6 @@ export function MapWorkspace(props: {
       dispatchDrawing({ type: direction })
     }
   }
-
   const selectMeasurement = (id: string) => {
     const measurement = allMeasurements.find((item) => item.id === id)
     if (!measurement) return
@@ -172,6 +185,17 @@ export function MapWorkspace(props: {
     clearCapture()
     setDraftReady(false)
     setActivePanel('details')
+  }
+  const selectMapFeature = (id: string) => {
+    const feature = mapFeatures.items.find((item) => item.measurement.id === id)
+    if (!feature) return
+    setSelectedId(id)
+    setSelectedWorkId(feature.measurement.workItemId)
+    rememberActiveWork(props.inspectionCase.id, feature.measurement.workItemId)
+    setMode('view')
+    setEditHistory(null)
+    clearCapture()
+    setDraftReady(false)
   }
 
   if (!boundary) {
@@ -246,28 +270,20 @@ export function MapWorkspace(props: {
                   : 'Không tải được nền đã chọn; đã chuyển sang Vệ tinh + địa danh.',
               )
             }}
-            onSelect={selectMeasurement}
+            onSelect={selectMapFeature}
+            onViewportChange={mapFeatures.setBbox}
             selectedId={selectedId}
           />
-          {(mode === 'line' || mode === 'area') && (
-            <output
-              className="map-live-result"
-              aria-label="Kết quả đo trực tiếp"
-              aria-live="polite"
-            >
-              <span>{mode === 'line' ? 'Tổng tuyến bổ sung' : 'Diện tích vùng bổ sung'}</span>
-              <strong>{temporaryValue(draftGeometry)}</strong>
-            </output>
-          )}
-          {captureSync.latest && mode === 'view' && (
-            <MapCaptureStatus
-              draft={captureSync.latest}
-              onOpen={() => classificationSelection.open(captureSync.latest!)}
-            />
-          )}
-          <div className="map-status-sr" aria-live="polite">
-            Chế độ {mapModeLabel(mode)}. Nền {selectedBasemap.label}.
-          </div>
+          <MapWorkspaceOverlays
+            basemapLabel={selectedBasemap.label}
+            capture={captureSync.latest}
+            draftGeometry={draftGeometry}
+            mode={mode}
+            onClearSelection={() => setSelectedId(null)}
+            onOpenCapture={() => classificationSelection.open(captureSync.latest!)}
+            onOpenFeature={() => setActivePanel('details')}
+            selectedFeature={selectedFeature}
+          />
         </section>
 
         <MapWorkspaceDrawers
@@ -280,7 +296,7 @@ export function MapWorkspace(props: {
             onError: setError,
             onPanel: setActivePanel,
             onStart: startCaptureDrawing,
-            refreshWork,
+            refreshWork: refreshMeasurementData,
             selection: classificationSelection,
             setSelectedId,
             setSelectedWorkId,
@@ -293,7 +309,7 @@ export function MapWorkspace(props: {
               try {
                 const confirmed = await api.confirmMeasurement(measurement.id)
                 setSelectedId(confirmed.id)
-                await refreshWork(confirmed.workItemId)
+                await refreshMeasurementData(confirmed.workItemId)
               } catch (reason) {
                 setError(reason instanceof Error ? reason.message : 'Không thể xác nhận phép đo.')
               }
@@ -327,11 +343,11 @@ export function MapWorkspace(props: {
             onChanged: async (measurement) => {
               cancelDraft()
               setSelectedId(measurement.id)
-              await refreshWork(measurement.workItemId)
+              await refreshMeasurementData(measurement.workItemId)
             },
             onDataChanged: async (measurement) => {
               if (measurement) setSelectedId(measurement.id)
-              if (selectedWork) await refreshWork(selectedWork.id)
+              if (selectedWork) await refreshMeasurementData(selectedWork.id)
             },
             onEdit: () => {
               if (selected) {
@@ -343,53 +359,40 @@ export function MapWorkspace(props: {
             onRoutePreview: setRoutePreview,
             onRouteSaved: async (route) => {
               setSelectedId(route.measurement.id)
-              await refreshWork(route.measurement.workItemId)
+              await refreshMeasurementData(route.measurement.workItemId)
             },
             onSaved: async (measurement, action) => {
               if (action === 'continue' && drawableKind) {
                 startDrawing(drawableKind, measurement.workItemId)
-                await refreshWork(measurement.workItemId)
+                await refreshMeasurementData(measurement.workItemId)
                 return
               }
               cancelDraft()
               setSelectedId(measurement.id)
-              await refreshWork(measurement.workItemId)
+              await refreshMeasurementData(measurement.workItemId)
             },
           }}
           filters={{
+            components,
+            confirmedTotals: mapFeatures.confirmedTotals,
+            filters: mapFeatures.filters,
             groups: props.groups,
-            hidden,
-            measurable,
-            onLoadMore: (workItemId, cursor) =>
-              void api
-                .listMeasurements(workItemId, { cursor, limit: 200 })
-                .then((page) =>
-                  setSummaries((current) => ({
-                    ...current,
-                    [workItemId]: {
-                      ...page,
-                      items: [...current[workItemId]!.items, ...page.items],
-                    },
-                  })),
-                )
-                .catch((reason) =>
-                  setError(
-                    reason instanceof Error ? reason.message : 'Không nạp được trang tiếp theo.',
-                  ),
-                ),
-            onSelectMeasurement: selectMeasurement,
-            onSelectWork: selectWork,
-            onToggleWork: (id) =>
-              setHidden((current) => {
-                const next = new Set(current)
-                if (next.has(id)) next.delete(id)
-                else next.add(id)
-                return next
-              }),
+            items: mapFeatures.items,
+            loading: mapFeatures.loading,
+            nextCursor: mapFeatures.nextCursor,
+            onChange: (next) => {
+              mapFeatures.setFilters(next)
+              const work = measurable.find((item) => item.id === next.workItemId)
+              if (work) {
+                setSelectedWorkId(work.id)
+                rememberActiveWork(props.inspectionCase.id, work.id)
+              }
+            },
+            onLoadMore: () => void mapFeatures.loadMore(),
+            onSelect: selectMapFeature,
             selectedId,
-            selectedWorkId,
-            summaries,
-            workTypes: props.workTypes,
+            workItems: measurable,
+            zones,
           }}
           onClose={() => setActivePanel(null)}
         />

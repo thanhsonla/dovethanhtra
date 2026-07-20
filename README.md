@@ -226,6 +226,11 @@ bản đúng kiểu hình học và gửi một lần qua classify transaction. 
 được giữ trên phiếu để người dùng đọc trước khi đóng/tiếp tục; xung đột có nút tải
 lại phiên bản máy chủ. “Lưu & tiếp tục đo” khởi động lại đúng công cụ vừa dùng.
 
+Task 8 bổ sung bộ lọc server-side theo Khu vực, Lĩnh vực, Công tác, Mục con, công cụ
+đo và trạng thái; hỗ trợ bbox/cursor cho vùng nhìn lớn. Chỉ measurement đã xác nhận
+được đưa vào tổng; chọn đối tượng sẽ highlight/zoom trên bản đồ và hiện thẻ chi tiết
+gọn. Task 9 tiếp tục với mở metadata/history, tải GeoJSON và chỉnh sửa theo version.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`

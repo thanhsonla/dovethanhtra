@@ -253,11 +253,16 @@ giao diện.
 - Unit bao phủ lọc/payload; E2E Chromium/WebKit bao phủ tạo cấu trúc, cảnh báo
   PostGIS, đồng bộ offline còn lại và cập nhật cây dữ liệu.
 
-### Task 8 — Lọc, chọn và chi tiết
+### Task 8 — Lọc, chọn và chi tiết — hoàn thành
 
 - API/UI lọc theo mọi cấp, bbox/cursor; feature selection highlight/zoom và thẻ chi
   tiết gọn. Tổng mục con/công tác lấy từ máy chủ và chỉ gồm confirmed.
 - Performance test 5.000 geometry và E2E tổ hợp filter.
+- Đã hoàn thành: API `map-features` hỗ trợ lọc theo toàn bộ cây phân loại, bbox và
+  cursor opaque; tổng hợp chỉ lấy measurement `confirmed`. UI có drawer bộ lọc,
+  danh sách theo vùng nhìn, chọn đối tượng để highlight/zoom và thẻ chi tiết gọn.
+  Bổ sung index GIST cho hình học hiệu dụng và kiểm thử integration, performance
+  5.000 geometry cùng E2E Chromium/WebKit.
 
 ### Task 9 — Mở, tải xuống và chỉnh sửa
 

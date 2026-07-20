@@ -47,6 +47,9 @@ import { CaptureDraftService } from './modules/measurements/capture-draft-servic
 import { MeasurementRepository } from './modules/measurements/measurement-repository.js'
 import { measurementRoutes } from './modules/measurements/measurement-routes.js'
 import { MeasurementService } from './modules/measurements/measurement-service.js'
+import { MapFeatureRepository } from './modules/measurements/map-feature-repository.js'
+import { mapFeatureRoutes } from './modules/measurements/map-feature-routes.js'
+import { MapFeatureService } from './modules/measurements/map-feature-service.js'
 import { LocalRoutingProvider } from './modules/routing/local-routing-provider.js'
 import { RoutingRepository } from './modules/routing/routing-repository.js'
 import { routingRoutes } from './modules/routing/routing-routes.js'
@@ -208,6 +211,11 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     guards,
     prefix: '/api/v1',
     service: measurements,
+  })
+  await app.register(mapFeatureRoutes, {
+    guards,
+    prefix: '/api/v1/cases',
+    service: new MapFeatureService(new MapFeatureRepository(database)),
   })
   await app.register(captureDraftRoutes, { guards, prefix: '/api/v1', service: captureDrafts })
   await app.register(routingRoutes, { guards, prefix: '/api/v1', service: routing })

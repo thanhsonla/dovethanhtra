@@ -145,13 +145,50 @@ export const CaseMapContextSchema = Type.Object(
   { additionalProperties: false, $id: 'CaseMapContext' },
 )
 
+export const MapFeatureSchema = Type.Object(
+  {
+    measurement: MeasurementSchema,
+    managementZoneId: Type.Union([UuidSchema, Type.Null()]),
+    managementZoneName: Type.Union([Type.String(), Type.Null()]),
+    serviceGroupId: UuidSchema,
+    serviceGroupName: Type.String(),
+    workItemName: Type.String(),
+    workComponentName: Type.Union([Type.String(), Type.Null()]),
+  },
+  { additionalProperties: false, $id: 'MapFeature' },
+)
+
+export const MapFeatureConfirmedTotalSchema = Type.Object(
+  {
+    workItemId: UuidSchema,
+    workComponentId: Type.Union([UuidSchema, Type.Null()]),
+    measurementCount: Type.Integer({ minimum: 0 }),
+    total: Type.Number({ minimum: 0 }),
+    unit: Type.String(),
+  },
+  { additionalProperties: false },
+)
+
+export const MapFeatureListResponseSchema = Type.Object(
+  {
+    items: Type.Array(MapFeatureSchema),
+    confirmedTotals: Type.Array(MapFeatureConfirmedTotalSchema),
+    nextCursor: Type.Union([Type.String(), Type.Null()]),
+  },
+  { additionalProperties: false, $id: 'MapFeatureListResponse' },
+)
+
 export type CaseMapContext = Static<typeof CaseMapContextSchema>
 export type ConfirmMeasurementRequest = Static<typeof ConfirmMeasurementRequestSchema>
 export type CreateMeasurementRequest = Static<typeof CreateMeasurementRequestSchema>
 export type GeoJsonGeometry = Static<typeof GeoJsonGeometrySchema>
 export type Measurement = Static<typeof MeasurementSchema>
 export type MeasurementGeometryKind = Static<typeof MeasurementGeometryKindSchema>
+export type MeasurementStatus = Static<typeof MeasurementStatusSchema>
 export type DrawableMeasurementGeometryKind = Static<typeof DrawableMeasurementGeometryKindSchema>
 export type MeasurementListResponse = Static<typeof MeasurementListResponseSchema>
+export type MapFeature = Static<typeof MapFeatureSchema>
+export type MapFeatureConfirmedTotal = Static<typeof MapFeatureConfirmedTotalSchema>
+export type MapFeatureListResponse = Static<typeof MapFeatureListResponseSchema>
 export type MeasurementWarning = Static<typeof MeasurementWarningSchema>
 export type SupersedeMeasurementRequest = Static<typeof SupersedeMeasurementRequestSchema>

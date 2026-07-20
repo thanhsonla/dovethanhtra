@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { ExportDataset } from '../src/modules/exports/export-provider.js'
 import { ExportRepository } from '../src/modules/exports/export-repository.js'
 import { LocalExportProvider } from '../src/modules/exports/local-export-provider.js'
+import { MapFeatureRepository } from '../src/modules/measurements/map-feature-repository.js'
 import { createDatabase, type DatabaseHandle } from '../src/platform/database.js'
 
 const databaseUrl = process.env.DATABASE_URL
@@ -64,6 +65,19 @@ afterAll(async () => {
 })
 
 describe('Milestone 6 release performance', () => {
+  it('loads 5.000 map geometries by bbox inside the 5 second interaction budget', async () => {
+    const repository = new MapFeatureRepository(database.query)
+    const started = performance.now()
+    const page = await repository.list(caseId, ownerId, {
+      bbox: [104.64, 20.8, 104.66, 20.8005],
+      limit: 5_000,
+    })
+    const elapsedMs = performance.now() - started
+    expect(page.items).toHaveLength(5_000)
+    expect(page.nextCursor).toEqual(expect.any(Object))
+    expect(elapsedMs).toBeLessThan(5_000)
+  })
+
   it('loads 10.000 geometries and creates an XLSX inside release budgets', async () => {
     const repository = new ExportRepository(database.query)
     const loadStarted = performance.now()
