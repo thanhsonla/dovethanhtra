@@ -12,6 +12,7 @@ export interface BasemapDescriptor {
   attribution: string
   id: string
   label: string
+  lockRotation?: boolean
   loadStyle?: () => Promise<StyleSpecification>
   style: StyleSpecification | string
   viewportAttribution?: (viewport: BasemapViewport) => Promise<string>
@@ -119,6 +120,7 @@ function mapboxSatelliteDescriptor(environment: BasemapEnvironment): BasemapDesc
       '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a>',
     id: 'mapbox-satellite',
     label: 'Vệ tinh Mapbox + địa danh',
+    lockRotation: true,
     style: {
       version: 8,
       sources: {
@@ -235,6 +237,7 @@ function esriImageryWithLabelsDescriptor(): BasemapDescriptor {
       '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
     id: 'esri-imagery-labels',
     label: 'Vệ tinh + địa danh',
+    lockRotation: true,
     style: {
       version: 8,
       sources: {
@@ -272,7 +275,8 @@ function directGoogleHybridDescriptor(): BasemapDescriptor {
   return {
     attribution: '<a href="https://maps.google.com/">Google Maps</a>',
     id: 'google-hybrid-direct',
-    label: 'Google vệ tinh + địa danh',
+    label: 'Google vệ tinh + địa danh · khóa hướng Bắc',
+    lockRotation: true,
     style: {
       version: 8,
       sources: {
@@ -299,7 +303,8 @@ function googleSatelliteDescriptor(fetcher: Fetcher): BasemapDescriptor {
   return {
     attribution,
     id: 'google-satellite-labels',
-    label: 'Google vệ tinh + địa danh',
+    label: 'Google vệ tinh + địa danh · khóa hướng Bắc',
+    lockRotation: true,
     style: {
       version: 8,
       sources: {

@@ -139,6 +139,17 @@ function syncData(map: MapLibreMap, props: MeasurementMapProps) {
   syncDraftData(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
 }
 
+function applyRotationPolicy(map: MapLibreMap, descriptor: BasemapDescriptor) {
+  if (descriptor.lockRotation) {
+    map.dragRotate.disable()
+    map.touchZoomRotate.disableRotation()
+    if (Math.abs(map.getBearing()) > 0.01) map.setBearing(0)
+    return
+  }
+  map.dragRotate.enable()
+  map.touchZoomRotate.enableRotation()
+}
+
 function positions(geometry: GeoJsonGeometry): Position[] | null {
   if (geometry.type === 'Point') return [geometry.coordinates as Position]
   if (geometry.type === 'LineString') return geometry.coordinates as Position[]
@@ -239,6 +250,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
           zoom: 11.5,
         })
         map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
+        applyRotationPolicy(map, descriptor)
         replaceAttribution(map, descriptor.attribution)
         map.on('style.load', () => {
           syncData(map, latest.current)
@@ -248,6 +260,10 @@ export function MeasurementMap(props: MeasurementMapProps) {
         map.on('moveend', () => {
           refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId))
           reportViewport(map)
+        })
+        map.on('rotate', () => {
+          const active = latest.current.basemapProvider.get(latest.current.basemapId)
+          if (active.lockRotation && Math.abs(map.getBearing()) > 0.01) map.setBearing(0)
         })
         map.on('click', (event) => {
           const current = latest.current
@@ -321,6 +337,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
     activeBasemapId.current = props.basemapId
     fallbackRequested.current = false
     const descriptor = props.basemapProvider.get(props.basemapId)
+    applyRotationPolicy(map, descriptor)
     const requestId = ++styleRequest.current
     void (descriptor.loadStyle?.() ?? Promise.resolve(descriptor.style))
       .then((style) => {

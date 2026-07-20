@@ -48,6 +48,7 @@ describe('configured basemap provider', () => {
     expect(satellite).toMatchObject({
       id: 'mapbox-satellite',
       label: 'Vệ tinh Mapbox + địa danh',
+      lockRotation: true,
     })
     expect(satellite.attribution).toContain('© Mapbox')
     expect(JSON.stringify(satellite.style)).toContain('satellite-streets-v12')
@@ -133,7 +134,8 @@ describe('configured basemap provider', () => {
     const provider = new ConfiguredBasemapProvider({})
     const google = provider.get('google-hybrid-direct')
 
-    expect(google.label).toBe('Google vệ tinh + địa danh')
+    expect(google.label).toBe('Google vệ tinh + địa danh · khóa hướng Bắc')
+    expect(google.lockRotation).toBe(true)
     expect(JSON.stringify(google.style)).toContain(
       'https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
     )
