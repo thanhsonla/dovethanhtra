@@ -78,6 +78,7 @@ export {
   type WorkType,
 } from './catalog.js'
 export { ApiErrorSchema, DateSchema, DateTimeSchema, UuidSchema, type ApiError } from './common.js'
+export * from './capture-drafts.js'
 export {
   CaseMapContextSchema,
   ConfirmMeasurementRequestSchema,

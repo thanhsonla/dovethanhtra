@@ -90,11 +90,14 @@ Mục con thuộc công tác: `id`, `case_work_item_id`, `name`, `display_order`
 Vùng đệm đo trước khi phân loại: `id`, `inspection_case_id`, `local_id`, `device_id`,
 `idempotency_key`, `payload_hash`, `geometry_kind`, `method`, `raw_geometry`,
 `metadata`, `status`, `status_before_delete`, `version`, `classified_measurement_id`,
-`created_by`, `classified_at`, `deleted_at`.
+`classification_idempotency_key`, `classification_payload_hash`, `created_by`,
+`classified_at`, `deleted_at`.
 
 Nháp không mang kết quả chính thức và không tham gia aggregate/snapshot. Khi phân
 loại, máy chủ tạo/liên kết cấu trúc và measurement trong cùng transaction, sau đó
 gắn `classified_measurement_id`; raw geometry của nháp không bị ghi đè.
+Khóa/hash tạo nháp và khóa/hash phân loại được lưu riêng. Retry cùng khóa/hash trả
+lại draft/measurement hiện có; khóa trùng payload khác bị từ chối.
 
 ### `measurement`
 

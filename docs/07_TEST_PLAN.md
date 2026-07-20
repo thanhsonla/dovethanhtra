@@ -72,6 +72,11 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 | EXP-003   | Tải một/tập feature GeoJSON  | Đúng filter, quyền, hash và audit       |
 | EDIT-001  | Sửa measurement confirmed     | Phiên bản mới, bắt buộc lý do          |
 
+Task 4 có integration riêng bao phủ CRUD nháp, ETag lỗi thời, replay tạo/phân loại,
+payload conflict, IDOR, tạo công tác/mục con trong transaction, hồ sơ khóa và
+GeoJSON sai cấu trúc. Kiểm tra tổng xác nhận phải vẫn bằng 0 sau khi chỉ tạo nháp
+hoặc measurement chưa xác nhận.
+
 ## 5. Ca kiểm thử ngoại tuyến
 
 | Mã      | Tình huống                           | Kết quả mong đợi                                    |

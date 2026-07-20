@@ -11,6 +11,7 @@ import type { GoogleMapTiles } from './modules/basemaps/google-map-tiles-provide
 import { AuditRepository } from './modules/audit/audit-repository.js'
 import { auditRoutes } from './modules/audit/audit-routes.js'
 import { CaseRepository } from './modules/cases/case-repository.js'
+import { CaseCaptureClassificationAdapter } from './modules/cases/capture-classification-adapter.js'
 import { caseRoutes } from './modules/cases/case-routes.js'
 import { CaseService } from './modules/cases/case-service.js'
 import { CatalogRepository } from './modules/catalog/catalog-repository.js'
@@ -40,6 +41,9 @@ import { createAuthGuards } from './modules/identity/auth-guards.js'
 import { IdentityRepository } from './modules/identity/identity-repository.js'
 import { identityRoutes } from './modules/identity/identity-routes.js'
 import { IdentityService } from './modules/identity/identity-service.js'
+import { CaptureDraftRepository } from './modules/measurements/capture-draft-repository.js'
+import { captureDraftRoutes } from './modules/measurements/capture-draft-routes.js'
+import { CaptureDraftService } from './modules/measurements/capture-draft-service.js'
 import { MeasurementRepository } from './modules/measurements/measurement-repository.js'
 import { measurementRoutes } from './modules/measurements/measurement-routes.js'
 import { MeasurementService } from './modules/measurements/measurement-service.js'
@@ -126,12 +130,10 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   const audit = new AuditRepository(database)
   const catalogRepository = new CatalogRepository(database)
   const snapshots = new SnapshotRepository()
-  const cases = new CaseService(database, new CaseRepository(database), audit, snapshots)
-  const workStructure = new WorkStructureService(
-    database,
-    new WorkStructureRepository(database),
-    audit,
-  )
+  const caseRepository = new CaseRepository(database)
+  const workStructureRepository = new WorkStructureRepository(database)
+  const cases = new CaseService(database, caseRepository, audit, snapshots)
+  const workStructure = new WorkStructureService(database, workStructureRepository, audit)
   const comparison = new ComparisonService(database, new ComparisonRepository(database), audit)
   const exports = new ExportService(
     database,
@@ -145,6 +147,13 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await exports.resumePending()
   const measurementRepository = new MeasurementRepository(database)
   const measurements = new MeasurementService(database, measurementRepository, audit)
+  const captureDrafts = new CaptureDraftService(
+    database,
+    new CaptureDraftRepository(database),
+    measurementRepository,
+    new CaseCaptureClassificationAdapter(caseRepository, workStructureRepository),
+    audit,
+  )
   const routing = new RoutingService(
     database,
     new RoutingRepository(database),
@@ -200,6 +209,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     prefix: '/api/v1',
     service: measurements,
   })
+  await app.register(captureDraftRoutes, { guards, prefix: '/api/v1', service: captureDrafts })
   await app.register(routingRoutes, { guards, prefix: '/api/v1', service: routing })
   await app.register(fieldRoutes, { evidence, gps, guards, prefix: '/api/v1' })
   await app.register(comparisonRoutes, { guards, prefix: '/api/v1', service: comparison })

@@ -123,8 +123,11 @@
 - Seed có đúng bốn nhãn hiển thị nhanh, thêm `WASTEWATER_DRAINAGE`, giữ nhóm vận
   chuyển/chỉnh trang lịch sử và 12 tên khu vực không geometry.
 - Task 3 đã triển khai API CRUD/đổi tên/lưu trữ/phục hồi có version/audit cho khu
-  vực tên, lĩnh vực, công tác và mục con. Task 4 (nháp và phân loại transaction)
-  là bước mã nguồn tiếp theo; giao diện map-first mới chưa thay đổi trong task này.
+  vực tên, lĩnh vực, công tác và mục con.
+- Task 4 đã triển khai CRUD `capture_draft`, idempotency riêng cho tạo/phân loại,
+  optimistic concurrency, IDOR và transaction tạo/liên kết công tác, mục con,
+  measurement. Raw geometry được giữ nguyên; nháp và measurement chưa confirmed
+  không tham gia tổng. Task 5 (khung giao diện map-first) là bước tiếp theo.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

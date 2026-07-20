@@ -181,6 +181,8 @@ CREATE TABLE capture_draft (
   device_id text NOT NULL,
   idempotency_key text NOT NULL,
   payload_hash char(64) NOT NULL CHECK (payload_hash ~ '^[0-9a-f]{64}$'),
+  classification_idempotency_key text,
+  classification_payload_hash char(64),
   geometry_kind measurement_kind NOT NULL CHECK (geometry_kind IN ('point', 'line', 'area')),
   method measurement_method NOT NULL DEFAULT 'map_draw',
   raw_geometry geometry(Geometry, 4326) NOT NULL,
@@ -194,6 +196,13 @@ CREATE TABLE capture_draft (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz,
+  CONSTRAINT capture_draft_classification_identity CHECK (
+    (classification_idempotency_key IS NULL AND classification_payload_hash IS NULL)
+    OR (
+      length(btrim(classification_idempotency_key)) > 0
+      AND classification_payload_hash ~ '^[0-9a-f]{64}$'
+    )
+  ),
   UNIQUE (created_by, device_id, local_id),
   UNIQUE (created_by, device_id, idempotency_key)
 );
@@ -462,6 +471,9 @@ CREATE INDEX work_component_work_idx ON work_component (case_work_item_id, displ
 CREATE INDEX capture_draft_case_status_idx
   ON capture_draft (inspection_case_id, status, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX capture_draft_geometry_gix ON capture_draft USING gist (raw_geometry);
+CREATE UNIQUE INDEX capture_draft_classification_idempotency_uidx
+  ON capture_draft (created_by, device_id, classification_idempotency_key)
+  WHERE classification_idempotency_key IS NOT NULL;
 CREATE INDEX work_item_case_idx ON case_work_item (inspection_case_id, status)
   WHERE deleted_at IS NULL;
 CREATE INDEX source_quantity_work_item_idx ON source_quantity (case_work_item_id, source_kind)

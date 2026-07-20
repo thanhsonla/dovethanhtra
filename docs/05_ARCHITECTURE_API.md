@@ -175,15 +175,17 @@ tiếp khu vực/lĩnh vực; `workTypeId` chỉ bắt buộc khi dùng template
 ### Nháp thu thập và bản đồ map-first
 
 - `POST /cases/{caseId}/capture-drafts` — lưu raw geometry, yêu cầu
-  `Idempotency-Key` và `X-Device-Id`.
+  `Idempotency-Key` và `X-Device-Id`; lần đầu trả `201`, replay trả `200`.
 - `GET /cases/{caseId}/capture-drafts`
 - `GET /capture-drafts/{draftId}`
-- `PATCH /capture-drafts/{draftId}` — sửa nháp bằng `If-Match`.
-- `DELETE /capture-drafts/{draftId}` — xóa mềm.
-- `POST /capture-drafts/{draftId}/restore`
+- `PATCH /capture-drafts/{draftId}` — sửa geometry/metadata bằng `If-Match`.
+- `DELETE /capture-drafts/{draftId}` — xóa mềm, yêu cầu `If-Match` và lý do.
+- `POST /capture-drafts/{draftId}/restore` — yêu cầu `If-Match` và lý do.
 - `POST /capture-drafts/{draftId}/classify` — nhận khu vực, lĩnh vực, công tác và
   mục con tùy chọn có sẵn hoặc payload tạo mới; transaction tạo measurement và ghi
-  audit.
+  audit. Yêu cầu `If-Match`, `X-Device-Id`, `Idempotency-Key`; một trong
+  `workItemId`/`createWorkItem`, tối đa một trong `workComponentId`/
+  `createWorkComponent`.
 - `GET /cases/{caseId}/map-features` — filter có whitelist: `managementZoneId`,
   `serviceGroupId`, `workItemId`, `componentId`, `geometryKind`, `status`, `bbox`,
   `cursor`, `limit`.
@@ -193,6 +195,8 @@ tiếp khu vực/lĩnh vực; `workTypeId` chỉ bắt buộc khi dùng template
 
 Nháp `unclassified` không xuất hiện trong aggregate/comparison/snapshot. API tải
 nhanh vẫn kiểm owner/RBAC và không thay thế quy trình export hồ sơ đã khóa.
+Phân loại thành công trả draft đã liên kết và measurement có `captureDraftId`,
+`workComponentId`; retry cùng payload không tạo measurement thứ hai.
 
 ### Phép đo
 

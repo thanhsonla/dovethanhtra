@@ -34,6 +34,7 @@ export interface PersistMeasurementInput {
   calculationOutput: Record<string, unknown>
   calculationRuleCode: string
   calculationVersion: number
+  captureDraftId?: string
   code: string
   createdBy: string
   geometryKind: MeasurementGeometryKind
@@ -50,6 +51,7 @@ export interface PersistMeasurementInput {
   version: number
   warnings: MeasurementWarning[]
   workItemId: string
+  workComponentId?: string
 }
 
 interface MeasurementRow extends Omit<
@@ -72,7 +74,9 @@ interface MeasurementRow extends Omit<
 }
 
 const measurementColumns = sql.raw(`
-  m.id, c.id AS "caseId", m.case_work_item_id AS "workItemId", m.code, m.name,
+  m.id, c.id AS "caseId", m.case_work_item_id AS "workItemId",
+  m.work_component_id AS "workComponentId", m.capture_draft_id AS "captureDraftId",
+  m.code, m.name,
   m.version, m.supersedes_id AS "supersedesId", m.method,
   m.geometry_kind AS "geometryKind", ST_AsGeoJSON(m.raw_geometry)::json AS "rawGeometry",
   CASE WHEN m.normalized_geometry IS NULL THEN NULL
@@ -195,12 +199,14 @@ export class MeasurementRepository {
     const normalized = input.normalizedGeometry ? JSON.stringify(input.normalizedGeometry) : null
     const result = await sql<{ id: string }>`
       INSERT INTO measurement (
-        case_work_item_id, code, name, version, supersedes_id, method, geometry_kind,
+        case_work_item_id, work_component_id, capture_draft_id,
+        code, name, version, supersedes_id, method, geometry_kind,
         raw_geometry, normalized_geometry, gps_accuracy_m, base_value, calculated_quantity, unit,
         calculation_rule_code, calculation_version, calculation_inputs, calculation_output,
         validation_status, warnings, status, note, created_by
       ) VALUES (
-        ${input.workItemId}::uuid, ${input.code}, ${input.name}, ${input.version},
+        ${input.workItemId}::uuid, ${input.workComponentId ?? null}::uuid,
+        ${input.captureDraftId ?? null}::uuid, ${input.code}, ${input.name}, ${input.version},
         ${input.supersedesId ?? null}::uuid, ${input.method}::measurement_method,
         ${input.geometryKind}::measurement_kind,
         ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(input.rawGeometry)}), 4326),

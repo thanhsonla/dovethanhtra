@@ -17,6 +17,7 @@ const measurement = (input: Partial<Measurement>): Measurement => {
     calculationRuleCode: 'RULE-LENGTH-1',
     calculationVersion: 1,
     caseId: '00000000-0000-4000-8000-000000000001',
+    captureDraftId: null,
     code: 'MEAS-1',
     confirmedAt: null,
     createdAt: '2026-07-20T00:00:00.000Z',
@@ -43,6 +44,7 @@ const measurement = (input: Partial<Measurement>): Measurement => {
     version: 1,
     warnings: [],
     workItemId: '00000000-0000-4000-8000-000000000003',
+    workComponentId: null,
   }
   return { ...defaults, ...input }
 }

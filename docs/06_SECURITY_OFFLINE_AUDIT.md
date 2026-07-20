@@ -71,6 +71,9 @@ Không lưu token dài hạn dưới dạng plaintext nếu có phương án an 
 
 Mỗi mutation có khóa duy nhất do client tạo. Máy chủ lưu payload hash và kết quả. Gửi lại cùng khóa/payload trả kết quả cũ; cùng khóa nhưng payload khác trả lỗi xung đột.
 
+Tạo `capture_draft` và phân loại dùng hai cặp khóa/hash riêng. API không trả hash,
+không ghi raw geometry/tọa độ vào audit và ràng buộc unique theo actor + device.
+
 ### Xung đột
 
 - Bản nháp chưa xác nhận: có thể merge trường không xung đột.

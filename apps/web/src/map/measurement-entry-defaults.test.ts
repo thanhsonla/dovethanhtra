@@ -59,6 +59,8 @@ const measurement = (input: Partial<Measurement>): Measurement => ({
   warnings: [],
   workItemId: '00000000-0000-4000-8000-000000000002',
   ...input,
+  captureDraftId: input.captureDraftId ?? null,
+  workComponentId: input.workComponentId ?? null,
 })
 
 describe('measurement entry defaults', () => {

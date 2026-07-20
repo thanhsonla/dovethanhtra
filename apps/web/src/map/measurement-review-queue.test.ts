@@ -38,6 +38,8 @@ const measurement = (input: Partial<Measurement>): Measurement => ({
   warnings: [],
   workItemId: '00000000-0000-4000-8000-000000000003',
   ...input,
+  captureDraftId: input.captureDraftId ?? null,
+  workComponentId: input.workComponentId ?? null,
 })
 
 describe('measurement review queue', () => {

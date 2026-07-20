@@ -211,11 +211,13 @@ giao diện.
 - ADR-024 tách `management_zone` khỏi `admin_area`; bản đồ tiếp tục chỉ dùng ranh
   giới 75 xã/phường. API triển khai version/ETag, audit và xóa mềm không cascade.
 
-### Task 4 — API nháp và phân loại
+### Task 4 — API nháp và phân loại — hoàn thành
 
 - CRUD `capture_draft`, idempotency, classify transaction, tính PostGIS và liên kết
   measurement. Nháp không tham gia aggregate/snapshot/export.
 - Integration bao phủ retry, conflict, hồ sơ khóa và geometry lỗi.
+- Migration lưu khóa/hash phân loại riêng; API hỗ trợ ETag, IDOR, xóa mềm/phục hồi,
+  chọn hoặc tạo công tác/mục con và liên kết measurement trong một transaction.
 
 ### Task 5 — Khung giao diện map-first
 

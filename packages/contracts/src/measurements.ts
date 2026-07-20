@@ -63,6 +63,8 @@ export const MeasurementSchema = Type.Object(
     id: UuidSchema,
     caseId: UuidSchema,
     workItemId: UuidSchema,
+    workComponentId: Type.Union([UuidSchema, Type.Null()]),
+    captureDraftId: Type.Union([UuidSchema, Type.Null()]),
     code: Type.String(),
     name: Type.String(),
     version: Type.Integer({ minimum: 1 }),

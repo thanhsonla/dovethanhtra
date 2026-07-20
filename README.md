@@ -207,6 +207,11 @@ ghi từng phần giao đã cắt và dùng diện tích mục tiêu để chọ
 từ `config/management-zones.example.json`. Danh mục này không có geometry, không
 tạo lớp ranh giới riêng và không được gộp/suy diễn từ 75 xã, phường.
 
+API Task 4 cho phép lưu geometry trước tại `POST /api/v1/cases/{caseId}/capture-drafts`
+với `X-Device-Id` và `Idempotency-Key`, sau đó phân loại bằng
+`POST /api/v1/capture-drafts/{draftId}/classify` kèm `If-Match`. Nháp chưa phân loại
+không tham gia tổng; transaction phân loại mới tạo measurement và tính bằng PostGIS.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`
