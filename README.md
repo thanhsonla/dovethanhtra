@@ -2,20 +2,23 @@
 
 ## 1. Mục tiêu
 
-Xây dựng ứng dụng web/PWA hỗ trợ kiểm tra khối lượng thực tế trên bản đồ đối với các dịch vụ công ích đô thị, trước mắt gồm:
+Xây dựng ứng dụng web/PWA hỗ trợ kiểm tra khối lượng thực tế trên bản đồ đối với các
+dịch vụ công ích đô thị. Không gian nhập nhanh ưu tiên bốn lĩnh vực:
 
-1. Dịch vụ vệ sinh môi trường.
-2. Dịch vụ vận chuyển và xử lý rác thải.
-3. Dịch vụ chăm sóc cây xanh, hoa cảnh.
-4. Dịch vụ duy trì hệ thống điện chiếu sáng.
-5. Dịch vụ chỉnh trang đô thị khác.
+1. Vệ sinh môi trường.
+2. Chiếu sáng.
+3. Cây xanh.
+4. Thoát nước thải.
+
+Danh mục vẫn giữ các nhóm lịch sử như vận chuyển/xử lý rác và chỉnh trang đô thị;
+nhóm mới có thể được thêm hoặc ngừng sử dụng mà không làm mất hồ sơ cũ.
 
 Mỗi địa bàn/huyện được quản lý bằng một hoặc nhiều **hồ sơ kiểm tra**. Mỗi hồ sơ có nhiều công tác; mỗi công tác có nhiều phép đo điểm, tuyến, vùng hoặc lộ trình. Kết quả được tổng hợp và đối chiếu với khối lượng hợp đồng, báo cáo hoặc nghiệm thu.
 
 ## 2. Phạm vi MVP đã chốt
 
 - Quản lý hồ sơ theo huyện/địa bàn và thời kỳ kiểm tra.
-- Danh mục năm nhóm dịch vụ, cho phép tự thêm loại công tác.
+- Danh mục cấu hình được, có bốn lĩnh vực hiển thị nhanh và giữ nhóm lịch sử.
 - Đo điểm, đếm số lượng, đo tuyến, đo diện tích và tính lộ trình vận chuyển.
 - Một công tác được lưu nhiều phép đo độc lập.
 - Gắn ảnh, ghi chú, vị trí, thời gian và độ chính xác GPS.
@@ -86,7 +89,7 @@ Integration, performance và E2E tự tạo/dùng database riêng `dove_field_te
 ở cổng `3100`, tách khỏi API local cổng `3000` kể cả khi `pnpm dev` đang mở.
 
 `pnpm dev` dùng cấu hình giả dành riêng cho local trong `.env.example`, khởi động
-PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 5 (Mốc 6 không đổi schema) và seed dữ liệu local, sau đó mở API tại cổng
+PostgreSQL/PostGIS và MinIO, chạy migration mới nhất và seed dữ liệu local, sau đó mở API tại cổng
 `3000` và web tại cổng `5180`. Đăng nhập local bằng tài khoản giả trong
 `.env.example`. Không dùng các giá trị này cho staging hoặc production.
 

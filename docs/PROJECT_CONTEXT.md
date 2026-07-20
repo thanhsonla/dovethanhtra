@@ -116,8 +116,15 @@
   đổi nghiệp vụ.
 - Task 1 đã chốt ADR-023 và đồng bộ PRD, UX, data model, API, security, test plan và
   kế hoạch Task 0–10.
-- Chưa triển khai migration, API hoặc giao diện map-first. `work_component` và
-  `capture_draft` hiện mới là hợp đồng thiết kế; Task 2 là bước mã nguồn tiếp theo.
+- Task 2 đã thêm migration tương thích cho `work_component`, `capture_draft`, liên
+  kết measurement và quan hệ trực tiếp từ công tác tới lĩnh vực/kiểu đo. Backfill
+  giữ `work_type_id`, formula snapshot và kết quả cũ; rollback từ chối khi đã có dữ
+  liệu map-first không thể biểu diễn trong schema cũ.
+- Seed có đúng bốn nhãn hiển thị nhanh, thêm `WASTEWATER_DRAINAGE` và giữ nhóm vận
+  chuyển/chỉnh trang lịch sử. Chưa seed 12 khu vực quản lý do thiếu gói nguồn,
+  version, thời hạn hiệu lực và hash được phê duyệt.
+- Chưa triển khai API CRUD/phân loại hoặc giao diện map-first; Task 3 là bước mã
+  nguồn tiếp theo.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

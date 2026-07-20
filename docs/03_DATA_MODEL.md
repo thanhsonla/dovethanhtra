@@ -36,7 +36,9 @@ erDiagram
 
 ### `admin_area`
 
-Lưu địa bàn và phiên bản ranh giới. Trường chính: `id`, `code`, `name`, `area_type`, `parent_id`, `valid_from`, `valid_to`, `boundary`, `source`, `source_version`, `source_hash`.
+Lưu địa bàn và phiên bản ranh giới. Trường chính: `id`, `code`, `name`, `area_type`,
+`parent_id`, `valid_from`, `valid_to`, `boundary`, `source`, `source_version`,
+`source_hash`, `version`, `deleted_at`.
 
 `source_hash` là SHA-256 của đúng byte GeoJSON nguồn khi nhập qua CLI. Không ghi đè
 cùng `code/source_version` nếu hash thay đổi; phải tạo phiên bản nguồn mới.
@@ -49,7 +51,9 @@ Trường chính: `id`, `case_code`, `name`, `admin_area_id`, `period_start`, `p
 
 ### `service_group`
 
-Trường chính: `id`, `code`, `name`, `display_order`, `color`, `active`.
+Trường chính: `id`, `code`, `name`, `display_order`, `color`, `active`,
+`quick_default`, `quick_label`, `version`, `deleted_at`. `quick_default` chỉ là cấu
+hình hiển thị nhanh, không quyết định nhóm nào được lưu trong dữ liệu lịch sử.
 
 ### `work_type`
 
@@ -59,7 +63,8 @@ Mẫu công tác. Trường chính: `id`, `service_group_id`, `code`, `name`, `m
 
 Công tác cụ thể trong hồ sơ. Trường chính: `id`, `inspection_case_id`,
 `management_area_id`, `service_group_id`, `work_type_id`, `name`, `period_start`,
-`period_end`, `unit`, `formula_snapshot`, `warning_threshold`, `status`.
+`period_end`, `measurement_kind`, `unit`, `formula_snapshot`, `warning_threshold`,
+`status`, `version`, `deleted_at`.
 
 `work_type_id` là template nâng cao tùy chọn; công tác cơ bản dùng rule point/line/
 area được version hóa. Tên có thể trống khi mới thu thập nhưng bắt buộc trước khi
@@ -76,8 +81,9 @@ Mục con thuộc công tác: `id`, `case_work_item_id`, `name`, `display_order`
 ### `capture_draft`
 
 Vùng đệm đo trước khi phân loại: `id`, `inspection_case_id`, `local_id`, `device_id`,
-`geometry_kind`, `method`, `raw_geometry`, `metadata`, `status`, `version`,
-`classified_measurement_id`, `created_by`, `classified_at`, `deleted_at`.
+`idempotency_key`, `payload_hash`, `geometry_kind`, `method`, `raw_geometry`,
+`metadata`, `status`, `status_before_delete`, `version`, `classified_measurement_id`,
+`created_by`, `classified_at`, `deleted_at`.
 
 Nháp không mang kết quả chính thức và không tham gia aggregate/snapshot. Khi phân
 loại, máy chủ tạo/liên kết cấu trúc và measurement trong cùng transaction, sau đó

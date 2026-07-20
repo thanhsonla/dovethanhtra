@@ -62,7 +62,7 @@ describe('Milestone 1 API workflow', () => {
     const areas = areasResponse.json<AdminArea[]>()
     const groups = groupsResponse.json<ServiceGroup[]>()
     const workTypes = typesResponse.json<WorkType[]>()
-    expect(groups).toHaveLength(5)
+    expect(groups).toHaveLength(6)
     expect(workTypes.length).toBeGreaterThanOrEqual(15)
 
     const suffix = randomUUID().slice(0, 8)

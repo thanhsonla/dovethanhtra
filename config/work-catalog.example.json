@@ -1,5 +1,5 @@
 {
-  "catalogVersion": 1,
+  "catalogVersion": 2,
   "effectiveFrom": "2026-07-18",
   "serviceGroups": [
     {
@@ -7,6 +7,8 @@
       "name": "Dịch vụ vệ sinh môi trường",
       "color": "#0E7490",
       "displayOrder": 10,
+      "quickDefault": true,
+      "quickLabel": "Vệ sinh môi trường",
       "workTypes": [
         {
           "code": "STREET_SWEEP_LENGTH",
@@ -50,6 +52,7 @@
       "name": "Dịch vụ vận chuyển và xử lý rác thải",
       "color": "#C2410C",
       "displayOrder": 20,
+      "quickDefault": false,
       "workTypes": [
         {
           "code": "WASTE_ROUTE_DISTANCE",
@@ -94,6 +97,8 @@
       "name": "Dịch vụ chăm sóc cây xanh, hoa cảnh",
       "color": "#15803D",
       "displayOrder": 30,
+      "quickDefault": true,
+      "quickLabel": "Cây xanh",
       "workTypes": [
         {
           "code": "TREE_MAINTENANCE",
@@ -139,6 +144,8 @@
       "name": "Dịch vụ duy trì hệ thống điện chiếu sáng",
       "color": "#CA8A04",
       "displayOrder": 40,
+      "quickDefault": true,
+      "quickLabel": "Chiếu sáng",
       "workTypes": [
         {
           "code": "LIGHT_POLE_COUNT",
@@ -177,10 +184,20 @@
       ]
     },
     {
+      "code": "WASTEWATER_DRAINAGE",
+      "name": "Dịch vụ thoát nước thải",
+      "color": "#2563EB",
+      "displayOrder": 45,
+      "quickDefault": true,
+      "quickLabel": "Thoát nước thải",
+      "workTypes": []
+    },
+    {
       "code": "URBAN_BEAUTIFICATION",
       "name": "Dịch vụ chỉnh trang đô thị khác",
       "color": "#7C3AED",
       "displayOrder": 50,
+      "quickDefault": false,
       "workTypes": [
         {
           "code": "CURB_PAINTING",

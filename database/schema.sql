@@ -12,6 +12,9 @@ CREATE TYPE measurement_status AS ENUM (
 CREATE TYPE measurement_method AS ENUM (
   'map_draw', 'gps_point', 'gps_track', 'route_provider', 'import_geojson', 'manual_document'
 );
+CREATE TYPE capture_draft_status AS ENUM (
+  'unclassified', 'classifying', 'classified', 'conflict', 'deleted'
+);
 CREATE TYPE measurement_kind AS ENUM ('count', 'point', 'line', 'area', 'route', 'composite');
 CREATE TYPE source_quantity_kind AS ENUM ('estimate', 'contract', 'reported', 'accepted', 'other');
 
@@ -38,7 +41,10 @@ CREATE TABLE admin_area (
   source_version text NOT NULL,
   source_hash char(64),
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
   CONSTRAINT admin_area_dates CHECK (valid_to IS NULL OR valid_to >= valid_from),
   CONSTRAINT admin_area_boundary_valid CHECK (ST_IsValid(boundary)),
   CONSTRAINT admin_area_source_hash_format CHECK (
@@ -81,8 +87,15 @@ CREATE TABLE service_group (
   display_order integer NOT NULL DEFAULT 0,
   color text,
   active boolean NOT NULL DEFAULT true,
+  quick_default boolean NOT NULL DEFAULT false,
+  quick_label text,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
+  CONSTRAINT service_group_quick_label CHECK (
+    NOT quick_default OR length(btrim(quick_label)) > 0
+  )
 );
 
 CREATE TABLE work_type (
@@ -105,7 +118,10 @@ CREATE TABLE work_type (
 CREATE TABLE case_work_item (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   inspection_case_id uuid NOT NULL REFERENCES inspection_case(id),
-  work_type_id uuid NOT NULL REFERENCES work_type(id),
+  management_area_id uuid REFERENCES admin_area(id),
+  service_group_id uuid NOT NULL REFERENCES service_group(id),
+  work_type_id uuid REFERENCES work_type(id),
+  measurement_kind measurement_kind NOT NULL,
   name text NOT NULL,
   period_start date,
   period_end date,
@@ -113,6 +129,8 @@ CREATE TABLE case_work_item (
   formula_snapshot jsonb NOT NULL,
   warning_threshold jsonb NOT NULL DEFAULT '{}'::jsonb,
   status work_item_status NOT NULL DEFAULT 'draft',
+  status_before_delete work_item_status,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz,
@@ -121,9 +139,52 @@ CREATE TABLE case_work_item (
   )
 );
 
+CREATE TABLE work_component (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  case_work_item_id uuid NOT NULL REFERENCES case_work_item(id),
+  name text NOT NULL DEFAULT '',
+  display_order integer NOT NULL DEFAULT 0,
+  status work_item_status NOT NULL DEFAULT 'draft',
+  status_before_delete work_item_status,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
+  created_by uuid NOT NULL REFERENCES app_user(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
+  CONSTRAINT work_component_delete_state CHECK (
+    deleted_at IS NULL OR status = 'archived'
+  )
+);
+
+CREATE TABLE capture_draft (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  inspection_case_id uuid NOT NULL REFERENCES inspection_case(id),
+  local_id text NOT NULL,
+  device_id text NOT NULL,
+  idempotency_key text NOT NULL,
+  payload_hash char(64) NOT NULL CHECK (payload_hash ~ '^[0-9a-f]{64}$'),
+  geometry_kind measurement_kind NOT NULL CHECK (geometry_kind IN ('point', 'line', 'area')),
+  method measurement_method NOT NULL DEFAULT 'map_draw',
+  raw_geometry geometry(Geometry, 4326) NOT NULL,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status capture_draft_status NOT NULL DEFAULT 'unclassified',
+  status_before_delete capture_draft_status,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
+  classified_measurement_id uuid UNIQUE,
+  created_by uuid NOT NULL REFERENCES app_user(id),
+  classified_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
+  UNIQUE (created_by, device_id, local_id),
+  UNIQUE (created_by, device_id, idempotency_key)
+);
+
 CREATE TABLE measurement (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   case_work_item_id uuid NOT NULL REFERENCES case_work_item(id),
+  work_component_id uuid REFERENCES work_component(id),
+  capture_draft_id uuid UNIQUE REFERENCES capture_draft(id),
   code text NOT NULL,
   name text NOT NULL,
   version integer NOT NULL DEFAULT 1,
@@ -172,6 +233,10 @@ CREATE TABLE measurement (
   ),
   UNIQUE (case_work_item_id, code, version)
 );
+
+ALTER TABLE capture_draft
+  ADD CONSTRAINT capture_draft_classified_measurement_fk
+  FOREIGN KEY (classified_measurement_id) REFERENCES measurement(id);
 
 CREATE TABLE treatment_facility (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -356,6 +421,10 @@ CREATE TABLE export_record (
 );
 
 CREATE INDEX admin_area_boundary_gix ON admin_area USING gist (boundary);
+CREATE INDEX admin_area_management_idx ON admin_area (area_type, valid_from, valid_to)
+  WHERE deleted_at IS NULL;
+CREATE INDEX service_group_quick_idx ON service_group (display_order, name)
+  WHERE quick_default AND active AND deleted_at IS NULL;
 CREATE INDEX inspection_case_boundary_gix ON inspection_case USING gist (boundary_snapshot);
 CREATE INDEX measurement_raw_geometry_gix ON measurement USING gist (raw_geometry);
 CREATE INDEX measurement_normalized_geometry_gix ON measurement USING gist (normalized_geometry);
@@ -366,6 +435,13 @@ CREATE INDEX transport_route_geometry_gix ON transport_route USING gist (route_g
 CREATE INDEX treatment_facility_location_gix ON treatment_facility USING gist (location);
 CREATE INDEX measurement_work_item_idx ON measurement (case_work_item_id, status)
   WHERE deleted_at IS NULL;
+CREATE INDEX measurement_component_idx ON measurement (work_component_id, status)
+  WHERE work_component_id IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX work_component_work_idx ON work_component (case_work_item_id, display_order)
+  WHERE deleted_at IS NULL;
+CREATE INDEX capture_draft_case_status_idx
+  ON capture_draft (inspection_case_id, status, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX capture_draft_geometry_gix ON capture_draft USING gist (raw_geometry);
 CREATE INDEX work_item_case_idx ON case_work_item (inspection_case_id, status)
   WHERE deleted_at IS NULL;
 CREATE INDEX source_quantity_work_item_idx ON source_quantity (case_work_item_id, source_kind)
@@ -388,11 +464,17 @@ CREATE TRIGGER app_user_updated_at BEFORE UPDATE ON app_user
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER inspection_case_updated_at BEFORE UPDATE ON inspection_case
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER admin_area_updated_at BEFORE UPDATE ON admin_area
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER service_group_updated_at BEFORE UPDATE ON service_group
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER work_type_updated_at BEFORE UPDATE ON work_type
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER case_work_item_updated_at BEFORE UPDATE ON case_work_item
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER work_component_updated_at BEFORE UPDATE ON work_component
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER capture_draft_updated_at BEFORE UPDATE ON capture_draft
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER measurement_updated_at BEFORE UPDATE ON measurement
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();

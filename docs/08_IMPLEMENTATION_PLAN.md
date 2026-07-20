@@ -194,7 +194,7 @@ giao diện.
 - Nghiệm thu: không còn đặc tả bắt buộc chọn công tác trước khi đo; chưa có source
   code hoặc migration trong task này.
 
-### Task 2 — Migration tương thích và seed
+### Task 2 — Migration tương thích và seed — hoàn thành
 
 - Thêm `work_component`, `capture_draft`, version/index/constraint và liên kết tùy
   chọn từ measurement. Backfill dữ liệu cũ có marker nguồn, không đổi kết quả.

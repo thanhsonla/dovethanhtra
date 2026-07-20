@@ -16,6 +16,8 @@ interface CatalogFile {
     color: string
     displayOrder: number
     name: string
+    quickDefault?: boolean
+    quickLabel?: string
     workTypes: Array<{
       attributes?: string[]
       baseUnit: string
@@ -81,12 +83,18 @@ try {
   await database.query.transaction().execute(async (transaction) => {
     for (const group of catalog.serviceGroups) {
       const groupResult = await sql<{ id: string }>`
-        INSERT INTO service_group (code, name, display_order, color)
-        VALUES (${group.code}, ${group.name}, ${group.displayOrder}, ${group.color})
+        INSERT INTO service_group (
+          code, name, display_order, color, quick_default, quick_label
+        ) VALUES (
+          ${group.code}, ${group.name}, ${group.displayOrder}, ${group.color},
+          ${group.quickDefault ?? false}, ${group.quickLabel ?? null}
+        )
         ON CONFLICT (code) DO UPDATE SET
           name = EXCLUDED.name,
           display_order = EXCLUDED.display_order,
           color = EXCLUDED.color,
+          quick_default = EXCLUDED.quick_default,
+          quick_label = EXCLUDED.quick_label,
           active = true
         RETURNING id
       `.execute(transaction)
@@ -130,7 +138,7 @@ try {
   })
 
   process.stdout.write(
-    `Seed Mốc 1 hoàn tất: ${catalog.serviceGroups.length} nhóm dịch vụ, ` +
+    `Seed danh mục hoàn tất: ${catalog.serviceGroups.length} nhóm dịch vụ, ` +
       `${catalog.serviceGroups.reduce((total, group) => total + group.workTypes.length, 0)} công tác, ` +
       `tài khoản ${user.email}.\n`,
   )
