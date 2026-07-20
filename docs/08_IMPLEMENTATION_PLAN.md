@@ -172,3 +172,82 @@ KML/GPX đầy đủ, PDF/Word, dashboard, OSRM tự host, nhiều người dùn
 - Hai hồ sơ/hợp đồng mẫu để kiểm tra công thức.
 - Một tuyến vận chuyển đã biết cự ly để đối chứng.
 - Thiết bị iPad/iPhone sẽ dùng ngoài hiện trường.
+
+## 12. Chuyển đổi map-first — kế hoạch Task 0–10
+
+Kế hoạch này triển khai ADR-023 theo lát cắt nhỏ, giữ tương thích với dữ liệu Mốc
+1–6. Mỗi task có commit và cổng kiểm thử riêng; không gộp migration phá hủy với đổi
+giao diện.
+
+### Task 0 — Khảo sát và đóng baseline — hoàn thành
+
+- Kiểm tra runtime, dịch vụ local, test hiện hành, cấu trúc UI/API/database và ghi
+  nhận mâu thuẫn đặc tả.
+- Không thay đổi nghiệp vụ; baseline lint/typecheck/unit/integration/E2E phải xanh.
+
+### Task 1 — ADR và đặc tả — hoàn thành
+
+- Chốt map-first, đo trước–phân loại sau, `work_component`, `capture_draft`, 12 khu
+  vực quản lý tách khỏi 75 xã/phường, bốn lĩnh vực hiển thị mặc định và chính sách
+  mở/tải/chỉnh sửa.
+- Đồng bộ PRD, UX, data model, API, security, test plan và project context.
+- Nghiệm thu: không còn đặc tả bắt buộc chọn công tác trước khi đo; chưa có source
+  code hoặc migration trong task này.
+
+### Task 2 — Migration tương thích và seed
+
+- Thêm `work_component`, `capture_draft`, version/index/constraint và liên kết tùy
+  chọn từ measurement. Backfill dữ liệu cũ có marker nguồn, không đổi kết quả.
+- Seed bốn lĩnh vực hiển thị mặc định; giữ nhóm lịch sử. Nhập 12 khu vực quản lý chỉ
+  khi có gói nguồn/version/hash được phê duyệt.
+- Nghiệm thu migration tiến/lùi trên database tạm; rollback từ chối nếu làm mất
+  nháp hoặc chứng cứ mới.
+
+### Task 3 — API cấu trúc danh mục
+
+- CRUD/rename/archive/restore khu vực, lĩnh vực, công tác và mục con; optimistic
+  concurrency, owner/RBAC, audit và quy tắc không cascade.
+- Integration bao phủ đổi tên giữ ID, xóa cha còn con, phục hồi và IDOR.
+
+### Task 4 — API nháp và phân loại
+
+- CRUD `capture_draft`, idempotency, classify transaction, tính PostGIS và liên kết
+  measurement. Nháp không tham gia aggregate/snapshot/export.
+- Integration bao phủ retry, conflict, hồ sơ khóa và geometry lỗi.
+
+### Task 5 — Khung giao diện map-first
+
+- Bản đồ toàn vùng, header/chữ gọn, toolbar dọc desktop/ngang mobile, drawer/bottom
+  sheet cho dữ liệu, bộ lọc và chi tiết; menu nâng cao giữ GPS/route/ảnh/import.
+- E2E Chromium/WebKit kiểm vùng bản đồ, 44 px, keyboard/ARIA và responsive.
+
+### Task 6 — Công cụ vẽ nhanh
+
+- Điểm/chiều dài/diện tích, marker đỉnh, chữ thập đỏ, lùi/tiến, xóa phần chọn, kết
+  thúc và thẻ kết quả tạm bán trong suốt.
+- Unit test state machine; E2E vẽ, sửa và lưu nháp khi online/offline.
+
+### Task 7 — Phiếu phân loại sau khi đo
+
+- Wizard gọn chọn/tạo khu vực → lĩnh vực → công tác → mục con tùy chọn; tên công tác
+  để trống trong capture nhưng bắt buộc trước confirm, tên mục con bắt buộc nếu dùng.
+- Hỗ trợ lưu nháp, lưu và tiếp tục, xử lý conflict và cảnh báo geometry.
+
+### Task 8 — Lọc, chọn và chi tiết
+
+- API/UI lọc theo mọi cấp, bbox/cursor; feature selection highlight/zoom và thẻ chi
+  tiết gọn. Tổng mục con/công tác lấy từ máy chủ và chỉ gồm confirmed.
+- Performance test 5.000 geometry và E2E tổ hợp filter.
+
+### Task 9 — Mở, tải xuống và chỉnh sửa
+
+- Mở toàn bộ metadata/history, tải một hoặc tập lọc GeoJSON có quyền/hash/audit;
+  sửa nháp trực tiếp và sửa confirmed bằng supersede có lý do.
+- Integration/E2E bao phủ IDOR, filter export, version và phục hồi.
+
+### Task 10 — Tương thích, nghiệm thu và rollout
+
+- Regression GPS/route/ảnh/import/comparison/export, migration drill, backup/restore,
+  hướng dẫn sử dụng và feature flag/rollback UI nếu cần.
+- Chỉ đóng khi lint, typecheck, unit, integration, performance, Chromium/WebKit và
+  field test luồng đo–phân loại–lọc–tải–sửa đều có bằng chứng đạt.

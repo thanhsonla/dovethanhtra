@@ -2,8 +2,8 @@
 
 ## Trạng thái
 
-- Phiên bản tài liệu: 1.1.
-- Ngày chốt phạm vi: 18/07/2026.
+- Phiên bản tài liệu: 1.2.
+- Ngày chốt phạm vi gần nhất: 20/07/2026.
 - Giai đoạn: Mốc 6 — hardening, benchmark, backup/restore local và tài liệu vận hành
   đã triển khai; field test thiết bị và restore staging còn là cổng trước production.
 - Người dùng chính: một cán bộ thực hiện kiểm tra hiện trường; kiến trúc vẫn chuẩn bị cho nhiều người dùng về sau.
@@ -14,7 +14,8 @@
 - Công cụ hiển thị: MapLibre GL JS.
 - Cơ sở dữ liệu: PostgreSQL + PostGIS.
 - Định tuyến ban đầu: Mapbox Directions qua adapter.
-- Không dùng trực tiếp tile `mt1.google.com`.
+- `mt1.google.com` chỉ được dùng theo ngoại lệ ADR-022 qua `BasemapProvider`, không
+  gọi trực tiếp từ component và không cache; vẫn còn rủi ro điều khoản production.
 - Một công tác có nhiều phép đo.
 - Lưu riêng khối lượng nguồn và khối lượng kiểm tra.
 - Tính chính thức ở máy chủ; trình duyệt chỉ hiển thị tạm.
@@ -60,6 +61,15 @@
 - ADR-019 chuẩn hóa topology theo diện tích mục tiêu 01/07/2026: xử lý phần giao lớn
   nhất trước, chọn bên giữ để giảm sai lệch diện tích và giữ nguyên hợp geometry.
   Ngưỡng floating point là 0,01 m²; bản gốc không bị ghi đè.
+- Không gian kiểm tra chuyển sang map-first: toolbar dọc desktop/ngang mobile,
+  drawer/bottom sheet đóng được và ba công cụ nhanh điểm, chiều dài, diện tích.
+- Quy trình mới cho phép lưu `capture_draft` trước khi phân loại theo Khu vực quản
+  lý → Lĩnh vực → Công tác → Mục con → Phép đo. Nháp chưa phân loại không cộng tổng.
+- 12 huyện/thành phố cũ là khu vực quản lý version hóa, không thay 75 xã/phường hiện
+  hành. Bốn lĩnh vực mặc định là cấu hình hiển thị, không hard-code hoặc xóa nhóm cũ.
+- Measurement confirmed chỉ sửa bằng phiên bản superseding; xóa cấu trúc là xóa
+  mềm, không cascade chứng cứ. Chọn feature hỗ trợ mở, tải GeoJSON và chỉnh sửa theo
+  quyền với hash/audit.
 
 ## Chưa chốt
 
@@ -69,6 +79,8 @@
 - Ngưỡng sai số GPS theo từng công tác.
 - Ngưỡng cảnh báo chênh lệch mặc định.
 - Công thức thanh toán/qui đổi chi tiết của từng hợp đồng.
+- Gói nguồn, version, ngày hiệu lực và hình học được phê duyệt cho 12 khu vực quản
+  lý theo huyện/thành phố cũ.
 
 ## Nhật ký quyết định
 
@@ -96,6 +108,18 @@
 | 19/07/2026 | ADR-020 | Sao chép cấu trúc công tác không mang theo kết quả                 | Tái sử dụng cấu hình nhưng không nhân bản chứng cứ              |
 | 19/07/2026 | ADR-021 | Pipeline dữ liệu P1 và vòng đời artifact                          | Import có preview, phục hồi, phân trang và export an toàn       |
 | 19/07/2026 | ADR-022 | Cho phép Google hybrid trực tiếp theo La Kinh                    | Chủ dự án chấp thuận ngoại lệ mt1 qua adapter                    |
+| 20/07/2026 | ADR-023 | Map-first và đo trước, phân loại sau                            | Giảm bước nhập nhưng giữ tổng chính thức và provenance           |
+
+## Trạng thái chuyển đổi map-first
+
+- Task 0 đã đóng baseline môi trường và kiểm thử tại commit `27c0ac8`; không thay
+  đổi nghiệp vụ.
+- Task 1 đã chốt ADR-023 và đồng bộ PRD, UX, data model, API, security, test plan và
+  kế hoạch Task 0–10.
+- Chưa triển khai migration, API hoặc giao diện map-first. `work_component` và
+  `capture_draft` hiện mới là hợp đồng thiết kế; Task 2 là bước mã nguồn tiếp theo.
+- Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
+  trong toàn bộ quá trình chuyển đổi.
 
 ## Trạng thái triển khai Mốc 1
 

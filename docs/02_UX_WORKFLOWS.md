@@ -4,7 +4,8 @@
 
 - Bản đồ là vùng làm việc trung tâm; danh mục và thuộc tính không che quá nhiều bản đồ.
 - Mỗi thời điểm chỉ có một chế độ thao tác: xem, chọn, vẽ điểm, vẽ tuyến, vẽ vùng, định tuyến hoặc GPS.
-- Luôn hiển thị công tác đang được ghi dữ liệu để tránh lưu nhầm.
+- Luôn hiển thị trạng thái nháp và phân loại hiện tại; không bắt buộc chọn công tác
+  trước khi bắt đầu vẽ.
 - Kết quả tạm thời và kết quả máy chủ phải có nhãn khác nhau.
 - Thao tác nguy cơ mất dữ liệu phải có xác nhận và khả năng khôi phục.
 - Màu dùng theo nhóm dịch vụ nhưng trạng thái lỗi/cảnh báo ưu tiên màu hệ thống.
@@ -30,15 +31,16 @@ Hiển thị mã hồ sơ, địa bàn, thời kỳ, đơn vị, trạng thái, 
 
 Thao tác: tạo mới, mở, sao chép cấu trúc, lưu trữ, xuất nhanh.
 
-### 3.2. Không gian kiểm tra
+### 3.2. Không gian kiểm tra map-first
 
-Giao diện ba vùng:
-
-- **Trái:** cây nhóm dịch vụ → công tác → các phép đo.
-- **Giữa:** bản đồ, thanh công cụ đo, chọn bản đồ nền, lớp dữ liệu và tìm vị trí.
-- **Phải:** thuộc tính đối tượng, kết quả, nguồn số liệu, ảnh và cảnh báo.
-
-Thanh trạng thái phía dưới hiển thị tọa độ, mức zoom, độ chính xác GPS, số đối tượng đang chọn và trạng thái đồng bộ.
+- Bản đồ chiếm toàn bộ vùng nội dung sau header gọn. Không có panel trái/phải cố
+  định; cây dữ liệu, bộ lọc và thuộc tính mở bằng drawer nổi và đóng được hoàn toàn.
+- Thanh biểu tượng dọc bên trái gồm điểm, chiều dài, diện tích, lùi, tiến, xóa phần
+  đang chọn và kết thúc. Chọn đối tượng mở thẻ tóm tắt vừa nội dung, nền bán trong
+  suốt; không đặt thẻ rộng cố định che bản đồ.
+- Bộ chọn nền, trạng thái đồng bộ và tọa độ nằm trong các control gọn ở góc. GPS,
+  route, ảnh, import và hệ số nằm trong menu **Nâng cao**.
+- Chữ nội dung dùng thang responsive; nhãn phụ và số liệu không dùng cỡ tiêu đề.
 
 ### 3.3. Bảng đối chiếu
 
@@ -49,8 +51,8 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
 ## 4. Màn hình iPad/điện thoại
 
 - Toàn màn hình ưu tiên bản đồ.
-- Nút “Công tác đang đo” đặt trên cùng.
-- Thanh công cụ dưới: vị trí, điểm, tuyến, vùng, route, ảnh, lưu.
+- Thanh công cụ ngang phía trên gồm điểm, chiều dài, diện tích, lùi, tiến, xóa và
+  kết thúc; nút ít dùng nằm trong menu thêm.
 - Danh sách và thuộc tính mở bằng bottom sheet.
 - Nút tối thiểu khoảng 44 x 44 px; trạng thái GPS và ngoại tuyến luôn nhìn thấy.
 - Trước khi lưu, hiển thị tóm tắt: loại phép đo, kết quả, sai số, số ảnh và cảnh báo.
@@ -67,22 +69,41 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
 
 ### FLOW-02 — Thêm công tác mới
 
-1. Chọn nhóm dịch vụ.
-2. Chọn loại công tác có sẵn hoặc “Tạo loại công tác”.
-3. Xác nhận đơn vị, kiểu đo và công thức.
-4. Nhập tên cụ thể, kỳ thực hiện và ngưỡng cảnh báo.
-5. Lưu công tác vào hồ sơ.
+1. Chọn khu vực quản lý và lĩnh vực dịch vụ.
+2. Nhập tên công tác; có thể để trống khi chỉ lưu nháp thu thập.
+3. Công cụ điểm/chiều dài/diện tích xác định rule cơ bản. Nếu cần hệ số hoặc công
+   thức riêng, mở phần nâng cao và chọn template loại công tác.
+4. Nhập kỳ thực hiện/ngưỡng cảnh báo nếu cần rồi lưu công tác vào hồ sơ.
+5. Tạo một hoặc nhiều mục con có tên; có thể bỏ qua cấp này nếu công tác không cần.
 
-### FLOW-03 — Đo tuyến/diện tích
+### FLOW-03 — Đo trước, phân loại sau
 
-1. Chọn công tác.
-2. Chọn chế độ “Tuyến” hoặc “Vùng”.
-3. Vẽ, hoàn tác hoặc chỉnh đỉnh.
-4. Ứng dụng hiển thị kết quả tạm.
-5. Nhập tên tuyến/vị trí, tần suất, kỳ áp dụng và ghi chú.
-6. Chụp/gắn ảnh nếu cần.
-7. Lưu; máy chủ kiểm tra và tính lại.
-8. Xử lý cảnh báo hoặc xác nhận phép đo.
+1. Mở bản đồ và chọn Điểm, Chiều dài hoặc Diện tích mà không cần chọn công tác.
+2. Vẽ; từng đỉnh có marker, điểm hiện hành có chữ thập đỏ. Dùng lùi/tiến, chọn và
+   xóa một đỉnh hoặc phần đang chọn, rồi kết thúc.
+3. Ứng dụng hiển thị kết quả tạm trong thẻ gọn; chọn **Lưu nháp** để không mất hình.
+4. Chọn hoặc tạo lần lượt khu vực, lĩnh vực, công tác và mục con nếu cần. Công tác/
+   mục con cho phép đặt tên tại bước này.
+5. Máy chủ phân loại, kiểm tra geometry và tính kết quả trong một transaction.
+6. Xử lý cảnh báo và xác nhận. Hệ số, ảnh và thuộc tính chi tiết được bổ sung trong
+   phần **Nâng cao** khi công tác yêu cầu.
+
+### FLOW-03A — Quản lý cấu trúc dữ liệu
+
+1. Mở drawer dữ liệu và chọn cấp khu vực, lĩnh vực, công tác hoặc mục con.
+2. Thêm mới hoặc đổi tên tại chỗ; ID và liên kết dữ liệu không thay đổi.
+3. Lưu trữ/xóa mềm yêu cầu xác nhận. Nếu cha còn con hoạt động, chuyển con sang nơi
+   khác hoặc ngừng thao tác; không cascade xóa.
+4. Mở danh sách đã xóa để phục hồi; mọi thao tác có audit.
+
+### FLOW-03B — Lọc, mở, tải và chỉnh sửa
+
+1. Mở bộ lọc và chọn một hoặc nhiều tiêu chí khu vực, lĩnh vực, công tác, mục con,
+   loại geometry hoặc trạng thái; bỏ trống cấp con để xem toàn bộ kết quả phù hợp.
+2. Chọn feature trên bản đồ; hệ thống highlight, zoom và mở thẻ thông tin gọn.
+3. Chọn **Mở thông tin**, **Tải GeoJSON** hoặc **Chỉnh sửa**.
+4. Nháp được sửa trực tiếp. Phép đo đã xác nhận tạo phiên bản thay thế, yêu cầu lý
+   do và giữ bản cũ trong lịch sử.
 
 ### FLOW-04 — Ghi GPS hiện trường
 
@@ -123,6 +144,8 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
 - **Đã xác nhận:** được dùng để tổng hợp.
 - **Đã thay thế:** còn trong lịch sử nhưng không cộng tổng.
 - **Đã xóa mềm:** không hiển thị mặc định, có thể phục hồi.
+- **Chưa phân loại:** geometry đã lưu an toàn nhưng chưa thuộc cấu trúc nghiệp vụ,
+  không được cộng tổng hoặc xuất như kết quả chính thức.
 
 Thông báo phải nói rõ hành động, đối tượng và cách xử lý; tránh dùng thông báo chung như “Có lỗi xảy ra”.
 

@@ -4,7 +4,9 @@
 
 Khối lượng dịch vụ công ích hiện được thể hiện trong hợp đồng, dự toán, bảng nghiệm thu và báo cáo của đơn vị thực hiện. Khi kiểm tra thực địa, cán bộ phải đối chiếu nhiều tuyến đường, vị trí, diện tích và cự ly vận chuyển. Việc đo thủ công trên nhiều công cụ rời rạc làm khó truy vết nguồn số liệu, dễ cộng trùng và mất thời gian tổng hợp.
 
-Ứng dụng cần tạo một không gian làm việc thống nhất: chọn công tác, đo trực tiếp trên bản đồ hoặc ghi GPS, lưu nhiều vị trí cho cùng một công tác, đính kèm bằng chứng, tổng hợp và so sánh với số liệu nguồn.
+Ứng dụng cần tạo một không gian làm việc thống nhất: đo trực tiếp trên bản đồ hoặc
+ghi GPS, lưu nhanh geometry trước khi phân loại, gắn nhiều vị trí cho cùng một mục
+con/công tác, đính kèm bằng chứng, tổng hợp và so sánh với số liệu nguồn.
 
 ## 2. Mục tiêu sản phẩm
 
@@ -31,9 +33,18 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 ## 4. Thuật ngữ
 
 - **Hồ sơ kiểm tra:** tập hợp dữ liệu kiểm tra của một địa bàn, thời kỳ và đơn vị/công việc.
-- **Nhóm dịch vụ:** một trong năm mảng công ích hoặc nhóm bổ sung.
-- **Loại công tác:** mẫu cấu hình cho một công việc như quét đường, cắt cỏ, cắt tỉa cây.
-- **Công tác hồ sơ:** loại công tác đã được thêm vào một hồ sơ cụ thể.
+- **Khu vực quản lý:** phạm vi nghiệp vụ như 12 huyện/thành phố cũ; không thay thế
+  địa giới hành chính hiện hành dùng cho snapshot hồ sơ.
+- **Lĩnh vực dịch vụ:** nhóm công ích cấu hình được; giao diện nhanh hiển thị bốn
+  lĩnh vực mặc định nhưng vẫn bảo toàn nhóm lịch sử.
+- **Loại công tác:** template công thức nâng cao tùy chọn cho một công việc như quét
+  đường, cắt cỏ, cắt tỉa cây.
+- **Công tác hồ sơ:** công việc thuộc trực tiếp một khu vực và lĩnh vực trong hồ sơ;
+  có thể dùng template công thức nâng cao.
+- **Mục con:** bộ phận có tên thuộc một công tác, ví dụ một tên đường; có thể chứa
+  nhiều phép đo rời nhau.
+- **Nháp thu thập:** geometry đã lưu nhưng chưa được phân loại đầy đủ; không phải
+  phép đo chính thức và không được cộng tổng.
 - **Phép đo:** một bản ghi điểm, tuyến, vùng, số lượng hoặc lộ trình.
 - **Khối lượng nguồn:** khối lượng hợp đồng, dự toán, báo cáo hoặc nghiệm thu.
 - **Khối lượng kiểm tra:** kết quả tổng hợp từ các phép đo đã xác nhận.
@@ -54,12 +65,16 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 
 ### FR-CAT — Danh mục dịch vụ và công tác
 
-- **FR-CAT-001:** Có sẵn năm nhóm dịch vụ đã chốt.
+- **FR-CAT-001:** Giao diện nhanh có sẵn bốn lĩnh vực mặc định: Vệ sinh môi trường,
+  Chiếu sáng, Cây xanh và Thoát nước thải. Danh mục vẫn cấu hình được và giữ các
+  nhóm lịch sử đang có dữ liệu.
 - **FR-CAT-002:** Thêm, sửa, ngừng sử dụng nhóm dịch vụ mà không làm mất hồ sơ cũ.
 - **FR-CAT-003:** Tạo loại công tác với mã, tên, đơn vị, kiểu đo và quy tắc tính.
 - **FR-CAT-004:** Kiểu đo hỗ trợ `count`, `point`, `line`, `area`, `route`, `composite`.
 - **FR-CAT-005:** Cấu hình trường thuộc tính bắt buộc, kiểu dữ liệu, danh sách chọn và ngưỡng hợp lệ.
 - **FR-CAT-006:** Phiên bản hóa quy tắc tính; hồ sơ cũ tiếp tục dùng phiên bản đã lưu.
+- **FR-CAT-007:** Quản lý khu vực nghiệp vụ riêng với địa giới hành chính hiện hành;
+  mọi phiên bản phải có nguồn và thời hạn hiệu lực.
 
 ### FR-WORK — Công tác trong hồ sơ
 
@@ -68,6 +83,12 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 - **FR-WORK-003:** Ghi khối lượng nguồn theo các loại: dự toán, hợp đồng, báo cáo, nghiệm thu, khác.
 - **FR-WORK-004:** Một công tác chứa không giới hạn phép đo về mặt nghiệp vụ; giao diện phân trang khi số lượng lớn.
 - **FR-WORK-005:** Tổng khối lượng chỉ lấy phép đo ở trạng thái được phép tính.
+- **FR-WORK-006:** Công tác cho phép tên trống khi mới thu thập nhưng phải có tên
+  trước khi xác nhận phép đo.
+- **FR-WORK-007:** Thêm, đổi tên, lưu trữ, xóa mềm và phục hồi mục con; một mục con
+  chứa nhiều phép đo và hiển thị tổng cùng số liệu từng phần.
+- **FR-WORK-008:** Đổi tên giữ nguyên ID; xóa cha không cascade xóa dữ liệu con và
+  mọi thay đổi cấu trúc phải ghi audit.
 
 ### FR-MEAS — Phép đo bản đồ
 
@@ -81,6 +102,14 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 - **FR-MEAS-008:** Lưu phương pháp, nguồn geometry, người tạo, thời gian, thiết bị và ghi chú.
 - **FR-MEAS-009:** Kiểm tra hình học hợp lệ, trùng lặp và nằm ngoài địa bàn.
 - **FR-MEAS-010:** Xác nhận phép đo; sửa sau xác nhận tạo phiên bản mới.
+- **FR-MEAS-011:** Cho phép lưu nháp điểm, tuyến hoặc vùng trước khi chọn khu vực,
+  lĩnh vực, công tác và mục con tùy chọn.
+- **FR-MEAS-012:** Nháp chưa phân loại không tham gia tổng, đối chiếu, snapshot hoặc
+  export kết quả chính thức.
+- **FR-MEAS-013:** Phân loại nháp và tạo phép đo diễn ra trong một transaction có
+  idempotency, optimistic concurrency và audit.
+- **FR-MEAS-014:** Thanh công cụ nhanh có điểm, chiều dài, diện tích, lùi, tiến, xóa
+  phần đang chọn và kết thúc; hệ số/công thức chuyển vào luồng nâng cao.
 
 ### FR-ROUTE — Cự ly vận chuyển
 
@@ -116,6 +145,12 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 - **FR-MAP-003:** Hiển thị ranh giới địa bàn, cơ sở xử lý và dữ liệu phép đo.
 - **FR-MAP-004:** Hiển thị attribution phù hợp với nhà cung cấp hiện hành.
 - **FR-MAP-005:** Không lưu cache trái điều kiện nguồn bản đồ; lớp ngoại tuyến phải dùng nguồn được phép.
+- **FR-MAP-006:** Không gian đo ưu tiên bản đồ toàn màn hình; danh sách, bộ lọc và
+  chi tiết mở bằng drawer/bottom sheet có thể đóng hoàn toàn.
+- **FR-MAP-007:** Lọc theo khu vực, lĩnh vực, công tác, mục con, loại geometry và
+  trạng thái; bộ lọc ở cấp cha trả mọi đối tượng con phù hợp.
+- **FR-MAP-008:** Chọn đối tượng sẽ highlight, zoom và mở tóm tắt gọn với thao tác
+  mở thông tin, tải GeoJSON và chỉnh sửa theo quyền.
 
 ### FR-EXP — Nhập/xuất
 
@@ -123,6 +158,8 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 - **FR-EXP-002:** Xuất GeoJSON giữ thuộc tính nghiệp vụ và mã liên kết.
 - **FR-EXP-003:** Mỗi lần xuất ghi người dùng, thời gian, bộ lọc và hash tệp.
 - **FR-EXP-004:** Không xuất token, đường dẫn nội bộ hoặc thông tin hệ thống không cần thiết.
+- **FR-EXP-005:** Cho phép tải GeoJSON một đối tượng hoặc tập đang lọc; máy chủ kiểm
+  quyền, lưu bộ lọc, hash và audit.
 
 ### FR-AUDIT — Nhật ký
 
@@ -144,14 +181,19 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 
 ## 7. Tiêu chí nghiệm thu cấp sản phẩm
 
-1. Tạo hồ sơ Mộc Châu, thêm đủ năm nhóm dịch vụ và tối thiểu mười công tác mẫu.
-2. Trong một công tác, lưu ba tuyến độc lập; tổng đúng bằng tổng phép đo đã xác nhận.
-3. Đo polygon chuẩn 10.000 m² và tuyến chuẩn 1.000 m đạt dung sai kiểm thử.
-4. Tạo route từ điểm tập kết đến khu xử lý, lưu đầy đủ provider và geometry.
-5. Tạo một phép đo GPS khi mất mạng, đồng bộ lại mà không trùng dữ liệu.
-6. Nhập khối lượng nghiệm thu, hiển thị chênh lệch và cảnh báo theo ngưỡng.
-7. Xuất Excel và GeoJSON mở được, số liệu khớp giao diện.
-8. Khóa hồ sơ ngăn sửa; mở khóa bắt buộc lý do và có nhật ký.
+1. Tạo hồ sơ Mộc Châu, hiển thị bốn lĩnh vực mặc định và đọc được nhóm lịch sử.
+2. Vẽ một tuyến khi chưa chọn công tác, lưu nháp, phân loại vào một mục con và xác
+   nhận mà không tạo bản ghi trùng khi gửi lại.
+3. Trong một mục con, lưu ba tuyến độc lập; tổng mục con và công tác đúng bằng tổng
+   phép đo đã xác nhận.
+4. Đo polygon chuẩn 10.000 m² và tuyến chuẩn 1.000 m đạt dung sai kiểm thử.
+5. Lọc theo khu vực/lĩnh vực/công tác, chọn một đối tượng để mở, tải GeoJSON và sửa;
+   sửa bản confirmed tạo phiên bản mới có lý do.
+6. Tạo route từ điểm tập kết đến khu xử lý, lưu đầy đủ provider và geometry.
+7. Tạo một phép đo GPS khi mất mạng, đồng bộ lại mà không trùng dữ liệu.
+8. Nhập khối lượng nghiệm thu, hiển thị chênh lệch và cảnh báo theo ngưỡng.
+9. Xuất Excel và GeoJSON mở được, số liệu khớp giao diện.
+10. Khóa hồ sơ ngăn sửa; mở khóa bắt buộc lý do và có nhật ký.
 
 ## 8. Phụ thuộc và giả định
 

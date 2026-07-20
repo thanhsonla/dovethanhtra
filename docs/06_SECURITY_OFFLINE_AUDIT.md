@@ -62,6 +62,8 @@ Mật khẩu, token, secret, khóa mã hóa. Không xuất, không ghi log, khô
 - Geometry và biểu mẫu nháp.
 - Ảnh chờ tải lên, có cảnh báo dung lượng.
 - Hàng đợi mutation và trạng thái đồng bộ.
+- Nháp thu thập chưa phân loại, kèm `localId`, phiên bản và thời điểm tạo; không lưu
+  tọa độ vào log chẩn đoán.
 
 Không lưu token dài hạn dưới dạng plaintext nếu có phương án an toàn hơn của nền tảng.
 
@@ -73,6 +75,8 @@ Mỗi mutation có khóa duy nhất do client tạo. Máy chủ lưu payload has
 
 - Bản nháp chưa xác nhận: có thể merge trường không xung đột.
 - Geometry hoặc phép đo đã xác nhận: không merge tự động; tạo bản sửa mới.
+- Nháp thu thập: chỉ merge metadata không xung đột; geometry xung đột yêu cầu chọn
+  phiên bản, không tự nối hoặc thay thế.
 - Hồ sơ đã khóa: từ chối mutation và giữ bản nháp cục bộ để người dùng xuất/đối chiếu.
 - Ảnh: upload độc lập; liên kết chỉ hoàn tất sau khi máy chủ xác nhận hash.
 
@@ -87,6 +91,10 @@ Mỗi mutation có khóa duy nhất do client tạo. Máy chủ lưu payload has
 - Không lưu token hoặc toàn bộ ảnh/geometry lớn trong audit JSON; lưu ID/hash/thay đổi thuộc tính cần thiết.
 - Khi khóa hồ sơ, tạo `case_snapshot_hash` từ danh sách phiên bản đối tượng và kết quả tổng hợp.
 - Khi xuất, lưu hash tệp và snapshot ID để chứng minh tệp thuộc trạng thái nào.
+- Thêm/đổi tên/lưu trữ/phục hồi khu vực, lĩnh vực, công tác, mục con; phân loại nháp;
+  sửa phiên bản và tải GeoJSON đều phải ghi audit trong transaction nghiệp vụ.
+- Download một feature hoặc tập lọc phải kiểm quyền phía máy chủ, giới hạn số lượng,
+  lưu bộ lọc/hash và không đưa URL ký hoặc object key vào audit.
 
 ## 8. Sao lưu và phục hồi
 

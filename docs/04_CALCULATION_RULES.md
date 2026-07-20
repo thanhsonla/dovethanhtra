@@ -8,6 +8,12 @@
 4. Đơn vị lưu chuẩn: mét, mét vuông, mét khối, số lượng, tấn, lượt và tấn.km; giao diện có thể hiển thị km/ha.
 5. Không cộng bản nháp, bản bị thay thế hoặc bản xóa mềm.
 6. Chồng lặp phải được phát hiện trước khi cộng tổng, nhưng không tự động trừ nếu người dùng chưa xác nhận.
+7. `capture_draft` chỉ hiển thị số đo tạm và không có kết quả chính thức. Sau khi
+   phân loại, máy chủ mới tạo measurement, áp quy tắc/version và đưa bản confirmed
+   vào tổng.
+8. Luồng nhập nhanh có thể ẩn hệ số nhưng không được tự đặt hệ số nghiệp vụ. Với
+   point/line/area cơ bản, máy chủ lưu số lượng, mét hoặc mét vuông gốc; công thức có
+   biến bắt buộc chỉ được xác nhận sau khi người dùng bổ sung đủ đầu vào.
 
 ## 2. Kiểu đo cơ bản
 

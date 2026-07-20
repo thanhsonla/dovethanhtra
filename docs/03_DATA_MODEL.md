@@ -13,10 +13,16 @@
 ```mermaid
 erDiagram
   ADMIN_AREA ||--o{ INSPECTION_CASE : applies_to
+  ADMIN_AREA ||--o{ CASE_WORK_ITEM : manages
   INSPECTION_CASE ||--o{ CASE_WORK_ITEM : contains
+  INSPECTION_CASE ||--o{ CAPTURE_DRAFT : captures
   SERVICE_GROUP ||--o{ WORK_TYPE : groups
-  WORK_TYPE ||--o{ CASE_WORK_ITEM : instantiates
-  CASE_WORK_ITEM ||--o{ MEASUREMENT : has
+  SERVICE_GROUP ||--o{ CASE_WORK_ITEM : classifies
+  WORK_TYPE o|--o{ CASE_WORK_ITEM : templates
+  CASE_WORK_ITEM ||--o{ WORK_COMPONENT : contains
+  CASE_WORK_ITEM ||--o{ MEASUREMENT : owns
+  WORK_COMPONENT o|--o{ MEASUREMENT : groups
+  CAPTURE_DRAFT o|--o| MEASUREMENT : classifies_into
   MEASUREMENT ||--o{ ATTACHMENT : evidences
   MEASUREMENT ||--o| TRANSPORT_ROUTE : extends
   CASE_WORK_ITEM ||--o{ SOURCE_QUANTITY : compares
@@ -51,13 +57,37 @@ Mẫu công tác. Trường chính: `id`, `service_group_id`, `code`, `name`, `m
 
 ### `case_work_item`
 
-Công tác cụ thể trong hồ sơ. Trường chính: `id`, `inspection_case_id`, `work_type_id`, `name`, `period_start`, `period_end`, `unit`, `formula_snapshot`, `warning_threshold`, `status`.
+Công tác cụ thể trong hồ sơ. Trường chính: `id`, `inspection_case_id`,
+`management_area_id`, `service_group_id`, `work_type_id`, `name`, `period_start`,
+`period_end`, `unit`, `formula_snapshot`, `warning_threshold`, `status`.
+
+`work_type_id` là template nâng cao tùy chọn; công tác cơ bản dùng rule point/line/
+area được version hóa. Tên có thể trống khi mới thu thập nhưng bắt buộc trước khi
+xác nhận phép đo. Migration backfill `service_group_id` từ work type và giữ nguyên
+liên kết cũ; `management_area_id` dùng lớp khu vực quản lý, không thay snapshot địa
+giới hành chính của hồ sơ.
+
+### `work_component`
+
+Mục con thuộc công tác: `id`, `case_work_item_id`, `name`, `display_order`, `status`,
+`version`, `created_by`, `deleted_at`. Một mục con chứa nhiều measurement rời nhau.
+Đổi tên giữ nguyên ID; xóa mềm cha không cascade tới measurement.
+
+### `capture_draft`
+
+Vùng đệm đo trước khi phân loại: `id`, `inspection_case_id`, `local_id`, `device_id`,
+`geometry_kind`, `method`, `raw_geometry`, `metadata`, `status`, `version`,
+`classified_measurement_id`, `created_by`, `classified_at`, `deleted_at`.
+
+Nháp không mang kết quả chính thức và không tham gia aggregate/snapshot. Khi phân
+loại, máy chủ tạo/liên kết cấu trúc và measurement trong cùng transaction, sau đó
+gắn `classified_measurement_id`; raw geometry của nháp không bị ghi đè.
 
 ### `measurement`
 
 Trường chính:
 
-- Quan hệ: `case_work_item_id`, `supersedes_id`.
+- Quan hệ: `case_work_item_id`, `work_component_id`, `capture_draft_id`, `supersedes_id`.
 - Nhận dạng: `code`, `name`, `version`.
 - Phương pháp: `method`, `geometry_kind`, `source_device`, `source_provider`.
 - Hình học: `raw_geometry`, `normalized_geometry`.
@@ -115,6 +145,10 @@ Chống trùng khi đồng bộ: `idempotency_key`, `device_id`, `entity_type`, 
 
 `draft`, `pending_validation`, `needs_attention`, `confirmed`, `superseded`, `deleted`.
 
+### Trạng thái nháp thu thập
+
+`unclassified`, `classifying`, `classified`, `conflict`, `deleted`.
+
 ### Phương pháp đo
 
 `map_draw`, `gps_point`, `gps_track`, `route_provider`, `import_geojson`, `manual_document`.
@@ -132,11 +166,18 @@ Chống trùng khi đồng bộ: `idempotency_key`, `device_id`, `entity_type`, 
 - Hồ sơ `locked` không cho sửa dữ liệu nghiệp vụ trực tiếp.
 - `sha256` và `object_key` bắt buộc với tệp đã tải hoàn tất.
 - `idempotency_key` là duy nhất theo thiết bị/nguồn đồng bộ.
+- `capture_draft.classified_measurement_id` chỉ được gắn một lần; retry cùng
+  idempotency/payload trả cùng measurement.
+- Measurement confirmed phải có công tác hiện hành với tên không rỗng; mục con là
+  tùy chọn, nhưng nếu có thì phải hiện hành và có tên không rỗng.
+- Không cho lưu trữ/xóa mềm khu vực, lĩnh vực, công tác hoặc mục con còn con hoạt
+  động nếu chưa chuyển con; không có cascade xóa chứng cứ.
 
 ## 6. Chỉ mục
 
 - GIST cho boundary và geometry.
 - B-tree cho `inspection_case_id`, `case_work_item_id`, trạng thái và thời gian.
+- B-tree cho `work_component_id`, `capture_draft.status`, `created_by` và thời gian.
 - Partial index cho bản ghi chưa xóa.
 - GIN cho thuộc tính/cảnh báo JSONB khi có nhu cầu tìm kiếm thực tế.
 

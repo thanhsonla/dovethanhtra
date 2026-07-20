@@ -42,7 +42,8 @@ Nhóm dịch vụ, loại công tác, đơn vị và quy tắc tính.
 
 ### `measurements`
 
-Geometry, GPS, validation, version và tính khối lượng.
+Geometry, nháp thu thập, phân loại, mục con, GPS, validation, version và tính khối
+lượng. Mô-đun `sync` cung cấp idempotency nhưng không tự tạo kết quả chính thức.
 
 ### `routing`
 
@@ -143,13 +144,53 @@ Chỉ snapshot cấu hình được sao chép; kỳ công tác, phép đo, tuy�
 
 ### Danh mục và công tác
 
+- `GET /management-areas`
+- `POST /management-areas`
+- `PATCH /management-areas/{areaId}`
+- `DELETE /management-areas/{areaId}` và `POST /management-areas/{areaId}/restore`
 - `GET /service-groups`
 - `POST /service-groups`
+- `PATCH /service-groups/{serviceGroupId}`
+- `DELETE /service-groups/{serviceGroupId}` và
+  `POST /service-groups/{serviceGroupId}/restore`
 - `GET /work-types`
 - `POST /work-types`
 - `POST /cases/{caseId}/work-items`
 - `GET /cases/{caseId}/work-items`
 - `PATCH /work-items/{workItemId}`
+- `DELETE /work-items/{workItemId}` — xóa mềm, từ chối nếu còn mục con hoạt động.
+- `POST /work-items/{workItemId}/restore`
+- `POST /work-items/{workItemId}/components`
+- `GET /work-items/{workItemId}/components`
+- `PATCH /work-components/{componentId}`
+- `DELETE /work-components/{componentId}` — xóa mềm, không cascade phép đo.
+- `POST /work-components/{componentId}/restore`
+
+12 khu vực quản lý lịch sử và 75 xã/phường hiện hành là hai tập version/source riêng.
+Bốn lĩnh vực mặc định là seed cấu hình, không phải enum trong API. Công tác gắn trực
+tiếp khu vực/lĩnh vực; `workTypeId` chỉ bắt buộc khi dùng template công thức nâng cao.
+
+### Nháp thu thập và bản đồ map-first
+
+- `POST /cases/{caseId}/capture-drafts` — lưu raw geometry, yêu cầu
+  `Idempotency-Key` và `X-Device-Id`.
+- `GET /cases/{caseId}/capture-drafts`
+- `GET /capture-drafts/{draftId}`
+- `PATCH /capture-drafts/{draftId}` — sửa nháp bằng `If-Match`.
+- `DELETE /capture-drafts/{draftId}` — xóa mềm.
+- `POST /capture-drafts/{draftId}/restore`
+- `POST /capture-drafts/{draftId}/classify` — nhận khu vực, lĩnh vực, công tác và
+  mục con tùy chọn có sẵn hoặc payload tạo mới; transaction tạo measurement và ghi
+  audit.
+- `GET /cases/{caseId}/map-features` — filter có whitelist: `managementAreaId`,
+  `serviceGroupId`, `workItemId`, `componentId`, `geometryKind`, `status`, `bbox`,
+  `cursor`, `limit`.
+- `GET /measurements/{measurementId}/download.geojson` — tải nhanh một feature.
+- `POST /cases/{caseId}/map-features/download.geojson` — tải tập đang lọc, lưu hash,
+  bộ lọc và audit.
+
+Nháp `unclassified` không xuất hiện trong aggregate/comparison/snapshot. API tải
+nhanh vẫn kiểm owner/RBAC và không thay thế quy trình export hồ sơ đã khóa.
 
 ### Phép đo
 
@@ -226,6 +267,17 @@ cache/recalculate. Ngưỡng công tác ghi đè ngưỡng hồ sơ; nguồn b�
 5. Validation engine sinh warning/error.
 6. API lưu measurement, calculation output và audit event trong một transaction.
 7. Client nhận server ID, version và kết quả chính thức.
+
+### Luồng phân loại nháp thu thập
+
+1. Client lưu `capture_draft` ngay sau khi kết thúc hình, kể cả chưa có công tác.
+2. Client chọn hoặc tạo khu vực, lĩnh vực, công tác và mục con rồi gửi
+   `Idempotency-Key`, ETag của nháp và lý do nếu là hiệu chỉnh.
+3. API kiểm quyền, trạng thái hồ sơ, phiên bản nháp và toàn bộ quan hệ danh mục.
+4. Trong một transaction, API tạo/liên kết cấu trúc, tạo measurement từ raw
+   geometry, chạy PostGIS validation/calculation, liên kết lại nháp và ghi audit.
+5. Retry cùng khóa/payload nhận cùng kết quả; xung đột giữ nguyên nháp để người dùng
+   xử lý. Measurement confirmed chỉ được sửa bằng `supersede`.
 
 ## 8. Luồng tính route
 

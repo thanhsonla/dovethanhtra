@@ -44,12 +44,18 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 | CASE-003  | Sửa hồ sơ đã khóa qua API     | Bị từ chối và có log an toàn           |
 | CAT-001   | Tạo công tác line             | Schema và công thức phiên bản hóa      |
 | CAT-002   | Ngừng loại công tác đang dùng | Hồ sơ cũ vẫn đọc được                  |
+| CAT-003   | Đổi tên công tác/mục con       | ID/liên kết giữ nguyên, có audit       |
+| CAT-004   | Xóa cha còn con hoạt động      | Từ chối, không cascade dữ liệu         |
 | MEAS-001  | Đo tuyến chuẩn                | Kết quả máy chủ trong dung sai         |
 | MEAS-002  | Đo polygon chuẩn              | Kết quả máy chủ trong dung sai         |
 | MEAS-003  | Lưu polygon tự cắt            | Không cho xác nhận; trả warning/error  |
 | MEAS-004  | Ba phép đo một công tác       | Tổng chỉ gồm bản confirmed             |
 | MEAS-005  | Sửa phép đo confirmed         | Tạo version mới; bản cũ superseded     |
 | MEAS-006  | Geometry ngoài boundary       | Cảnh báo kèm phần ngoài ranh giới      |
+| MEAS-007  | Lưu hình trước khi phân loại  | Tạo nháp, không cộng tổng              |
+| MEAS-008  | Phân loại nháp vào mục con    | Tạo measurement và audit một lần       |
+| MEAS-009  | Ba đoạn trong một mục con     | Tổng mục con/công tác chỉ gồm confirmed |
+| MEAS-010  | Gửi lại classify cùng key     | Trả kết quả cũ, không nhân đôi         |
 | ROUTE-001 | Tính route hợp lệ             | Lưu distance, geometry, provider, time |
 | ROUTE-002 | Tính lại route                | Tạo version, không ghi đè              |
 | ROUTE-003 | Không tìm được route          | Lỗi xử lý được, không tạo bản ghi rỗng |
@@ -61,6 +67,10 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 | EXP-001   | Xuất Excel                    | Mở được, đủ sheet, tổng đúng           |
 | EXP-002   | Xuất GeoJSON                  | Geometry/ID/thuộc tính đúng            |
 | AUDIT-001 | Khóa/mở khóa                  | Có actor, reason, time, traceId        |
+| MAP-001   | Lọc ở cấp khu vực/lĩnh vực    | Hiện toàn bộ feature con phù hợp       |
+| MAP-002   | Chọn feature                  | Highlight, zoom và thẻ gọn             |
+| EXP-003   | Tải một/tập feature GeoJSON  | Đúng filter, quyền, hash và audit       |
+| EDIT-001  | Sửa measurement confirmed     | Phiên bản mới, bắt buộc lý do          |
 
 ## 5. Ca kiểm thử ngoại tuyến
 
@@ -72,6 +82,8 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 | OFF-004 | Hồ sơ bị khóa trước khi đồng bộ      | Giữ bản cục bộ, báo xung đột                        |
 | OFF-005 | Ảnh upload dở                        | Tiếp tục/thử lại, không tạo attachment hoàn tất giả |
 | OFF-006 | Đồng bộ theo thứ tự khác             | Quan hệ vẫn đúng hoặc được retry có kiểm soát       |
+| OFF-007 | Reload nháp chưa phân loại          | Geometry và trạng thái vẫn còn                       |
+| OFF-008 | Classify khi hồ sơ vừa bị khóa      | Giữ nháp, báo conflict, không tạo measurement        |
 
 ## 6. Kiểm thử bản đồ và GPS
 
@@ -83,6 +95,11 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 - GPS accuracy hiển thị và được lưu.
 - Tạm dừng GPS không nối các đoạn không hợp lý.
 - Raw track giữ nguyên sau lọc nhiễu.
+- Desktop có toolbar dọc; điện thoại/iPad có toolbar ngang trên, control chính tối
+  thiểu 44 x 44 px và drawer đóng được để trả toàn bộ không gian cho bản đồ.
+- Lùi/tiến và xóa phần đang chọn hoạt động cho point/line/polygon; từng đỉnh và chữ
+  thập đỏ hiện đúng trong lúc vẽ.
+- Kết quả tạm cập nhật trực tiếp nhưng luôn có nhãn phân biệt với số chính thức.
 
 ## 7. Kiểm thử bảo mật
 
@@ -95,6 +112,8 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 - Secret scan repository và build artifact.
 - Dependency vulnerability scan.
 - API khóa hồ sơ phải kiểm tra quyền và reason.
+- IDOR trên capture draft, work component và download GeoJSON.
+- Filter chỉ nhận trường/operator whitelist; tên cấp dữ liệu được escape chống XSS.
 
 ## 8. Kiểm thử hiệu năng
 
