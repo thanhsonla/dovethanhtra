@@ -136,8 +136,14 @@
   tích hoạt động khi chưa có công tác, marker đỉnh/chữ thập đỏ hỗ trợ chọn-xóa,
   lùi/tiến và kết quả tạm gọn. Capture draft được ghi IndexedDB trước, đồng bộ qua
   API bằng idempotency key, tự thử lại khi online và phục hồi nháp gần nhất. Luồng
-  đo theo công tác cũ vẫn vào từ ngăn Dữ liệu; Task 7 (phiếu phân loại) là bước kế
-  tiếp.
+  đo theo công tác cũ vẫn vào từ ngăn Dữ liệu.
+- Task 7 đã thêm phiếu phân loại hậu kỳ từ “Lưu & phân loại” hoặc nút trạng thái
+  nháp. Phiếu chọn Khu vực → Lĩnh vực → Công tác → Mục con, cho tạo Công tác/Mục
+  con trong classify transaction, tự chọn rule đúng geometry và giữ phần nâng cao
+  thu gọn. ETag/device/idempotency được giữ xuyên retry; 409/423 cho tải lại server
+  version, cảnh báo PostGIS phải được đọc trước khi đóng hoặc tiếp tục đo. Công tác
+  mới và measurement được nạp lại vào cây dữ liệu ngay sau khi lưu. Task 8 (lọc đa
+  cấp/chọn feature/chi tiết) là bước tiếp theo.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

@@ -6,6 +6,7 @@ import { createDrawingState, drawingReducer } from './drawing-state.js'
 import { geometryFromPositions } from './map-geometry.js'
 import type { MapPanelName } from './drawing-toolbar.js'
 import type { MapMode, Position } from './measurement-map.js'
+import type { StoredCaptureDraft } from '../field/offline-store.js'
 import { useCaptureDraftSync } from './use-capture-draft-sync.js'
 
 type DrawingTarget = 'capture' | 'measurement'
@@ -15,6 +16,7 @@ export function useMapDrawingWorkflow(options: {
   locked: boolean
   onError: (message: string) => void
   onPanel: (panel: MapPanelName | null) => void
+  onClassifyReady: (draft: StoredCaptureDraft) => void
 }) {
   const [mode, setMode] = useState<MapMode>('view')
   const [drawing, dispatchDrawing] = useReducer(drawingReducer, undefined, () =>
@@ -95,6 +97,22 @@ export function useMapDrawingWorkflow(options: {
           void captureSync
             .save(capturePending.kind, capturePending.geometry)
             .then(() => options.onPanel(null))
+            .catch((reason) =>
+              options.onError(reason instanceof Error ? reason.message : 'Không thể lưu nháp.'),
+            )
+            .finally(() => setSavingCapture(false))
+        },
+        onSaveAndClassify: () => {
+          setSavingCapture(true)
+          void captureSync
+            .save(capturePending.kind, capturePending.geometry)
+            .then((draft) => {
+              if (draft.serverDraft) options.onClassifyReady(draft)
+              else {
+                options.onError('Nháp đã lưu trên thiết bị. Có thể phân loại sau khi có mạng.')
+                options.onPanel(null)
+              }
+            })
             .catch((reason) =>
               options.onError(reason instanceof Error ? reason.message : 'Không thể lưu nháp.'),
             )

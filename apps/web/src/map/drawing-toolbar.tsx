@@ -2,8 +2,8 @@ import type { DrawableMeasurementGeometryKind } from '@dove/contracts'
 
 import type { MapMode } from './measurement-map.js'
 
-export type MapPanelName = 'capture' | 'data' | 'details' | 'filters'
-type ToolbarPanelName = Exclude<MapPanelName, 'capture'>
+export type MapPanelName = 'capture' | 'classification' | 'data' | 'details' | 'filters'
+type ToolbarPanelName = Exclude<MapPanelName, 'capture' | 'classification'>
 
 function ToolIcon(props: {
   name: 'area' | 'cancel' | 'delete' | 'finish' | 'line' | 'point' | 'redo' | 'undo'

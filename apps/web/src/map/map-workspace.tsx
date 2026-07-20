@@ -27,6 +27,10 @@ import { activeWorkId, measurementKindForWork, rememberActiveWork } from './map-
 import { MapWorkspaceDrawers } from './map-workspace-drawers.js'
 import { useMapDrawingWorkflow } from './use-map-drawing-workflow.js'
 import { useMapWorkspaceResources } from './use-map-workspace-resources.js'
+import {
+  classificationPanelProps,
+  useClassificationSelection,
+} from './use-capture-classification.js'
 
 export function MapWorkspace(props: {
   groups: ServiceGroup[]
@@ -59,11 +63,13 @@ export function MapWorkspace(props: {
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [routePreview, setRoutePreview] = useState<GeoJsonGeometry | null>(null)
   const [activePanel, setActivePanel] = useState<MapPanelName | null>(null)
+  const classificationSelection = useClassificationSelection(setActivePanel)
   const drawingWorkflow = useMapDrawingWorkflow({
     caseId: props.inspectionCase.id,
     locked: props.inspectionCase.status === 'locked',
     onError: setError,
     onPanel: setActivePanel,
+    onClassifyReady: classificationSelection.open,
   })
   const {
     capturePending,
@@ -80,7 +86,7 @@ export function MapWorkspace(props: {
     basemaps.descriptors().find((item) => basemaps.supportsOffline(item.id))?.id ??
     basemaps.defaultId
   const selectedBasemap = basemaps.get(basemapId)
-
+  const classificationDraft = classificationSelection.find(drawingWorkflow.captureSync.drafts)
   const allMeasurements = Object.values(summaries).flatMap((summary) => summary.items)
   const selected = allMeasurements.find((item) => item.id === selectedId) ?? null
   const selectedWork = measurable.find((item) => item.id === selectedWorkId) ?? null
@@ -254,7 +260,12 @@ export function MapWorkspace(props: {
               <strong>{temporaryValue(draftGeometry)}</strong>
             </output>
           )}
-          {captureSync.latest && mode === 'view' && <MapCaptureStatus draft={captureSync.latest} />}
+          {captureSync.latest && mode === 'view' && (
+            <MapCaptureStatus
+              draft={captureSync.latest}
+              onOpen={() => classificationSelection.open(captureSync.latest!)}
+            />
+          )}
           <div className="map-status-sr" aria-live="polite">
             Chế độ {mapModeLabel(mode)}. Nền {selectedBasemap.label}.
           </div>
@@ -263,6 +274,19 @@ export function MapWorkspace(props: {
         <MapWorkspaceDrawers
           activePanel={activePanel}
           capture={drawingWorkflow.capturePanel}
+          classification={classificationPanelProps({
+            captureSync,
+            clearCapture,
+            draft: classificationDraft,
+            onError: setError,
+            onPanel: setActivePanel,
+            onStart: startCaptureDrawing,
+            refreshWork,
+            selection: classificationSelection,
+            setSelectedId,
+            setSelectedWorkId,
+            workspace: props,
+          })}
           data={{
             inspectionCase: props.inspectionCase,
             mode,

@@ -190,7 +190,18 @@
   backdrop-filter: blur(5px);
   color: #fff;
   font-size: 0.72rem;
-  pointer-events: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.map-capture-status span {
+  margin-left: 8px;
+  font-weight: 800;
+}
+
+.map-capture-status:disabled {
+  cursor: default;
+  opacity: 0.86;
 }
 
 .map-capture-status.is-queued,
@@ -242,6 +253,73 @@
 .capture-draft-panel__result strong {
   color: #176c4c;
   font-size: 1rem;
+}
+
+.capture-classification {
+  display: grid;
+  gap: 12px;
+}
+
+.capture-classification label {
+  font-size: 0.78rem;
+}
+
+.capture-classification input,
+.capture-classification select,
+.capture-classification textarea {
+  min-height: 40px;
+  font-size: 0.84rem;
+}
+
+.capture-classification textarea {
+  width: 100%;
+  min-height: 78px;
+  padding: 9px 11px;
+  border: 1px solid #bdcec5;
+  border-radius: 9px;
+  resize: vertical;
+}
+
+.capture-classification details {
+  padding: 8px 10px;
+  border: 1px solid #d6e1db;
+  border-radius: 9px;
+}
+
+.capture-classification details[open] summary {
+  margin-bottom: 10px;
+}
+
+.capture-classification summary {
+  cursor: pointer;
+  color: #3e5d51;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.capture-classification__hint,
+.capture-classification--result p {
+  margin: 0;
+  color: #60736a;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.capture-classification__eyebrow {
+  margin: 0;
+  color: #176c4c;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.capture-classification--result h3 {
+  margin: 0;
+}
+
+.field-hint.is-error {
+  color: #9a2f2f;
 }
 
 .map-alert {

@@ -38,7 +38,11 @@ import type {
   BasemapCapabilities,
   CaptureDraft,
   CaptureDraftMutationResponse,
+  ClassifyCaptureDraftRequest,
+  ClassifyCaptureDraftResponse,
   CreateCaptureDraftRequest,
+  ManagementZone,
+  WorkComponent,
 } from '@dove/contracts'
 
 export class ApiClientError extends Error {
@@ -117,6 +121,22 @@ export const api = {
     }),
   listCaptureDrafts: (caseId: string) =>
     request<CaptureDraft[]>(`/cases/${caseId}/capture-drafts?limit=200`),
+  getCaptureDraft: (draftId: string) => request<CaptureDraft>(`/capture-drafts/${draftId}`),
+  classifyCaptureDraft: (
+    draft: CaptureDraft,
+    input: ClassifyCaptureDraftRequest,
+    idempotencyKey: string,
+    deviceId: string,
+  ) =>
+    request<ClassifyCaptureDraftResponse>(`/capture-drafts/${draft.id}/classify`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+      headers: {
+        'idempotency-key': idempotencyKey,
+        'if-match': `"${draft.version}"`,
+        'x-device-id': deviceId,
+      },
+    }),
   createCase: (input: CreateCaseRequest) =>
     request<InspectionCase>('/cases', { method: 'POST', body: JSON.stringify(input) }),
   createWorkItem: (caseId: string, input: CreateWorkItemRequest) =>
@@ -229,7 +249,10 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
   listServiceGroups: () => request<ServiceGroup[]>('/catalog/service-groups'),
+  listManagementZones: () => request<ManagementZone[]>('/catalog/management-zones'),
   listWorkItems: (caseId: string) => request<WorkItem[]>(`/cases/${caseId}/work-items`),
+  listWorkComponents: (workItemId: string) =>
+    request<WorkComponent[]>(`/work-items/${workItemId}/components`),
   listWorkTypes: () => request<WorkType[]>('/catalog/work-types'),
   listTreatmentFacilities: () => request<TreatmentFacility[]>('/treatment-facilities'),
   calculateRoute: (input: RouteRequest) =>

@@ -13,6 +13,7 @@ export function CaptureDraftPanel(props: {
   kind: DrawableMeasurementGeometryKind
   onCancel: () => void
   onSave: () => void
+  onSaveAndClassify: () => void
   saving: boolean
 }) {
   return (
@@ -28,6 +29,9 @@ export function CaptureDraftPanel(props: {
       <div className="form-actions">
         <button className="primary" disabled={props.saving} onClick={props.onSave} type="button">
           {props.saving ? 'Đang lưu…' : 'Lưu nháp'}
+        </button>
+        <button disabled={props.saving} onClick={props.onSaveAndClassify} type="button">
+          Lưu & phân loại
         </button>
         <button disabled={props.saving} onClick={props.onCancel} type="button">
           Hủy

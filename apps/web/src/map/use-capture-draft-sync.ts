@@ -1,4 +1,5 @@
 import type {
+  ClassifyCaptureDraftRequest,
   CreateCaptureDraftRequest,
   DrawableMeasurementGeometryKind,
   GeoJsonGeometry,
@@ -128,5 +129,52 @@ export function useCaptureDraftSync(caseId: string, onError: (message: string) =
     [caseId, replace, sync],
   )
 
-  return { drafts, latest: useMemo(() => drafts[0] ?? null, [drafts]), save }
+  const classify = useCallback(
+    async (draft: StoredCaptureDraft, input: ClassifyCaptureDraftRequest, key: string) => {
+      if (!draft.serverDraft) throw new Error('Nháp cần đồng bộ trước khi phân loại.')
+      try {
+        const response = await api.classifyCaptureDraft(
+          draft.serverDraft,
+          input,
+          key,
+          draft.deviceId,
+        )
+        const classified = withStatus({ ...draft, serverDraft: response.draft }, 'synced')
+        await offlineStore.putCaptureDraft(classified)
+        replace(classified)
+        return response
+      } catch (reason) {
+        if (reason instanceof ApiClientError && (reason.status === 409 || reason.status === 423)) {
+          const conflict = withStatus(draft, 'conflict', reason.message)
+          await offlineStore.putCaptureDraft(conflict)
+          replace(conflict)
+        }
+        throw reason
+      }
+    },
+    [replace],
+  )
+
+  const reload = useCallback(
+    async (draft: StoredCaptureDraft) => {
+      if (!draft.serverDraft) return draft
+      const serverDraft = await api.getCaptureDraft(draft.serverDraft.id)
+      const refreshed = withStatus({ ...draft, serverDraft }, 'synced')
+      await offlineStore.putCaptureDraft(refreshed)
+      replace(refreshed)
+      return refreshed
+    },
+    [replace],
+  )
+
+  return {
+    classify,
+    drafts,
+    latest: useMemo(
+      () => drafts.find((item) => item.serverDraft?.status !== 'classified') ?? null,
+      [drafts],
+    ),
+    reload,
+    save,
+  }
 }

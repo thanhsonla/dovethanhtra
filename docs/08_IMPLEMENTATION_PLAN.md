@@ -240,11 +240,18 @@ giao diện.
 - Luồng “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu vẫn giữ tương thích với phép đo
   theo công tác hiện có; wizard phân loại nháp chưa thuộc Task 6.
 
-### Task 7 — Phiếu phân loại sau khi đo
+### Task 7 — Phiếu phân loại sau khi đo — hoàn thành
 
 - Wizard gọn chọn/tạo khu vực → lĩnh vực → công tác → mục con tùy chọn; tên công tác
   để trống trong capture nhưng bắt buộc trước confirm, tên mục con bắt buộc nếu dùng.
 - Hỗ trợ lưu nháp, lưu và tiếp tục, xử lý conflict và cảnh báo geometry.
+- Nháp đã đồng bộ có nút mở lại phiếu; công tác hiện có được lọc theo đúng khu vực,
+  lĩnh vực và loại geometry. Công tác/mục con mới được tạo trong classify transaction;
+  quy tắc cơ bản tương thích được chọn tự động, lựa chọn nâng cao chỉ hiện khi có nhiều rule.
+- Client giữ idempotency key trong một lần phân loại, dùng ETag/device ID, lưu trạng
+  thái classified vào IndexedDB và cho tải lại server version khi 409/423.
+- Unit bao phủ lọc/payload; E2E Chromium/WebKit bao phủ tạo cấu trúc, cảnh báo
+  PostGIS, đồng bộ offline còn lại và cập nhật cây dữ liệu.
 
 ### Task 8 — Lọc, chọn và chi tiết
 

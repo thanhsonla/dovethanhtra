@@ -79,6 +79,12 @@ ghi local trước khi gọi API và chỉ tự thử lại các mục `queued` 
 online. Mỗi nháp giữ nguyên `localId`, device ID và idempotency key qua mọi lần thử;
 không dùng service worker để cache tile nền ngoài.
 
+Client Task 7 chỉ cho phân loại sau khi nháp có server ID. Mỗi lần mở phiếu tạo một
+khóa classify riêng và giữ nguyên khóa đó trong lần thử lại cùng payload; kết quả
+classified được ghi lại IndexedDB. Khi API trả 409/423, nháp chuyển `conflict`, giữ
+raw geometry và cho tải lại phiên bản máy chủ; không tự merge hoặc gửi lại với ETag
+cũ. Cảnh báo geometry do máy chủ trả không bị ẩn và chặn tự động chuyển bước.
+
 ### Xung đột
 
 - Bản nháp chưa xác nhận: có thể merge trường không xung đột.

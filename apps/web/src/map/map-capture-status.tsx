@@ -8,10 +8,16 @@ const labels: Record<StoredCaptureDraft['status'], string> = {
   syncing: 'Đang đồng bộ',
 }
 
-export function MapCaptureStatus(props: { draft: StoredCaptureDraft }) {
+export function MapCaptureStatus(props: { draft: StoredCaptureDraft; onOpen: () => void }) {
   return (
-    <output className={`map-capture-status is-${props.draft.status}`}>
+    <button
+      className={`map-capture-status is-${props.draft.status}`}
+      disabled={!props.draft.serverDraft}
+      onClick={props.onOpen}
+      type="button"
+    >
       Nháp chưa phân loại · {labels[props.draft.status]}
-    </output>
+      {props.draft.serverDraft && <span>Phân loại →</span>}
+    </button>
   )
 }

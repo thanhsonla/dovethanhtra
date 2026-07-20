@@ -92,7 +92,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await map.click({ position: { x: 330, y: 320 } })
   await map.click({ position: { x: 390, y: 320 } })
   await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeEnabled()
-  await page.waitForTimeout(100)
+  await page.waitForTimeout(500)
   await map.click({ position: { x: 390, y: 320 } })
   await expect(page.getByRole('button', { name: 'Xóa phần đang chọn' })).toBeEnabled()
   await page.getByRole('button', { name: 'Xóa phần đang chọn' }).click()
@@ -110,6 +110,23 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByRole('button', { name: 'Lưu nháp' }).click()
   expect((await onlineCaptureResponse).status()).toBeLessThan(300)
   await expect(page.getByText('Nháp chưa phân loại · Đã đồng bộ')).toBeVisible()
+
+  const classifiedWorkName = `Chiều dài hiện trường ${suffix}`
+  await page.getByText('Nháp chưa phân loại · Đã đồng bộ').click()
+  await expect(page.getByLabel('Khu vực quản lý khi phân loại')).not.toHaveValue('')
+  await expect(page.getByLabel('Lĩnh vực dịch vụ khi phân loại')).not.toHaveValue('')
+  await page.getByLabel('Tên công tác khi phân loại').fill(classifiedWorkName)
+  await page.getByLabel('Mục con khi phân loại').selectOption('new')
+  await page.getByLabel('Tên mục con khi phân loại').fill('Đường kiểm tra E2E')
+  const classificationResponse = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith('/classify'),
+  )
+  await page.getByRole('button', { name: 'Lưu', exact: true }).click()
+  expect((await classificationResponse).status()).toBeLessThan(300)
+  const warningClose = page.getByRole('button', { name: 'Đóng', exact: true })
+  if (await warningClose.count()) await warningClose.click()
+  await expect(page.getByRole('dialog', { name: 'Phân loại kết quả đo' })).toHaveCount(0)
+  await expect(page.getByText('Nháp chưa phân loại · Đã đồng bộ')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Điểm', exact: true }).click()
   await map.click({ position: { x: 360, y: 350 } })
@@ -149,14 +166,14 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByText('Nháp chưa phân loại · Đã đồng bộ')).toBeVisible()
 
   await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
-  await expect(page.getByText('Chưa có công tác đo')).toBeVisible()
+  await expect(page.getByRole('button', { name: classifiedWorkName, exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.locator('.map-drawer')).toHaveCount(0)
   await expect(page.locator('.measurement-panel')).toHaveCount(0)
   await expect(page.locator('.map-status')).toHaveCount(0)
   await page.getByRole('button', { name: 'Mở dữ liệu' }).click()
-  await expect(page.getByLabel('Công tác đang đo')).toBeVisible()
-  await expect(page.getByLabel('Tiến độ hồ sơ')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Công tác đang đo', exact: true })).toBeVisible()
+  await expect(page.getByLabel('Tiến độ hồ sơ')).toBeVisible()
   await page
     .getByRole('button', { name: 'Tạo công tác nhanh', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())

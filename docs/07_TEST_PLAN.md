@@ -56,6 +56,8 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 | MEAS-008  | Phân loại nháp vào mục con    | Tạo measurement và audit một lần       |
 | MEAS-009  | Ba đoạn trong một mục con     | Tổng mục con/công tác chỉ gồm confirmed |
 | MEAS-010  | Gửi lại classify cùng key     | Trả kết quả cũ, không nhân đôi         |
+| MEAS-011  | Phiếu phân loại sau khi đo    | Lọc đúng cấp, tạo công tác/mục con, cảnh báo hiển thị |
+| MEAS-012  | Lưu và tiếp tục đo            | Mở lại đúng công cụ sau khi máy chủ lưu |
 | ROUTE-001 | Tính route hợp lệ             | Lưu distance, geometry, provider, time |
 | ROUTE-002 | Tính lại route                | Tạo version, không ghi đè              |
 | ROUTE-003 | Không tìm được route          | Lỗi xử lý được, không tạo bản ghi rỗng |

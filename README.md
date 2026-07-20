@@ -223,6 +223,12 @@ xem kết quả tạm trên nền bán trong suốt. “Lưu nháp” ghi local-
 tự đồng bộ khi có mạng và không đưa nháp chưa phân loại vào tổng chính thức. Việc
 chọn khu vực, lĩnh vực, công tác và mục con sau khi đo thuộc Task 7.
 
+Task 7 bổ sung “Lưu & phân loại” và nút trạng thái để mở lại nháp đã đồng bộ. Phiếu
+gọn chọn Khu vực → Lĩnh vực, liên kết hoặc tạo Công tác/Mục con, tự chọn quy tắc cơ
+bản đúng kiểu hình học và gửi một lần qua classify transaction. Cảnh báo PostGIS
+được giữ trên phiếu để người dùng đọc trước khi đóng/tiếp tục; xung đột có nút tải
+lại phiên bản máy chủ. “Lưu & tiếp tục đo” khởi động lại đúng công cụ vừa dùng.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`
