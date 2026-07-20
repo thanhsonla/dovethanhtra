@@ -1,6 +1,7 @@
 import { Type, type Static } from '@sinclair/typebox'
 
 import { DateSchema, DateTimeSchema, UuidSchema } from './common.js'
+import { MeasurementKindSchema } from './catalog.js'
 
 export const CaseStatusSchema = Type.Union([
   Type.Literal('draft'),
@@ -96,6 +97,11 @@ export const WorkItemSchema = Type.Object(
   {
     id: UuidSchema,
     caseId: UuidSchema,
+    managementZoneId: Type.Union([UuidSchema, Type.Null()]),
+    managementZoneName: Type.Union([Type.String(), Type.Null()]),
+    serviceGroupId: UuidSchema,
+    serviceGroupName: Type.String(),
+    measurementKind: MeasurementKindSchema,
     workTypeId: UuidSchema,
     workTypeCode: Type.String(),
     name: Type.String(),
@@ -105,6 +111,8 @@ export const WorkItemSchema = Type.Object(
     formulaSnapshot: Type.Record(Type.String(), Type.Unknown()),
     warningThreshold: Type.Record(Type.String(), Type.Unknown()),
     status: WorkItemStatusSchema,
+    version: Type.Integer({ minimum: 1 }),
+    deletedAt: Type.Union([DateTimeSchema, Type.Null()]),
   },
   { additionalProperties: false, $id: 'WorkItem' },
 )
@@ -112,12 +120,64 @@ export const WorkItemSchema = Type.Object(
 export const CreateWorkItemRequestSchema = Type.Object(
   {
     workTypeId: UuidSchema,
+    managementZoneId: Type.Optional(Type.Union([UuidSchema, Type.Null()])),
     name: Type.String({ minLength: 1, maxLength: 300 }),
     periodStart: Type.Optional(Type.Union([DateSchema, Type.Null()])),
     periodEnd: Type.Optional(Type.Union([DateSchema, Type.Null()])),
     warningThreshold: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
   },
   { additionalProperties: false, $id: 'CreateWorkItemRequest' },
+)
+
+export const UpdateWorkItemRequestSchema = Type.Partial(
+  Type.Object({
+    name: Type.String({ minLength: 1, maxLength: 300 }),
+    managementZoneId: Type.Union([UuidSchema, Type.Null()]),
+    periodStart: Type.Union([DateSchema, Type.Null()]),
+    periodEnd: Type.Union([DateSchema, Type.Null()]),
+    warningThreshold: Type.Record(Type.String(), Type.Unknown()),
+    status: WorkItemStatusSchema,
+  }),
+  { additionalProperties: false, $id: 'UpdateWorkItemRequest' },
+)
+
+export const WorkComponentStatusSchema = Type.Union([
+  Type.Literal('draft'),
+  Type.Literal('active'),
+  Type.Literal('completed'),
+  Type.Literal('archived'),
+])
+
+export const WorkComponentSchema = Type.Object(
+  {
+    id: UuidSchema,
+    workItemId: UuidSchema,
+    name: Type.String(),
+    displayOrder: Type.Integer(),
+    status: WorkComponentStatusSchema,
+    version: Type.Integer({ minimum: 1 }),
+    deletedAt: Type.Union([DateTimeSchema, Type.Null()]),
+    createdAt: DateTimeSchema,
+    updatedAt: DateTimeSchema,
+  },
+  { additionalProperties: false, $id: 'WorkComponent' },
+)
+
+export const CreateWorkComponentRequestSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 300 }),
+    displayOrder: Type.Optional(Type.Integer({ minimum: 0, maximum: 10_000 })),
+  },
+  { additionalProperties: false, $id: 'CreateWorkComponentRequest' },
+)
+
+export const UpdateWorkComponentRequestSchema = Type.Partial(
+  Type.Object({
+    name: Type.String({ minLength: 1, maxLength: 300 }),
+    displayOrder: Type.Integer({ minimum: 0, maximum: 10_000 }),
+    status: WorkComponentStatusSchema,
+  }),
+  { additionalProperties: false, $id: 'UpdateWorkComponentRequest' },
 )
 
 export const CaseTransitionRequestSchema = Type.Object(
@@ -150,7 +210,11 @@ export type CaseTransitionResponse = Static<typeof CaseTransitionResponseSchema>
 export type CaseListResponse = Static<typeof CaseListResponseSchema>
 export type CreateCaseRequest = Static<typeof CreateCaseRequestSchema>
 export type CreateWorkItemRequest = Static<typeof CreateWorkItemRequestSchema>
+export type CreateWorkComponentRequest = Static<typeof CreateWorkComponentRequestSchema>
 export type InspectionCase = Static<typeof InspectionCaseSchema>
 export type RestoreRecordRequest = Static<typeof RestoreRecordRequestSchema>
 export type UpdateCaseRequest = Static<typeof UpdateCaseRequestSchema>
+export type UpdateWorkComponentRequest = Static<typeof UpdateWorkComponentRequestSchema>
+export type UpdateWorkItemRequest = Static<typeof UpdateWorkItemRequestSchema>
+export type WorkComponent = Static<typeof WorkComponentSchema>
 export type WorkItem = Static<typeof WorkItemSchema>

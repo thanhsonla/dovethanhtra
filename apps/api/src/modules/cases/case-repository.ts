@@ -23,7 +23,8 @@ interface CaseRow extends Omit<
   updatedAt: Date | string
 }
 
-interface WorkItemRow extends Omit<WorkItem, 'periodEnd' | 'periodStart'> {
+interface WorkItemRow extends Omit<WorkItem, 'deletedAt' | 'periodEnd' | 'periodStart'> {
+  deletedAt: Date | string | null
   periodEnd: Date | string | null
   periodStart: Date | string | null
 }
@@ -54,6 +55,7 @@ const mapCase = (row: CaseRow): InspectionCase => ({
 
 const mapWorkItem = (row: WorkItemRow): WorkItem => ({
   ...row,
+  deletedAt: row.deletedAt ? isoDateTime(row.deletedAt) : null,
   periodEnd: row.periodEnd ? isoDate(row.periodEnd) : null,
   periodStart: row.periodStart ? isoDate(row.periodStart) : null,
 })
@@ -166,10 +168,12 @@ export class CaseRepository {
     if (workItemIds.length === 0) return []
     const result = await sql<{ id: string }>`
       INSERT INTO case_work_item (
-        inspection_case_id, work_type_id, name, period_start, period_end,
-        unit, formula_snapshot, warning_threshold, status
+        inspection_case_id, management_zone_id, work_type_id, service_group_id,
+        measurement_kind, name, period_start, period_end, unit, formula_snapshot,
+        warning_threshold, status
       )
-      SELECT ${targetCaseId}::uuid, source.work_type_id, source.name, NULL, NULL,
+      SELECT ${targetCaseId}::uuid, source.management_zone_id, source.work_type_id,
+        source.service_group_id, source.measurement_kind, source.name, NULL, NULL,
         source.unit, source.formula_snapshot, source.warning_threshold, 'draft'
       FROM case_work_item source
       JOIN inspection_case source_case ON source_case.id = source.inspection_case_id
@@ -281,11 +285,17 @@ export class CaseRepository {
   async listWorkItems(caseId: string, ownerId: string): Promise<WorkItem[]> {
     const result = await sql<WorkItemRow>`
       SELECT w.id, w.inspection_case_id AS "caseId", w.work_type_id AS "workTypeId",
-        t.code AS "workTypeCode", w.name, w.period_start AS "periodStart",
+        t.code AS "workTypeCode", w.management_zone_id AS "managementZoneId",
+        z.name AS "managementZoneName", w.service_group_id AS "serviceGroupId",
+        g.name AS "serviceGroupName", w.measurement_kind AS "measurementKind",
+        w.name, w.period_start AS "periodStart",
         w.period_end AS "periodEnd", w.unit, w.formula_snapshot AS "formulaSnapshot",
-        w.warning_threshold AS "warningThreshold", w.status
+        w.warning_threshold AS "warningThreshold", w.status, w.version,
+        w.deleted_at AS "deletedAt"
       FROM case_work_item w
       JOIN work_type t ON t.id = w.work_type_id
+      JOIN service_group g ON g.id = w.service_group_id
+      LEFT JOIN management_zone z ON z.id = w.management_zone_id
       JOIN inspection_case c ON c.id = w.inspection_case_id
       WHERE w.inspection_case_id = ${caseId}::uuid AND c.owner_id = ${ownerId}::uuid
         AND c.deleted_at IS NULL AND w.deleted_at IS NULL
@@ -302,10 +312,10 @@ export class CaseRepository {
   ): Promise<string | null> {
     const result = await sql<{ id: string }>`
       INSERT INTO case_work_item (
-        inspection_case_id, work_type_id, name, period_start, period_end,
+        inspection_case_id, management_zone_id, work_type_id, name, period_start, period_end,
         unit, formula_snapshot, warning_threshold
       )
-      SELECT c.id, t.id, ${input.name}, ${input.periodStart ?? null}::date,
+      SELECT c.id, ${input.managementZoneId ?? null}::uuid, t.id, ${input.name}, ${input.periodStart ?? null}::date,
         ${input.periodEnd ?? null}::date, t.base_unit,
         jsonb_build_object(
           'workTypeCode', t.code,
@@ -316,6 +326,10 @@ export class CaseRepository {
       JOIN work_type t ON t.id = ${input.workTypeId}::uuid AND t.active = true
       WHERE c.id = ${caseId}::uuid AND c.owner_id = ${ownerId}::uuid
         AND c.deleted_at IS NULL AND c.status <> 'locked'
+        AND (${input.managementZoneId ?? null}::uuid IS NULL OR EXISTS (
+          SELECT 1 FROM management_zone z WHERE z.id=${input.managementZoneId ?? null}::uuid
+            AND z.active AND z.deleted_at IS NULL
+        ))
       RETURNING id
     `.execute(executor)
     return result.rows[0]?.id ?? null
@@ -328,11 +342,17 @@ export class CaseRepository {
   ): Promise<WorkItem | null> {
     const result = await sql<WorkItemRow>`
       SELECT w.id, w.inspection_case_id AS "caseId", w.work_type_id AS "workTypeId",
-        t.code AS "workTypeCode", w.name, w.period_start AS "periodStart",
+        t.code AS "workTypeCode", w.management_zone_id AS "managementZoneId",
+        z.name AS "managementZoneName", w.service_group_id AS "serviceGroupId",
+        g.name AS "serviceGroupName", w.measurement_kind AS "measurementKind",
+        w.name, w.period_start AS "periodStart",
         w.period_end AS "periodEnd", w.unit, w.formula_snapshot AS "formulaSnapshot",
-        w.warning_threshold AS "warningThreshold", w.status
+        w.warning_threshold AS "warningThreshold", w.status, w.version,
+        w.deleted_at AS "deletedAt"
       FROM case_work_item w
       JOIN work_type t ON t.id = w.work_type_id
+      JOIN service_group g ON g.id = w.service_group_id
+      LEFT JOIN management_zone z ON z.id = w.management_zone_id
       JOIN inspection_case c ON c.id = w.inspection_case_id
       WHERE w.id = ${id}::uuid AND c.owner_id = ${ownerId}::uuid
         AND c.deleted_at IS NULL AND w.deleted_at IS NULL

@@ -2,6 +2,7 @@ import {
   CreateServiceGroupRequestSchema,
   CreateWorkTypeRequestSchema,
   ServiceGroupSchema,
+  RestoreRecordRequestSchema,
   UpdateServiceGroupRequestSchema,
   UpdateWorkTypeRequestSchema,
   WorkTypeSchema,
@@ -9,6 +10,7 @@ import {
   type CreateWorkTypeRequest,
   type UpdateServiceGroupRequest,
   type UpdateWorkTypeRequest,
+  type RestoreRecordRequest,
 } from '@dove/contracts'
 import { Type } from '@sinclair/typebox'
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
@@ -28,6 +30,13 @@ const ListQuery = Type.Object({ includeInactive: Type.Optional(Type.Boolean()) }
 function actor(request: FastifyRequest) {
   if (!request.currentUser) throw new AppError(401, 'AUTH_REQUIRED', 'Bạn cần đăng nhập.')
   return request.currentUser
+}
+
+function version(header: string | string[] | undefined) {
+  const raw = Array.isArray(header) ? header[0] : header
+  const matched = raw?.match(/^(?:W\/)?"?(\d+)"?$/)
+  if (!matched) throw new AppError(428, 'IF_MATCH_REQUIRED', 'Yêu cầu phải gửi If-Match.')
+  return Number(matched[1])
 }
 
 export const catalogRoutes: FastifyPluginAsync<CatalogRouteOptions> = async (app, options) => {
@@ -60,7 +69,7 @@ export const catalogRoutes: FastifyPluginAsync<CatalogRouteOptions> = async (app
         actor(request).id,
         request.id,
       )
-      return reply.code(201).send(created)
+      return reply.header('etag', `"${created.version}"`).code(201).send(created)
     },
   )
 
@@ -75,13 +84,62 @@ export const catalogRoutes: FastifyPluginAsync<CatalogRouteOptions> = async (app
         tags: ['catalog'],
       },
     },
-    (request) =>
-      options.service.updateServiceGroup(
+    async (request, reply) => {
+      const updated = await options.service.updateServiceGroup(
         request.params.id,
+        version(request.headers['if-match']),
         request.body,
         actor(request).id,
         request.id,
-      ),
+      )
+      return reply.header('etag', `"${updated.version}"`).send(updated)
+    },
+  )
+
+  app.delete<{ Body: RestoreRecordRequest; Params: { id: string } }>(
+    '/service-groups/:id',
+    {
+      preHandler: options.guards.requireCatalogAdmin,
+      schema: {
+        body: RestoreRecordRequestSchema,
+        params: IdParams,
+        response: { 200: ServiceGroupSchema },
+        tags: ['catalog'],
+      },
+    },
+    async (request, reply) => {
+      const deleted = await options.service.removeServiceGroup(
+        request.params.id,
+        version(request.headers['if-match']),
+        request.body.reason,
+        actor(request).id,
+        request.id,
+      )
+      return reply.header('etag', `"${deleted.version}"`).send(deleted)
+    },
+  )
+
+  app.post<{ Body: RestoreRecordRequest; Params: { id: string } }>(
+    '/service-groups/:id/restore',
+    {
+      preHandler: options.guards.requireCatalogAdmin,
+      schema: {
+        body: RestoreRecordRequestSchema,
+        params: IdParams,
+        response: { 200: ServiceGroupSchema },
+        tags: ['catalog'],
+      },
+    },
+    async (request, reply) => {
+      const restored = await options.service.restoreServiceGroup(
+        request.params.id,
+        version(request.headers['if-match']),
+        request.body.reason,
+        actor(request).id,
+        request.id,
+      )
+      return reply.header('etag', `"${restored.version}"`).send(restored)
+    },
   )
 
   app.get<{ Querystring: { includeInactive?: boolean } }>(

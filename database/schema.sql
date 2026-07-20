@@ -98,6 +98,23 @@ CREATE TABLE service_group (
   )
 );
 
+-- Nhãn phân loại nghiệp vụ, không phải địa giới và cố ý không có geometry.
+CREATE TABLE management_zone (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL UNIQUE CHECK (code ~ '^[A-Z0-9_]+$'),
+  name text NOT NULL CHECK (length(btrim(name)) > 0),
+  display_order integer NOT NULL DEFAULT 0,
+  active boolean NOT NULL DEFAULT true,
+  system_seed boolean NOT NULL DEFAULT false,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
+  CONSTRAINT management_zone_delete_state CHECK (
+    (deleted_at IS NULL AND active) OR (deleted_at IS NOT NULL AND NOT active)
+  )
+);
+
 CREATE TABLE work_type (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   service_group_id uuid NOT NULL REFERENCES service_group(id),
@@ -118,7 +135,7 @@ CREATE TABLE work_type (
 CREATE TABLE case_work_item (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   inspection_case_id uuid NOT NULL REFERENCES inspection_case(id),
-  management_area_id uuid REFERENCES admin_area(id),
+  management_zone_id uuid REFERENCES management_zone(id),
   service_group_id uuid NOT NULL REFERENCES service_group(id),
   work_type_id uuid REFERENCES work_type(id),
   measurement_kind measurement_kind NOT NULL,
@@ -129,6 +146,7 @@ CREATE TABLE case_work_item (
   formula_snapshot jsonb NOT NULL,
   warning_threshold jsonb NOT NULL DEFAULT '{}'::jsonb,
   status work_item_status NOT NULL DEFAULT 'draft',
+  status_before_delete work_item_status,
   status_before_delete work_item_status,
   version integer NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -425,6 +443,8 @@ CREATE INDEX admin_area_management_idx ON admin_area (area_type, valid_from, val
   WHERE deleted_at IS NULL;
 CREATE INDEX service_group_quick_idx ON service_group (display_order, name)
   WHERE quick_default AND active AND deleted_at IS NULL;
+CREATE INDEX management_zone_active_idx ON management_zone (display_order, name)
+  WHERE deleted_at IS NULL AND active;
 CREATE INDEX inspection_case_boundary_gix ON inspection_case USING gist (boundary_snapshot);
 CREATE INDEX measurement_raw_geometry_gix ON measurement USING gist (raw_geometry);
 CREATE INDEX measurement_normalized_geometry_gix ON measurement USING gist (normalized_geometry);
@@ -467,6 +487,8 @@ FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER admin_area_updated_at BEFORE UPDATE ON admin_area
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER service_group_updated_at BEFORE UPDATE ON service_group
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER management_zone_updated_at BEFORE UPDATE ON management_zone
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER work_type_updated_at BEFORE UPDATE ON work_type
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();

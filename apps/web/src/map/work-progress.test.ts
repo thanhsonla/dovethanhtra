@@ -7,14 +7,21 @@ const workItem = (id: string, name: string): WorkItem => ({
   caseId: '00000000-0000-4000-8000-000000000001',
   formulaSnapshot: {},
   id,
+  deletedAt: null,
+  managementZoneId: null,
+  managementZoneName: null,
+  measurementKind: 'line',
   name,
   periodEnd: null,
   periodStart: null,
   status: 'active',
+  serviceGroupId: '00000000-0000-4000-8000-000000000009',
+  serviceGroupName: 'Nhóm thử',
   unit: 'm',
   warningThreshold: {},
   workTypeCode: 'LINE',
   workTypeId: '00000000-0000-4000-8000-000000000010',
+  version: 1,
 })
 
 const measurement = (status: Measurement['status']): Measurement => ({

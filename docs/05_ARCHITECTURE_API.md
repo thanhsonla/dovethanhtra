@@ -144,15 +144,16 @@ Chỉ snapshot cấu hình được sao chép; kỳ công tác, phép đo, tuy�
 
 ### Danh mục và công tác
 
-- `GET /management-areas`
-- `POST /management-areas`
-- `PATCH /management-areas/{areaId}`
-- `DELETE /management-areas/{areaId}` và `POST /management-areas/{areaId}/restore`
-- `GET /service-groups`
-- `POST /service-groups`
-- `PATCH /service-groups/{serviceGroupId}`
-- `DELETE /service-groups/{serviceGroupId}` và
-  `POST /service-groups/{serviceGroupId}/restore`
+- `GET /catalog/management-zones`
+- `POST /catalog/management-zones`
+- `PATCH /catalog/management-zones/{zoneId}`
+- `DELETE /catalog/management-zones/{zoneId}` và
+  `POST /catalog/management-zones/{zoneId}/restore`
+- `GET /catalog/service-groups`
+- `POST /catalog/service-groups`
+- `PATCH /catalog/service-groups/{serviceGroupId}`
+- `DELETE /catalog/service-groups/{serviceGroupId}` và
+  `POST /catalog/service-groups/{serviceGroupId}/restore`
 - `GET /work-types`
 - `POST /work-types`
 - `POST /cases/{caseId}/work-items`
@@ -166,7 +167,8 @@ Chỉ snapshot cấu hình được sao chép; kỳ công tác, phép đo, tuy�
 - `DELETE /work-components/{componentId}` — xóa mềm, không cascade phép đo.
 - `POST /work-components/{componentId}/restore`
 
-12 khu vực quản lý lịch sử và 75 xã/phường hiện hành là hai tập version/source riêng.
+12 khu vực quản lý là danh mục tên không có geometry. Bản đồ không tạo lớp ranh
+giới cho 12 khu vực và chỉ hiển thị địa giới 75 xã/phường hiện hành.
 Bốn lĩnh vực mặc định là seed cấu hình, không phải enum trong API. Công tác gắn trực
 tiếp khu vực/lĩnh vực; `workTypeId` chỉ bắt buộc khi dùng template công thức nâng cao.
 
@@ -182,7 +184,7 @@ tiếp khu vực/lĩnh vực; `workTypeId` chỉ bắt buộc khi dùng template
 - `POST /capture-drafts/{draftId}/classify` — nhận khu vực, lĩnh vực, công tác và
   mục con tùy chọn có sẵn hoặc payload tạo mới; transaction tạo measurement và ghi
   audit.
-- `GET /cases/{caseId}/map-features` — filter có whitelist: `managementAreaId`,
+- `GET /cases/{caseId}/map-features` — filter có whitelist: `managementZoneId`,
   `serviceGroupId`, `workItemId`, `componentId`, `geometryKind`, `status`, `bbox`,
   `cursor`, `limit`.
 - `GET /measurements/{measurementId}/download.geojson` — tải nhanh một feature.

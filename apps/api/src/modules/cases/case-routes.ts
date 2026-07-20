@@ -247,6 +247,7 @@ export const caseRoutes: FastifyPluginAsync<CaseRouteOptions> = async (app, opti
         ownerId(request),
         request.id,
       )
+      reply.header('etag', `"${created.version}"`)
       return reply.code(201).send(created)
     },
   )

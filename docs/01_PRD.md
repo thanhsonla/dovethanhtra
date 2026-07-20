@@ -33,8 +33,8 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 ## 4. Thuật ngữ
 
 - **Hồ sơ kiểm tra:** tập hợp dữ liệu kiểm tra của một địa bàn, thời kỳ và đơn vị/công việc.
-- **Khu vực quản lý:** phạm vi nghiệp vụ như 12 huyện/thành phố cũ; không thay thế
-  địa giới hành chính hiện hành dùng cho snapshot hồ sơ.
+- **Khu vực quản lý:** nhãn nghiệp vụ như tên 12 huyện/thành phố cũ, không có hình
+  học và không thay thế địa giới 75 xã/phường hiện hành dùng trên bản đồ/snapshot.
 - **Lĩnh vực dịch vụ:** nhóm công ích cấu hình được; giao diện nhanh hiển thị bốn
   lĩnh vực mặc định nhưng vẫn bảo toàn nhóm lịch sử.
 - **Loại công tác:** template công thức nâng cao tùy chọn cho một công việc như quét
@@ -73,8 +73,9 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 - **FR-CAT-004:** Kiểu đo hỗ trợ `count`, `point`, `line`, `area`, `route`, `composite`.
 - **FR-CAT-005:** Cấu hình trường thuộc tính bắt buộc, kiểu dữ liệu, danh sách chọn và ngưỡng hợp lệ.
 - **FR-CAT-006:** Phiên bản hóa quy tắc tính; hồ sơ cũ tiếp tục dùng phiên bản đã lưu.
-- **FR-CAT-007:** Quản lý khu vực nghiệp vụ riêng với địa giới hành chính hiện hành;
-  mọi phiên bản phải có nguồn và thời hạn hiệu lực.
+- **FR-CAT-007:** Quản lý khu vực nghiệp vụ dưới dạng danh mục tên có version, đổi
+  tên/xóa mềm/phục hồi; không tạo ranh giới riêng. Bản đồ chỉ dùng địa giới 75
+  xã/phường hiện hành theo nguồn/version hành chính.
 
 ### FR-WORK — Công tác trong hồ sơ
 

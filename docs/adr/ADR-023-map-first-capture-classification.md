@@ -36,9 +36,9 @@ Phân cấp làm việc là:
 
 `Khu vực quản lý → Lĩnh vực dịch vụ → Công tác → Mục con → Phép đo`.
 
-- 12 huyện/thành phố cũ được quản lý như một lớp khu vực nghiệp vụ có version,
-  nguồn và thời hạn hiệu lực riêng. Chúng không thay thế và không làm thay đổi danh
-  mục 75 xã, phường hiện hành hoặc snapshot ranh giới pháp lý của hồ sơ.
+- 12 huyện/thành phố cũ là danh mục khu vực nghiệp vụ không geometry theo ADR-024.
+  Chúng không thay thế và không làm thay đổi danh mục 75 xã, phường hiện hành hoặc
+  snapshot ranh giới pháp lý của hồ sơ.
 - Bốn lĩnh vực hiển thị mặc định là `Vệ sinh môi trường`, `Chiếu sáng`, `Cây xanh`
   và `Thoát nước thải`. Đây là seed/cấu hình hiển thị, không phải enum hard-code;
   nhóm lịch sử khác vẫn đọc được và quản trị viên có thể thêm hoặc ngừng sử dụng.

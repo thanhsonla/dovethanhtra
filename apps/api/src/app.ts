@@ -16,9 +16,15 @@ import { CaseService } from './modules/cases/case-service.js'
 import { CatalogRepository } from './modules/catalog/catalog-repository.js'
 import { catalogRoutes } from './modules/catalog/catalog-routes.js'
 import { CatalogService } from './modules/catalog/catalog-service.js'
+import { ManagementZoneRepository } from './modules/catalog/management-zone-repository.js'
+import { managementZoneRoutes } from './modules/catalog/management-zone-routes.js'
+import { ManagementZoneService } from './modules/catalog/management-zone-service.js'
 import { ComparisonRepository } from './modules/comparison/comparison-repository.js'
 import { comparisonRoutes } from './modules/comparison/comparison-routes.js'
 import { ComparisonService } from './modules/comparison/comparison-service.js'
+import { WorkStructureRepository } from './modules/cases/work-structure-repository.js'
+import { workStructureRoutes } from './modules/cases/work-structure-routes.js'
+import { WorkStructureService } from './modules/cases/work-structure-service.js'
 import { ExportRepository } from './modules/exports/export-repository.js'
 import { exportRoutes } from './modules/exports/export-routes.js'
 import { ExportService } from './modules/exports/export-service.js'
@@ -121,6 +127,11 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   const catalogRepository = new CatalogRepository(database)
   const snapshots = new SnapshotRepository()
   const cases = new CaseService(database, new CaseRepository(database), audit, snapshots)
+  const workStructure = new WorkStructureService(
+    database,
+    new WorkStructureRepository(database),
+    audit,
+  )
   const comparison = new ComparisonService(database, new ComparisonRepository(database), audit)
   const exports = new ExportService(
     database,
@@ -177,7 +188,13 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     prefix: '/api/v1/catalog',
     service: new CatalogService(database, catalogRepository, audit),
   })
+  await app.register(managementZoneRoutes, {
+    guards,
+    prefix: '/api/v1/catalog/management-zones',
+    service: new ManagementZoneService(database, new ManagementZoneRepository(database), audit),
+  })
   await app.register(caseRoutes, { guards, prefix: '/api/v1/cases', service: cases })
+  await app.register(workStructureRoutes, { guards, prefix: '/api/v1', service: workStructure })
   await app.register(measurementRoutes, {
     guards,
     prefix: '/api/v1',

@@ -26,6 +26,9 @@ export class CatalogService {
   }
 
   async createServiceGroup(input: CreateServiceGroupRequest, actorId: string, traceId: string) {
+    if (input.quickDefault && !input.quickLabel?.trim()) {
+      throw new AppError(422, 'QUICK_LABEL_REQUIRED', 'Lĩnh vực hiển thị nhanh phải có nhãn ngắn.')
+    }
     try {
       return await this.database.transaction().execute(async (transaction) => {
         const created = await this.repository.createServiceGroup(transaction, input)
@@ -49,23 +52,105 @@ export class CatalogService {
 
   async updateServiceGroup(
     id: string,
+    expectedVersion: number,
     input: UpdateServiceGroupRequest,
     actorId: string,
     traceId: string,
   ) {
     return this.database.transaction().execute(async (transaction) => {
-      const updated = await this.repository.updateServiceGroup(transaction, id, input)
-      if (!updated)
+      const before = await this.repository.getServiceGroup(transaction, id)
+      if (!before)
         throw new AppError(404, 'SERVICE_GROUP_NOT_FOUND', 'Không tìm thấy nhóm dịch vụ.')
+      const quickDefault = input.quickDefault ?? before.quickDefault
+      const quickLabel = Object.hasOwn(input, 'quickLabel') ? input.quickLabel : before.quickLabel
+      if (quickDefault && !quickLabel?.trim()) {
+        throw new AppError(
+          422,
+          'QUICK_LABEL_REQUIRED',
+          'Lĩnh vực hiển thị nhanh phải có nhãn ngắn.',
+        )
+      }
+      const updated = await this.repository.updateServiceGroup(
+        transaction,
+        id,
+        expectedVersion,
+        input,
+      )
+      if (!updated)
+        throw new AppError(409, 'VERSION_CONFLICT', 'Nhóm dịch vụ đã được thay đổi ở nơi khác.')
       await this.audit.append(transaction, {
         action: updated.active ? 'updated' : 'deactivated',
         actorId,
         afterData: updated,
+        beforeData: before,
         entityId: updated.id,
         entityType: 'service_group',
         traceId,
       })
       return updated
+    })
+  }
+
+  async removeServiceGroup(
+    id: string,
+    expectedVersion: number,
+    reason: string,
+    actorId: string,
+    traceId: string,
+  ) {
+    return this.database.transaction().execute(async (transaction) => {
+      const before = await this.repository.getServiceGroup(transaction, id)
+      if (!before)
+        throw new AppError(404, 'SERVICE_GROUP_NOT_FOUND', 'Không tìm thấy nhóm dịch vụ.')
+      if (await this.repository.hasActiveServiceChildren(transaction, id)) {
+        throw new AppError(409, 'SERVICE_GROUP_IN_USE', 'Nhóm dịch vụ còn công tác đang hoạt động.')
+      }
+      const deleted = await this.repository.softDeleteServiceGroup(transaction, id, expectedVersion)
+      if (!deleted)
+        throw new AppError(409, 'VERSION_CONFLICT', 'Nhóm dịch vụ đã được thay đổi ở nơi khác.')
+      await this.audit.append(transaction, {
+        action: 'soft_deleted',
+        actorId,
+        beforeData: before,
+        afterData: deleted,
+        entityId: id,
+        entityType: 'service_group',
+        reason,
+        traceId,
+      })
+      return deleted
+    })
+  }
+
+  async restoreServiceGroup(
+    id: string,
+    expectedVersion: number,
+    reason: string,
+    actorId: string,
+    traceId: string,
+  ) {
+    return this.database.transaction().execute(async (transaction) => {
+      const before = await this.repository.getServiceGroup(transaction, id, true)
+      if (!before)
+        throw new AppError(
+          404,
+          'SERVICE_GROUP_NOT_FOUND',
+          'Không tìm thấy nhóm dịch vụ đã lưu trữ.',
+        )
+      const restored = await this.repository.restoreServiceGroup(transaction, id, expectedVersion)
+      if (!restored)
+        throw new AppError(409, 'VERSION_CONFLICT', 'Nhóm dịch vụ đã được thay đổi ở nơi khác.')
+      await this.audit.append(transaction, {
+        action: 'restored',
+        actorId,
+        beforeData: before,
+        afterData: restored,
+        entityId: id,
+        entityType: 'service_group',
+        reason,
+        traceId,
+      })
+      return restored
     })
   }
 

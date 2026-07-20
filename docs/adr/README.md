@@ -17,3 +17,5 @@ phát hành, backup/restore và field trial. ADR-001 đến ADR-004 được ghi
 liệu P1 giai đoạn 2 gồm import, phân trang/phục hồi, export queue và quét bằng chứng.
 `ADR-022` chốt ngoại lệ Google hybrid qua adapter; `ADR-023` chốt không gian
 map-first, phân cấp có mục con và quy trình đo trước, phân loại sau.
+`ADR-024` chốt 12 khu vực quản lý là danh mục tên không geometry; bản đồ tiếp tục
+chỉ dùng ranh giới 75 xã/phường hiện hành.

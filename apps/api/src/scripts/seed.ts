@@ -29,6 +29,11 @@ interface CatalogFile {
   }>
 }
 
+interface ManagementZoneFile {
+  catalogVersion: number
+  managementZones: Array<{ code: string; displayOrder: number; name: string }>
+}
+
 function required(name: string): string {
   const value = process.env[name]
   if (!value) throw new Error(`Missing required environment variable: ${name}`)
@@ -45,7 +50,13 @@ try {
   const catalogPath = fileURLToPath(
     new URL('../../../../config/work-catalog.example.json', import.meta.url),
   )
-  const catalog = JSON.parse(await readFile(catalogPath, 'utf8')) as CatalogFile
+  const managementZonePath = fileURLToPath(
+    new URL('../../../../config/management-zones.example.json', import.meta.url),
+  )
+  const [catalog, managementZoneCatalog] = await Promise.all([
+    readFile(catalogPath, 'utf8').then((value) => JSON.parse(value) as CatalogFile),
+    readFile(managementZonePath, 'utf8').then((value) => JSON.parse(value) as ManagementZoneFile),
+  ])
   const identity = new IdentityRepository(database.query)
   const passwordHash = await hash(required('BOOTSTRAP_OWNER_PASSWORD'))
 
@@ -81,6 +92,19 @@ try {
   `.execute(database.query)
 
   await database.query.transaction().execute(async (transaction) => {
+    for (const zone of managementZoneCatalog.managementZones) {
+      await sql`
+        INSERT INTO management_zone (code, name, display_order, system_seed)
+        VALUES (${zone.code}, ${zone.name}, ${zone.displayOrder}, true)
+        ON CONFLICT (code) DO UPDATE SET
+          name = EXCLUDED.name,
+          display_order = EXCLUDED.display_order,
+          active = true,
+          deleted_at = NULL
+        WHERE management_zone.system_seed
+      `.execute(transaction)
+    }
+
     for (const group of catalog.serviceGroups) {
       const groupResult = await sql<{ id: string }>`
         INSERT INTO service_group (
@@ -138,7 +162,8 @@ try {
   })
 
   process.stdout.write(
-    `Seed danh mục hoàn tất: ${catalog.serviceGroups.length} nhóm dịch vụ, ` +
+    `Seed danh mục hoàn tất: ${managementZoneCatalog.managementZones.length} khu vực tên, ` +
+      `${catalog.serviceGroups.length} nhóm dịch vụ, ` +
       `${catalog.serviceGroups.reduce((total, group) => total + group.workTypes.length, 0)} công tác, ` +
       `tài khoản ${user.email}.\n`,
   )

@@ -203,6 +203,10 @@ Kết quả kiểm tra `ST_IsValid`, import lặp và chồng lấn liên xã đ
 `docs/data/son-la-75-boundary-validation.md`. Bản gốc vẫn được giữ; pipeline topology
 ghi từng phần giao đã cắt và dùng diện tích mục tiêu để chọn bên giữ.
 
+12 khu vực theo tên huyện/thành phố cũ chỉ là danh mục phân loại công tác, được seed
+từ `config/management-zones.example.json`. Danh mục này không có geometry, không
+tạo lớp ranh giới riêng và không được gộp/suy diễn từ 75 xã, phường.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`

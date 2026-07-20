@@ -198,16 +198,18 @@ giao diện.
 
 - Thêm `work_component`, `capture_draft`, version/index/constraint và liên kết tùy
   chọn từ measurement. Backfill dữ liệu cũ có marker nguồn, không đổi kết quả.
-- Seed bốn lĩnh vực hiển thị mặc định; giữ nhóm lịch sử. Nhập 12 khu vực quản lý chỉ
-  khi có gói nguồn/version/hash được phê duyệt.
+- Seed bốn lĩnh vực hiển thị mặc định; giữ nhóm lịch sử. Seed 12 khu vực dưới dạng
+  tên phân loại, không tạo geometry theo ADR-024.
 - Nghiệm thu migration tiến/lùi trên database tạm; rollback từ chối nếu làm mất
   nháp hoặc chứng cứ mới.
 
-### Task 3 — API cấu trúc danh mục
+### Task 3 — API cấu trúc danh mục — hoàn thành
 
 - CRUD/rename/archive/restore khu vực, lĩnh vực, công tác và mục con; optimistic
   concurrency, owner/RBAC, audit và quy tắc không cascade.
 - Integration bao phủ đổi tên giữ ID, xóa cha còn con, phục hồi và IDOR.
+- ADR-024 tách `management_zone` khỏi `admin_area`; bản đồ tiếp tục chỉ dùng ranh
+  giới 75 xã/phường. API triển khai version/ETag, audit và xóa mềm không cascade.
 
 ### Task 4 — API nháp và phân loại
 

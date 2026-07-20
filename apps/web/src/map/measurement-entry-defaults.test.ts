@@ -7,14 +7,21 @@ const workItem = (requiredInputs: string[]): WorkItem => ({
   caseId: '00000000-0000-4000-8000-000000000001',
   formulaSnapshot: { calculationSpec: { requiredInputs } },
   id: '00000000-0000-4000-8000-000000000002',
+  deletedAt: null,
+  managementZoneId: null,
+  managementZoneName: null,
+  measurementKind: 'line',
   name: 'Công tác thử',
   periodEnd: null,
   periodStart: null,
   status: 'active',
+  serviceGroupId: '00000000-0000-4000-8000-000000000007',
+  serviceGroupName: 'Nhóm thử',
   unit: 'm.lần',
   warningThreshold: {},
   workTypeCode: 'TEST_LINE',
   workTypeId: '00000000-0000-4000-8000-000000000003',
+  version: 1,
 })
 
 const measurement = (input: Partial<Measurement>): Measurement => ({

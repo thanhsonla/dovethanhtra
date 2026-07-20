@@ -65,8 +65,9 @@
   drawer/bottom sheet đóng được và ba công cụ nhanh điểm, chiều dài, diện tích.
 - Quy trình mới cho phép lưu `capture_draft` trước khi phân loại theo Khu vực quản
   lý → Lĩnh vực → Công tác → Mục con → Phép đo. Nháp chưa phân loại không cộng tổng.
-- 12 huyện/thành phố cũ là khu vực quản lý version hóa, không thay 75 xã/phường hiện
-  hành. Bốn lĩnh vực mặc định là cấu hình hiển thị, không hard-code hoặc xóa nhóm cũ.
+- 12 huyện/thành phố cũ chỉ là danh mục tên version hóa, không có geometry và không
+  thay 75 xã/phường hiện hành. Bốn lĩnh vực mặc định là cấu hình hiển thị, không
+  hard-code hoặc xóa nhóm cũ.
 - Measurement confirmed chỉ sửa bằng phiên bản superseding; xóa cấu trúc là xóa
   mềm, không cascade chứng cứ. Chọn feature hỗ trợ mở, tải GeoJSON và chỉnh sửa theo
   quyền với hash/audit.
@@ -79,8 +80,6 @@
 - Ngưỡng sai số GPS theo từng công tác.
 - Ngưỡng cảnh báo chênh lệch mặc định.
 - Công thức thanh toán/qui đổi chi tiết của từng hợp đồng.
-- Gói nguồn, version, ngày hiệu lực và hình học được phê duyệt cho 12 khu vực quản
-  lý theo huyện/thành phố cũ.
 
 ## Nhật ký quyết định
 
@@ -109,6 +108,7 @@
 | 19/07/2026 | ADR-021 | Pipeline dữ liệu P1 và vòng đời artifact                          | Import có preview, phục hồi, phân trang và export an toàn       |
 | 19/07/2026 | ADR-022 | Cho phép Google hybrid trực tiếp theo La Kinh                    | Chủ dự án chấp thuận ngoại lệ mt1 qua adapter                    |
 | 20/07/2026 | ADR-023 | Map-first và đo trước, phân loại sau                            | Giảm bước nhập nhưng giữ tổng chính thức và provenance           |
+| 20/07/2026 | ADR-024 | 12 khu vực là nhãn tên, không có geometry                  | Không tạo ranh giới huyện cũ; bản đồ chỉ dùng 75 xã/phường       |
 
 ## Trạng thái chuyển đổi map-first
 
@@ -120,11 +120,11 @@
   kết measurement và quan hệ trực tiếp từ công tác tới lĩnh vực/kiểu đo. Backfill
   giữ `work_type_id`, formula snapshot và kết quả cũ; rollback từ chối khi đã có dữ
   liệu map-first không thể biểu diễn trong schema cũ.
-- Seed có đúng bốn nhãn hiển thị nhanh, thêm `WASTEWATER_DRAINAGE` và giữ nhóm vận
-  chuyển/chỉnh trang lịch sử. Chưa seed 12 khu vực quản lý do thiếu gói nguồn,
-  version, thời hạn hiệu lực và hash được phê duyệt.
-- Chưa triển khai API CRUD/phân loại hoặc giao diện map-first; Task 3 là bước mã
-  nguồn tiếp theo.
+- Seed có đúng bốn nhãn hiển thị nhanh, thêm `WASTEWATER_DRAINAGE`, giữ nhóm vận
+  chuyển/chỉnh trang lịch sử và 12 tên khu vực không geometry.
+- Task 3 đã triển khai API CRUD/đổi tên/lưu trữ/phục hồi có version/audit cho khu
+  vực tên, lĩnh vực, công tác và mục con. Task 4 (nháp và phân loại transaction)
+  là bước mã nguồn tiếp theo; giao diện map-first mới chưa thay đổi trong task này.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

@@ -18,7 +18,11 @@ export const ServiceGroupSchema = Type.Object(
     name: Type.String(),
     displayOrder: Type.Integer(),
     color: Type.Union([Type.String(), Type.Null()]),
+    quickDefault: Type.Boolean(),
+    quickLabel: Type.Union([Type.String(), Type.Null()]),
     active: Type.Boolean(),
+    version: Type.Integer({ minimum: 1 }),
+    deletedAt: Type.Union([DateTimeSchema, Type.Null()]),
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
   },
@@ -31,6 +35,8 @@ export const CreateServiceGroupRequestSchema = Type.Object(
     name: Type.String({ minLength: 1, maxLength: 300 }),
     displayOrder: Type.Integer({ minimum: 0, maximum: 10_000 }),
     color: Type.Optional(Type.Union([Type.String({ pattern: '^#[0-9A-Fa-f]{6}$' }), Type.Null()])),
+    quickDefault: Type.Optional(Type.Boolean()),
+    quickLabel: Type.Optional(Type.Union([Type.String({ maxLength: 100 }), Type.Null()])),
   },
   { additionalProperties: false, $id: 'CreateServiceGroupRequest' },
 )
@@ -40,9 +46,44 @@ export const UpdateServiceGroupRequestSchema = Type.Partial(
     name: Type.String({ minLength: 1, maxLength: 300 }),
     displayOrder: Type.Integer({ minimum: 0, maximum: 10_000 }),
     color: Type.Union([Type.String({ pattern: '^#[0-9A-Fa-f]{6}$' }), Type.Null()]),
+    quickDefault: Type.Boolean(),
+    quickLabel: Type.Union([Type.String({ maxLength: 100 }), Type.Null()]),
     active: Type.Boolean(),
   }),
   { additionalProperties: false, $id: 'UpdateServiceGroupRequest' },
+)
+
+export const ManagementZoneSchema = Type.Object(
+  {
+    id: UuidSchema,
+    code: Type.String(),
+    name: Type.String(),
+    displayOrder: Type.Integer(),
+    active: Type.Boolean(),
+    systemSeed: Type.Boolean(),
+    version: Type.Integer({ minimum: 1 }),
+    deletedAt: Type.Union([DateTimeSchema, Type.Null()]),
+    createdAt: DateTimeSchema,
+    updatedAt: DateTimeSchema,
+  },
+  { additionalProperties: false, $id: 'ManagementZone' },
+)
+
+export const CreateManagementZoneRequestSchema = Type.Object(
+  {
+    code: Type.String({ minLength: 2, maxLength: 100, pattern: '^[A-Z0-9_]+$' }),
+    name: Type.String({ minLength: 1, maxLength: 300 }),
+    displayOrder: Type.Integer({ minimum: 0, maximum: 10_000 }),
+  },
+  { additionalProperties: false, $id: 'CreateManagementZoneRequest' },
+)
+
+export const UpdateManagementZoneRequestSchema = Type.Partial(
+  Type.Object({
+    name: Type.String({ minLength: 1, maxLength: 300 }),
+    displayOrder: Type.Integer({ minimum: 0, maximum: 10_000 }),
+  }),
+  { additionalProperties: false, $id: 'UpdateManagementZoneRequest' },
 )
 
 export const WorkTypeSchema = Type.Object(
@@ -86,9 +127,12 @@ export const UpdateWorkTypeRequestSchema = Type.Partial(
 )
 
 export type CreateServiceGroupRequest = Static<typeof CreateServiceGroupRequestSchema>
+export type CreateManagementZoneRequest = Static<typeof CreateManagementZoneRequestSchema>
 export type CreateWorkTypeRequest = Static<typeof CreateWorkTypeRequestSchema>
 export type MeasurementKind = Static<typeof MeasurementKindSchema>
+export type ManagementZone = Static<typeof ManagementZoneSchema>
 export type ServiceGroup = Static<typeof ServiceGroupSchema>
 export type UpdateServiceGroupRequest = Static<typeof UpdateServiceGroupRequestSchema>
+export type UpdateManagementZoneRequest = Static<typeof UpdateManagementZoneRequestSchema>
 export type UpdateWorkTypeRequest = Static<typeof UpdateWorkTypeRequestSchema>
 export type WorkType = Static<typeof WorkTypeSchema>

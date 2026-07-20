@@ -59,18 +59,25 @@ hình hiển thị nhanh, không quyết định nhóm nào được lưu trong 
 
 Mẫu công tác. Trường chính: `id`, `service_group_id`, `code`, `name`, `measurement_kind`, `base_unit`, `attribute_schema`, `calculation_spec`, `calculation_version`, `active`.
 
+### `management_zone`
+
+Danh mục tên 12 khu vực nghiệp vụ cũ: `id`, `code`, `name`, `display_order`,
+`active`, `system_seed`, `version`, `deleted_at`. Bảng cố ý không có geometry,
+source hay thời hạn hiệu lực; không được dùng để vẽ ranh giới. `system_seed` chỉ
+ngăn seed lặp ghi đè tên mà người dùng đã sửa.
+
 ### `case_work_item`
 
 Công tác cụ thể trong hồ sơ. Trường chính: `id`, `inspection_case_id`,
-`management_area_id`, `service_group_id`, `work_type_id`, `name`, `period_start`,
+`management_zone_id`, `service_group_id`, `work_type_id`, `name`, `period_start`,
 `period_end`, `measurement_kind`, `unit`, `formula_snapshot`, `warning_threshold`,
 `status`, `version`, `deleted_at`.
 
 `work_type_id` là template nâng cao tùy chọn; công tác cơ bản dùng rule point/line/
 area được version hóa. Tên có thể trống khi mới thu thập nhưng bắt buộc trước khi
 xác nhận phép đo. Migration backfill `service_group_id` từ work type và giữ nguyên
-liên kết cũ; `management_area_id` dùng lớp khu vực quản lý, không thay snapshot địa
-giới hành chính của hồ sơ.
+liên kết cũ; `management_zone_id` chỉ là nhãn phân loại, không thay snapshot hay
+ranh giới 75 xã/phường của hồ sơ.
 
 ### `work_component`
 

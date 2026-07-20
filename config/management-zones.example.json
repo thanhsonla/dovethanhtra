@@ -1,0 +1,17 @@
+{
+  "catalogVersion": 1,
+  "managementZones": [
+    { "code": "SON_LA_CITY", "name": "Thành phố Sơn La", "displayOrder": 10 },
+    { "code": "QUYNH_NHAI", "name": "Quỳnh Nhai", "displayOrder": 20 },
+    { "code": "THUAN_CHAU", "name": "Thuận Châu", "displayOrder": 30 },
+    { "code": "MUONG_LA", "name": "Mường La", "displayOrder": 40 },
+    { "code": "BAC_YEN", "name": "Bắc Yên", "displayOrder": 50 },
+    { "code": "PHU_YEN", "name": "Phù Yên", "displayOrder": 60 },
+    { "code": "MOC_CHAU", "name": "Mộc Châu", "displayOrder": 70 },
+    { "code": "YEN_CHAU", "name": "Yên Châu", "displayOrder": 80 },
+    { "code": "MAI_SON", "name": "Mai Sơn", "displayOrder": 90 },
+    { "code": "SONG_MA", "name": "Sông Mã", "displayOrder": 100 },
+    { "code": "SOP_COP", "name": "Sốp Cộp", "displayOrder": 110 },
+    { "code": "VAN_HO", "name": "Vân Hồ", "displayOrder": 120 }
+  ]
+}
