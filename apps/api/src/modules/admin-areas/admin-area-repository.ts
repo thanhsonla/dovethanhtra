@@ -39,7 +39,8 @@ export class AdminAreaRepository {
     const result = await sql<AdminAreaBoundary>`
       SELECT DISTINCT ON (code)
         id, code, name, area_type AS "areaType", source_version AS "sourceVersion",
-        ST_AsGeoJSON(boundary)::json AS boundary
+        ST_AsGeoJSON(boundary)::json AS boundary,
+        ST_AsGeoJSON(ST_PointOnSurface(boundary))::json AS "labelPoint"
       FROM admin_area
       WHERE area_type IN ('commune','ward')
         AND valid_from <= CURRENT_DATE

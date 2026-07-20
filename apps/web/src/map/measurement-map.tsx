@@ -10,11 +10,20 @@ import { useEffect, useRef } from 'react'
 
 import type { BasemapDescriptor, BasemapProvider } from './basemap-provider.js'
 import {
+  addCommuneBoundaryLayer,
+  removeCommuneLabels,
+  replaceCommuneLabels,
+  resizeCommuneLabels,
+  syncCommuneBoundaryData,
+  type CommuneLabelMarker,
+} from './commune-boundary-layer.js'
+import {
   addDraftLayers,
   addDraftSources,
   ensureCrosshairImage,
   syncDraftData,
 } from './draft-drawing-layer.js'
+import { createMeasurementEditMarkers } from './measurement-edit-markers.js'
 import { geometryExtent } from './map-selection.js'
 
 export type MapMode = 'view' | 'point' | 'line' | 'area' | 'edit'
@@ -71,18 +80,6 @@ function boundaryCollection(boundary: GeoJsonGeometry) {
   }
 }
 
-function communeBoundaryCollection(boundaries: AdminAreaBoundary[]) {
-  return {
-    type: 'FeatureCollection' as const,
-    features: boundaries.map((item) => ({
-      type: 'Feature' as const,
-      id: item.id,
-      properties: { code: item.code, name: item.name, sourceVersion: item.sourceVersion },
-      geometry: item.boundary,
-    })),
-  }
-}
-
 function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
   if (map.getSource('case-boundary')) return
   ensureCrosshairImage(map)
@@ -94,10 +91,7 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     type: 'geojson',
     data: asMapGeoJson(featureCollection(props)),
   })
-  map.addSource('commune-boundaries', {
-    type: 'geojson',
-    data: asMapGeoJson(communeBoundaryCollection(props.communeBoundaries)),
-  })
+  addCommuneBoundaryLayer(map, props.communeBoundaries)
   addDraftSources(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
   map.addLayer({
     id: 'case-boundary-fill',
@@ -110,17 +104,6 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     source: 'case-boundary',
     type: 'line',
     paint: { 'line-color': '#287052', 'line-dasharray': [3, 2], 'line-width': 2 },
-  })
-  map.addLayer({
-    id: 'commune-boundary-lines',
-    source: 'commune-boundaries',
-    type: 'line',
-    paint: {
-      'line-color': '#0b8b69',
-      'line-dasharray': [3, 2],
-      'line-opacity': 0.9,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.8, 13, 1.5, 17, 2.2],
-    },
   })
   map.addLayer({
     id: 'measurement-areas',
@@ -164,9 +147,7 @@ function syncData(map: MapLibreMap, props: MeasurementMapProps) {
     asMapGeoJson(boundaryCollection(props.boundary)),
   )
   ;(map.getSource('measurements') as GeoJSONSource).setData(asMapGeoJson(featureCollection(props)))
-  ;(map.getSource('commune-boundaries') as GeoJSONSource).setData(
-    asMapGeoJson(communeBoundaryCollection(props.communeBoundaries)),
-  )
+  syncCommuneBoundaryData(map, props.communeBoundaries)
   syncDraftData(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
 }
 
@@ -181,35 +162,11 @@ function applyRotationPolicy(map: MapLibreMap, descriptor: BasemapDescriptor) {
   map.touchZoomRotate.enableRotation()
 }
 
-function positions(geometry: GeoJsonGeometry): Position[] | null {
-  if (geometry.type === 'Point') return [geometry.coordinates as Position]
-  if (geometry.type === 'LineString') return geometry.coordinates as Position[]
-  if (geometry.type === 'Polygon')
-    return (geometry.coordinates as Position[][])[0]?.slice(0, -1) ?? []
-  return null
-}
-
-function replacePosition(
-  geometry: GeoJsonGeometry,
-  index: number,
-  position: Position,
-): GeoJsonGeometry {
-  if (geometry.type === 'Point') return { type: 'Point', coordinates: position }
-  if (geometry.type === 'LineString') {
-    const coordinates = [...(geometry.coordinates as Position[])]
-    coordinates[index] = position
-    return { type: 'LineString', coordinates }
-  }
-  const ring = [...((geometry.coordinates as Position[][])[0] ?? [])]
-  ring[index] = position
-  if (index === 0) ring[ring.length - 1] = position
-  return { type: 'Polygon', coordinates: [ring] }
-}
-
 export function MeasurementMap(props: MeasurementMapProps) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const markers = useRef<Marker[]>([])
+  const communeLabelMarkers = useRef<CommuneLabelMarker[]>([])
   const attributionControl = useRef<AttributionControl | null>(null)
   const attributionRequest = useRef(0)
   const styleRequest = useRef(0)
@@ -296,6 +253,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
           const active = latest.current.basemapProvider.get(latest.current.basemapId)
           if (active.lockRotation && Math.abs(map.getBearing()) > 0.01) map.setBearing(0)
         })
+        map.on('zoom', () => resizeCommuneLabels(map, communeLabelMarkers.current))
         map.on('click', (event) => {
           const current = latest.current
           if (['point', 'line', 'area'].includes(current.mode)) {
@@ -331,6 +289,11 @@ export function MeasurementMap(props: MeasurementMapProps) {
           }
         })
         mapRef.current = map
+        communeLabelMarkers.current = replaceCommuneLabels(
+          map,
+          latest.current.communeBoundaries,
+          communeLabelMarkers.current,
+        )
       })
       .catch(() => {
         if (!disposed && !fallbackRequested.current) {
@@ -343,6 +306,8 @@ export function MeasurementMap(props: MeasurementMapProps) {
       styleRequest.current += 1
       attributionRequest.current += 1
       markers.current.forEach((marker) => marker.remove())
+      removeCommuneLabels(communeLabelMarkers.current)
+      communeLabelMarkers.current = []
       mapRef.current?.remove()
       attributionControl.current = null
       mapRef.current = null
@@ -362,6 +327,16 @@ export function MeasurementMap(props: MeasurementMapProps) {
     props.measurements,
     props.selectedId,
   ])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    communeLabelMarkers.current = replaceCommuneLabels(
+      map,
+      props.communeBoundaries,
+      communeLabelMarkers.current,
+    )
+  }, [props.communeBoundaries])
 
   useEffect(() => {
     const map = mapRef.current
@@ -420,18 +395,9 @@ export function MeasurementMap(props: MeasurementMapProps) {
     const map = mapRef.current
     const geometry = props.editMeasurement?.rawGeometry
     if (!map || props.mode !== 'edit' || !geometry) return
-    const editable = positions(geometry)
-    if (!editable) return
-    markers.current = editable.map((position, index) => {
-      const marker = new maplibregl.Marker({ color: '#ef7d32', draggable: true })
-        .setLngLat(position)
-        .addTo(map)
-      marker.on('dragend', () => {
-        const lngLat = marker.getLngLat()
-        props.onEditGeometry(replacePosition(geometry, index, [lngLat.lng, lngLat.lat]))
-      })
-      return marker
-    })
+    markers.current = createMeasurementEditMarkers(map, geometry, (updatedGeometry) =>
+      props.onEditGeometry(updatedGeometry),
+    )
   }, [props.editMeasurement, props.mode])
 
   return <div className="measurement-map" ref={container} aria-label="Bản đồ phép đo" />

@@ -360,3 +360,7 @@
 - Luồng nhập nhanh Ưu tiên 3 thêm **Tiến độ hồ sơ** và điều hướng **Đến việc cần
   làm**. Tiến độ chỉ nêu số công tác có dữ liệu, bộ phận confirmed và mục cần xử lý;
   không tự gán trạng thái hoàn thành vì danh mục không có chỉ tiêu số lượng bắt buộc.
+- Lớp địa giới 75 xã/phường dùng nét đứt đỏ, tăng độ đậm theo zoom. API trả thêm
+  `ST_PointOnSurface` của từng địa giới để đặt tên viết hoa, đứng, đậm bên trong
+  hình xã; cỡ chữ và chiều rộng nhãn tự điều chỉnh theo mức zoom, độc lập với hướng
+  xoay của nền bản đồ.

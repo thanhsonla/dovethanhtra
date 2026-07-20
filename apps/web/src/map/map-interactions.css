@@ -12,6 +12,25 @@
   backdrop-filter: blur(8px);
 }
 
+.commune-boundary-label {
+  width: var(--commune-label-max-width, 110px);
+  color: #991b1b;
+  font-size: var(--commune-label-font-size, 12px);
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.08;
+  pointer-events: none;
+  text-align: center;
+  text-shadow:
+    -1px -1px 0 rgb(255 255 255 / 95%),
+    1px -1px 0 rgb(255 255 255 / 95%),
+    -1px 1px 0 rgb(255 255 255 / 95%),
+    1px 1px 0 rgb(255 255 255 / 95%),
+    0 0 4px rgb(255 255 255 / 90%);
+  text-transform: uppercase;
+  user-select: none;
+}
+
 .map-primary-toolbar {
   top: 12px;
   left: 12px;

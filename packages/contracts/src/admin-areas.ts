@@ -20,6 +20,14 @@ export const AdminAreaSchema = Type.Object(
 
 export type AdminArea = Static<typeof AdminAreaSchema>
 
+export const AdminAreaLabelPointSchema = Type.Object(
+  {
+    type: Type.Literal('Point'),
+    coordinates: Type.Tuple([Type.Number(), Type.Number()]),
+  },
+  { additionalProperties: false },
+)
+
 export const AdminAreaBoundarySchema = Type.Object(
   {
     id: UuidSchema,
@@ -28,6 +36,7 @@ export const AdminAreaBoundarySchema = Type.Object(
     areaType: Type.String(),
     sourceVersion: Type.String(),
     boundary: GeoJsonGeometrySchema,
+    labelPoint: AdminAreaLabelPointSchema,
   },
   { additionalProperties: false, $id: 'AdminAreaBoundary' },
 )

@@ -69,6 +69,14 @@ describe('Milestone 1 API workflow', () => {
     expect(groups).toHaveLength(6)
     expect(new Set(boundaries.map((item) => item.code)).size).toBe(boundaries.length)
     expect(boundaries.every((item) => ['commune', 'ward'].includes(item.areaType))).toBe(true)
+    expect(
+      boundaries.every(
+        (item) =>
+          item.labelPoint.type === 'Point' &&
+          item.labelPoint.coordinates.length === 2 &&
+          item.labelPoint.coordinates.every(Number.isFinite),
+      ),
+    ).toBe(true)
     expect(workTypes.length).toBeGreaterThanOrEqual(15)
 
     const suffix = randomUUID().slice(0, 8)
