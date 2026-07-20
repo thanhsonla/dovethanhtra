@@ -4,10 +4,10 @@ import type {
   DrawableMeasurementGeometryKind,
   WorkItem,
 } from '@dove/contracts'
-import { type FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 
 import { api } from '../api.js'
-import { requiredInputs, temporaryValue } from './map-geometry.js'
+import { calculationInputMeta, requiredInputs, temporaryValue } from './map-geometry.js'
 
 function field(values: FormData, name: string): string {
   const value = values.get(name)
@@ -23,25 +23,48 @@ const statusLabels: Record<string, string> = {
 }
 
 export interface MeasurementInspectorProps {
+  defaultName: string
   draftGeometry: GeoJsonGeometry | null
   draftReady: boolean
+  initialCalculationInputs: Record<string, number>
   measurement: Measurement | null
   onCancel(): void
   onChanged(item: Measurement): Promise<void>
   onEdit(): void
   onError(value: string): void
+  onSaved(item: Measurement, action: 'continue' | 'done'): Promise<void>
   selectedKind: DrawableMeasurementGeometryKind | null
   selectedWork: WorkItem | null
 }
 
 export function MeasurementInspector(props: MeasurementInspectorProps) {
+  const [busy, setBusy] = useState(false)
+  const deliverSaved = async (measurement: Measurement, action: 'continue' | 'done') => {
+    try {
+      await props.onSaved(measurement, action)
+    } catch (reason) {
+      throw new Error(
+        `Phép đo đã được lưu nhưng danh sách chưa tải lại: ${
+          reason instanceof Error ? reason.message : 'lỗi chưa xác định'
+        }`,
+        { cause: reason },
+      )
+    }
+  }
+
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!props.selectedWork || !props.selectedKind || !props.draftGeometry) return
     const values = new FormData(event.currentTarget)
+    const submitter = (event.nativeEvent as SubmitEvent).submitter
+    const action =
+      submitter instanceof HTMLButtonElement && submitter.value === 'confirm'
+        ? 'confirm'
+        : 'continue'
     const calculationInputs = Object.fromEntries(
       requiredInputs(props.selectedWork).map((name) => [name, Number(field(values, name))]),
     )
+    setBusy(true)
     try {
       const created = await api.createMeasurement(props.selectedWork.id, {
         calculationInputs,
@@ -50,9 +73,32 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
         name: field(values, 'name'),
         note: field(values, 'note') || null,
       })
-      await props.onChanged(created)
+      if (action === 'continue') {
+        await deliverSaved(created, 'continue')
+        return
+      }
+      if (created.warnings.length > 0) {
+        await deliverSaved(created, 'done')
+        props.onError('Đã lưu nháp. Phép đo có cảnh báo nên cần rà soát trước khi xác nhận.')
+        return
+      }
+      let confirmed: Measurement
+      try {
+        confirmed = await api.confirmMeasurement(created.id)
+      } catch (reason) {
+        await deliverSaved(created, 'done')
+        props.onError(
+          `Đã lưu nháp nhưng chưa xác nhận được: ${
+            reason instanceof Error ? reason.message : 'lỗi chưa xác định'
+          }`,
+        )
+        return
+      }
+      await deliverSaved(confirmed, 'done')
     } catch (reason) {
       props.onError(reason instanceof Error ? reason.message : 'Không thể lưu phép đo.')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -78,26 +124,74 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
 
   if (props.draftReady && props.draftGeometry) {
     return (
-      <form className="measurement-form" onSubmit={(event) => void save(event)}>
-        <p className="section-kicker">Phép đo mới</p>
-        <h2>Kết quả tạm: {temporaryValue(props.draftGeometry)}</h2>
+      <form
+        className="measurement-form measurement-form--quick"
+        onSubmit={(event) => void save(event)}
+      >
+        <div className="measurement-quick-summary">
+          <span>Kết quả tạm trên thiết bị</span>
+          <strong>{temporaryValue(props.draftGeometry)}</strong>
+          <small>Kết quả chính thức được máy chủ kiểm tra sau khi lưu.</small>
+        </div>
         <label>
           Tên phép đo
-          <input name="name" required />
+          <input name="name" defaultValue={props.defaultName} required />
         </label>
-        {requiredInputs(props.selectedWork).map((name) => (
-          <label key={name}>
-            {name}
-            <input name={name} type="number" min="0" step="any" required />
+        <div className="measurement-input-grid">
+          {requiredInputs(props.selectedWork).map((name) => {
+            const meta = calculationInputMeta(name)
+            const inherited = props.initialCalculationInputs[name]
+            return (
+              <label key={name}>
+                {meta.label}
+                <input
+                  aria-describedby={`${name}-help`}
+                  defaultValue={inherited}
+                  name={name}
+                  placeholder={meta.placeholder}
+                  type="number"
+                  min="0"
+                  step="any"
+                  required
+                />
+                <small id={`${name}-help`}>
+                  {inherited === undefined ? meta.description : `Kế thừa gần nhất: ${inherited}.`}
+                </small>
+              </label>
+            )
+          })}
+        </div>
+        <details className="measurement-more-fields">
+          <summary>Ghi chú và thông tin thêm</summary>
+          <label>
+            Ghi chú
+            <textarea name="note" rows={3} />
           </label>
-        ))}
-        <label>
-          Ghi chú
-          <textarea name="note" rows={3} />
-        </label>
-        <div className="button-row">
-          <button className="button" type="submit">
-            Lưu và tính máy chủ
+          {requiredInputs(props.selectedWork).length > 0 && (
+            <small>
+              Các đầu vào được lưu cùng phiên bản công thức; có thể sửa giá trị kế thừa trước khi
+              lưu.
+            </small>
+          )}
+        </details>
+        <div className="measurement-save-actions">
+          <button
+            className="button"
+            disabled={busy}
+            name="saveAction"
+            value="continue"
+            type="submit"
+          >
+            {busy ? 'Đang lưu…' : 'Lưu và tiếp tục'}
+          </button>
+          <button
+            className="button button--secondary"
+            disabled={busy}
+            name="saveAction"
+            value="confirm"
+            type="submit"
+          >
+            Lưu và xác nhận
           </button>
           <button className="button button--quiet" type="button" onClick={() => props.onCancel()}>
             Hủy

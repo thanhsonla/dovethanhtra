@@ -4,6 +4,30 @@ import type { GeoJsonGeometry, MeasurementGeometryKind, WorkItem } from '@dove/c
 
 import type { Position } from './measurement-map.js'
 
+const inputHelp: Record<string, { description: string; label: string; placeholder?: string }> = {
+  frequency: {
+    description: 'Số lần thực hiện trong một ngày hoặc một kỳ theo hồ sơ công tác.',
+    label: 'Tần suất thực hiện',
+    placeholder: 'Ví dụ: 1',
+  },
+  occurrence_count: {
+    description: 'Số lượt hoặc số lần phát sinh được tính cho bộ phận đo này.',
+    label: 'Số lượt phát sinh',
+    placeholder: 'Ví dụ: 1',
+  },
+  service_days: {
+    description: 'Số ngày dịch vụ được tính trong kỳ kiểm tra.',
+    label: 'Số ngày thực hiện',
+    placeholder: 'Ví dụ: 30',
+  },
+  side_factor: {
+    description:
+      'Hệ số mặt đường: 1 là một bên/một mặt, 2 là hai bên/hai mặt nếu hợp đồng quy định.',
+    label: 'Hệ số mặt/tuyến',
+    placeholder: '1 hoặc 2',
+  },
+}
+
 export function geometryFromPositions(
   kind: MeasurementGeometryKind,
   points: Position[],
@@ -24,6 +48,15 @@ export function temporaryValue(geometry: GeoJsonGeometry | null): string {
   return '1 điểm'
 }
 
+export function positionsFromGeometry(geometry: GeoJsonGeometry | null): Position[] {
+  if (!geometry) return []
+  if (geometry.type === 'Point') return [geometry.coordinates as Position]
+  if (geometry.type === 'LineString') return geometry.coordinates as Position[]
+  if (geometry.type === 'Polygon')
+    return ((geometry.coordinates as Position[][])[0] ?? []).slice(0, -1)
+  return []
+}
+
 export function requiredInputs(workItem: WorkItem | null): string[] {
   const spec = workItem?.formulaSnapshot.calculationSpec
   if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return []
@@ -31,4 +64,12 @@ export function requiredInputs(workItem: WorkItem | null): string[] {
   return Array.isArray(required)
     ? required.filter((item): item is string => typeof item === 'string')
     : []
+}
+
+export function calculationInputMeta(name: string): {
+  description: string
+  label: string
+  placeholder?: string
+} {
+  return inputHelp[name] ?? { description: `Đầu vào công thức: ${name}.`, label: name }
 }

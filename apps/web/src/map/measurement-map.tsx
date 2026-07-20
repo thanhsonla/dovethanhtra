@@ -9,6 +9,12 @@ import type { GeoJSON } from 'geojson'
 import { useEffect, useRef } from 'react'
 
 import type { BasemapDescriptor, BasemapProvider } from './basemap-provider.js'
+import {
+  addDraftLayers,
+  addDraftSources,
+  ensureCrosshairImage,
+  syncDraftData,
+} from './draft-drawing-layer.js'
 
 export type MapMode = 'view' | 'point' | 'line' | 'area' | 'edit'
 export type Position = [number, number]
@@ -20,6 +26,7 @@ interface MeasurementMapProps {
   basemapProvider: BasemapProvider
   boundary: GeoJsonGeometry
   draftGeometry: GeoJsonGeometry | null
+  draftPositions: Position[]
   editMeasurement: Measurement | null
   hiddenWorkItemIds: Set<string>
   measurements: Measurement[]
@@ -59,15 +66,9 @@ function boundaryCollection(boundary: GeoJsonGeometry) {
   }
 }
 
-function draftCollection(geometry: GeoJsonGeometry | null) {
-  return {
-    type: 'FeatureCollection' as const,
-    features: geometry ? [{ type: 'Feature' as const, properties: {}, geometry }] : [],
-  }
-}
-
 function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
   if (map.getSource('case-boundary')) return
+  ensureCrosshairImage(map)
   map.addSource('case-boundary', {
     type: 'geojson',
     data: asMapGeoJson(boundaryCollection(props.boundary)),
@@ -76,10 +77,7 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     type: 'geojson',
     data: asMapGeoJson(featureCollection(props)),
   })
-  map.addSource('measurement-draft', {
-    type: 'geojson',
-    data: asMapGeoJson(draftCollection(props.draftGeometry)),
-  })
+  addDraftSources(map, props.draftGeometry, props.draftPositions)
   map.addLayer({
     id: 'case-boundary-fill',
     source: 'case-boundary',
@@ -124,26 +122,7 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
       'circle-stroke-width': 2,
     },
   })
-  map.addLayer({
-    id: 'draft-fill',
-    source: 'measurement-draft',
-    type: 'fill',
-    filter: ['==', '$type', 'Polygon'],
-    paint: { 'fill-color': '#e5a324', 'fill-opacity': 0.3 },
-  })
-  map.addLayer({
-    id: 'draft-line',
-    source: 'measurement-draft',
-    type: 'line',
-    paint: { 'line-color': '#e07b22', 'line-dasharray': [2, 1], 'line-width': 4 },
-  })
-  map.addLayer({
-    id: 'draft-point',
-    source: 'measurement-draft',
-    type: 'circle',
-    filter: ['==', '$type', 'Point'],
-    paint: { 'circle-color': '#e07b22', 'circle-radius': 8 },
-  })
+  addDraftLayers(map)
 }
 
 function syncData(map: MapLibreMap, props: MeasurementMapProps) {
@@ -153,9 +132,7 @@ function syncData(map: MapLibreMap, props: MeasurementMapProps) {
     asMapGeoJson(boundaryCollection(props.boundary)),
   )
   ;(map.getSource('measurements') as GeoJSONSource).setData(asMapGeoJson(featureCollection(props)))
-  ;(map.getSource('measurement-draft') as GeoJSONSource).setData(
-    asMapGeoJson(draftCollection(props.draftGeometry)),
-  )
+  syncDraftData(map, props.draftGeometry, props.draftPositions)
 }
 
 function positions(geometry: GeoJsonGeometry): Position[] | null {
@@ -307,6 +284,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
   }, [
     props.boundary,
     props.draftGeometry,
+    props.draftPositions,
     props.hiddenWorkItemIds,
     props.measurements,
     props.selectedId,

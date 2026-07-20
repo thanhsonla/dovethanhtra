@@ -2,7 +2,6 @@ import type {
   GeoJsonGeometry,
   DrawableMeasurementGeometryKind,
   InspectionCase,
-  MeasurementGeometryKind,
   MeasurementListResponse,
   ServiceGroup,
   WorkItem,
@@ -12,8 +11,8 @@ import type {
 import { useEffect, useMemo, useState } from 'react'
 
 import { api } from '../api.js'
-import { FieldPanel } from '../field/field-panel.js'
 import { createBasemapProvider } from './basemap-provider.js'
+import { DrawingToolbar } from './drawing-toolbar.js'
 import {
   createHistory,
   pushHistory,
@@ -21,13 +20,14 @@ import {
   undoHistory,
   type HistoryState,
 } from './geometry-history.js'
-import { MeasurementMap, type MapMode, type Position } from './measurement-map.js'
 import { geometryFromPositions, temporaryValue } from './map-geometry.js'
-import { MeasurementInspector } from './measurement-inspector.js'
+import { MapDetailsPanel } from './map-details-panel.js'
+import { MapWorkspaceHeader } from './map-workspace-header.js'
+import { inheritedCalculationInputs, nextMeasurementName } from './measurement-entry-defaults.js'
 import { MeasurementLayerTree } from './measurement-layer-tree.js'
-import { RoutePlanner } from './route-planner.js'
-import { DataToolsPanel } from './data-tools-panel.js'
-import { DrawingToolbar } from './drawing-toolbar.js'
+import { MeasurementMap, type MapMode, type Position } from './measurement-map.js'
+import { activeWorkId, measurementKindForWork, rememberActiveWork } from './map-workspace-state.js'
+import { MapQuickWorkflow } from './map-quick-workflow.js'
 
 const emptyPositions = createHistory<Position[]>([])
 const modeLabels: Record<MapMode, string> = {
@@ -37,11 +37,6 @@ const modeLabels: Record<MapMode, string> = {
   point: 'Vẽ điểm',
   view: 'Xem',
 }
-function kindForWork(item: WorkItem, workTypes: WorkType[]): MeasurementGeometryKind | null {
-  const kind = workTypes.find((type) => type.id === item.workTypeId)?.measurementKind
-  return kind === 'point' || kind === 'line' || kind === 'area' || kind === 'route' ? kind : null
-}
-
 export function MapWorkspace(props: {
   groups: ServiceGroup[]
   inspectionCase: InspectionCase
@@ -51,13 +46,15 @@ export function MapWorkspace(props: {
   workTypes: WorkType[]
 }) {
   const measurable = useMemo(
-    () => props.workItems.filter((item) => kindForWork(item, props.workTypes)),
+    () => props.workItems.filter((item) => measurementKindForWork(item, props.workTypes)),
     [props.workItems, props.workTypes],
   )
   const [basemaps, setBasemaps] = useState(() => createBasemapProvider())
   const [boundary, setBoundary] = useState<GeoJsonGeometry | null>(null)
   const [summaries, setSummaries] = useState<Record<string, MeasurementListResponse>>({})
-  const [selectedWorkId, setSelectedWorkId] = useState(measurable[0]?.id ?? '')
+  const [selectedWorkId, setSelectedWorkId] = useState(() =>
+    activeWorkId(props.inspectionCase.id, measurable),
+  )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [mode, setMode] = useState<MapMode>('view')
@@ -72,6 +69,7 @@ export function MapWorkspace(props: {
   const localFallbackId =
     basemaps.descriptors().find((item) => basemaps.supportsOffline(item.id))?.id ??
     basemaps.defaultId
+  const selectedBasemap = basemaps.get(basemapId)
 
   const refreshWork = async (workItemId: string) => {
     const summary = await api.listMeasurements(workItemId, { limit: 200 })
@@ -112,7 +110,8 @@ export function MapWorkspace(props: {
   const allMeasurements = Object.values(summaries).flatMap((summary) => summary.items)
   const selected = allMeasurements.find((item) => item.id === selectedId) ?? null
   const selectedWork = measurable.find((item) => item.id === selectedWorkId) ?? null
-  const selectedKind = selectedWork ? kindForWork(selectedWork, props.workTypes) : null
+  const selectedSummary = selectedWork ? summaries[selectedWork.id] : undefined
+  const selectedKind = selectedWork ? measurementKindForWork(selectedWork, props.workTypes) : null
   const drawableKind =
     selectedKind === 'point' || selectedKind === 'line' || selectedKind === 'area'
       ? selectedKind
@@ -123,9 +122,17 @@ export function MapWorkspace(props: {
     (drawableKind ? geometryFromPositions(drawableKind, positions.present) : null)
   const editMeasurement =
     selected && editHistory ? { ...selected, rawGeometry: editHistory.present } : null
+  const defaultMeasurementName = drawableKind
+    ? nextMeasurementName(drawableKind, selectedSummary?.items ?? [])
+    : ''
+  const initialCalculationInputs = inheritedCalculationInputs(
+    selectedWork,
+    selectedSummary?.items ?? [],
+  )
 
   const startDrawing = (nextMode: DrawableMeasurementGeometryKind, workItemId: string) => {
     setSelectedWorkId(workItemId)
+    rememberActiveWork(props.inspectionCase.id, workItemId)
     setMode(nextMode)
     setPositions(createHistory([]))
     setEditHistory(null)
@@ -146,8 +153,7 @@ export function MapWorkspace(props: {
   }
 
   const addPosition = (position: Position) => {
-    const next = pushHistory(positions, [...positions.present, position])
-    setPositions(next)
+    setPositions((current) => pushHistory(current, [...current.present, position]))
     if (mode === 'point') {
       setMode('view')
       setDraftReady(true)
@@ -160,6 +166,14 @@ export function MapWorkspace(props: {
     setPositions(createHistory([]))
     setEditHistory(null)
     setDraftReady(false)
+  }
+
+  const selectWork = (item: WorkItem) => {
+    setSelectedWorkId(item.id)
+    rememberActiveWork(props.inspectionCase.id, item.id)
+    setSelectedId(null)
+    cancelDraft()
+    setDetailsOpen(measurementKindForWork(item, props.workTypes) === 'route')
   }
 
   const changeHistory = (direction: 'undo' | 'redo') => {
@@ -175,6 +189,7 @@ export function MapWorkspace(props: {
     if (!measurement) return
     setSelectedId(id)
     setSelectedWorkId(measurement.workItemId)
+    rememberActiveWork(props.inspectionCase.id, measurement.workItemId)
     setMode('view')
     setEditHistory(null)
     setDraftReady(false)
@@ -191,25 +206,13 @@ export function MapWorkspace(props: {
 
   return (
     <main className="map-shell">
-      <header className="map-header">
-        <button className="button button--quiet" onClick={() => props.onBack()}>
-          ← Hồ sơ
-        </button>
-        <div>
-          <p className="eyebrow">Mốc 4 · Bản đồ, hiện trường và ngoại tuyến</p>
-          <h1>{props.inspectionCase.name}</h1>
-        </div>
-        <label className="basemap-select">
-          Bản đồ nền
-          <select value={basemapId} onChange={(event) => setBasemapId(event.target.value)}>
-            {basemaps.descriptors().map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </header>
+      <MapWorkspaceHeader
+        basemapId={basemapId}
+        basemaps={basemaps}
+        inspectionCase={props.inspectionCase}
+        onBack={() => props.onBack()}
+        onBasemapChange={setBasemapId}
+      />
       {error && (
         <div className="alert map-alert" role="alert">
           {error}
@@ -239,12 +242,7 @@ export function MapWorkspace(props: {
               )
           }
           onSelectMeasurement={selectMeasurement}
-          onSelectWork={(item) => {
-            setSelectedWorkId(item.id)
-            setSelectedId(null)
-            cancelDraft()
-            setDetailsOpen(kindForWork(item, props.workTypes) === 'route')
-          }}
+          onSelectWork={selectWork}
           onToggleWork={(id) =>
             setHidden((current) => {
               const next = new Set(current)
@@ -260,33 +258,48 @@ export function MapWorkspace(props: {
         />
 
         <section className="map-stage">
+          <MapQuickWorkflow
+            inspectionCase={props.inspectionCase}
+            mode={mode}
+            onConfirm={async (measurement) => {
+              try {
+                const confirmed = await api.confirmMeasurement(measurement.id)
+                setSelectedId(confirmed.id)
+                await refreshWork(confirmed.workItemId)
+              } catch (reason) {
+                setError(reason instanceof Error ? reason.message : 'Không thể xác nhận phép đo.')
+              }
+            }}
+            onError={setError}
+            onOpenDetails={() => setDetailsOpen(true)}
+            onSelectMeasurement={(measurement) => selectMeasurement(measurement.id)}
+            onSelectWork={selectWork}
+            onStart={startDrawing}
+            onWorkCreated={(item) => props.onWorkCreated(item)}
+            selectedWork={selectedWork}
+            selectedWorkId={selectedWorkId}
+            summaries={summaries}
+            summary={selectedSummary}
+            workItems={measurable}
+            workTypes={props.workTypes}
+          />
           <DrawingToolbar
-            canOpenDetails={Boolean(selectedWork)}
             canRedo={Boolean((editHistory ?? positions).future.length)}
             canUndo={Boolean((editHistory ?? positions).past.length)}
-            detailsOpen={detailsOpen}
-            inspectionCase={props.inspectionCase}
             mode={mode}
             onCancel={() => {
               cancelDraft()
               setDetailsOpen(false)
             }}
-            onError={setError}
             onFinish={finishDrawing}
             onHistory={changeHistory}
-            onStart={startDrawing}
-            onToggleDetails={() => setDetailsOpen((value) => !value)}
-            onWorkCreated={(item) => props.onWorkCreated(item)}
-            selectedKind={selectedKind}
-            selectedWorkId={selectedWorkId}
-            workItems={measurable}
-            workTypes={props.workTypes}
           />
           <MeasurementMap
             basemapId={basemapId}
             basemapProvider={basemaps}
             boundary={boundary}
             draftGeometry={draftGeometry}
+            draftPositions={positions.present}
             editMeasurement={editMeasurement}
             hiddenWorkItemIds={hidden}
             measurements={allMeasurements}
@@ -311,75 +324,68 @@ export function MapWorkspace(props: {
             onSelect={selectMeasurement}
             selectedId={selectedId}
           />
+          {(mode === 'line' || mode === 'area') && (
+            <output
+              className="map-live-result"
+              aria-label="Kết quả đo trực tiếp"
+              aria-live="polite"
+            >
+              <span>{mode === 'line' ? 'Tổng tuyến bổ sung' : 'Diện tích vùng bổ sung'}</span>
+              <strong>{temporaryValue(draftGeometry)}</strong>
+            </output>
+          )}
           <div className="map-status-sr" aria-live="polite">
-            Chế độ {modeLabels[mode]}. Kết quả tạm {temporaryValue(draftGeometry)}. Nền{' '}
-            {basemaps.get(basemapId).label}.
+            Chế độ {modeLabels[mode]}. Nền {selectedBasemap.label}.
           </div>
         </section>
 
         {detailsOpen && (
-          <aside className="measurement-panel">
-            <div className="measurement-panel__heading">
-              <strong>Chi tiết phép đo</strong>
-              <button onClick={() => setDetailsOpen(false)}>Đóng</button>
-            </div>
-            {selectedKind === 'route' && selectedWork ? (
-              <RoutePlanner
-                facilities={facilities}
-                measurement={selected}
-                workItem={selectedWork}
-                onError={setError}
-                onPreview={setRoutePreview}
-                onSaved={async (route) => {
-                  setSelectedId(route.measurement.id)
-                  await refreshWork(route.measurement.workItemId)
-                }}
-              />
-            ) : (
-              <MeasurementInspector
-                draftGeometry={draftGeometry}
-                draftReady={draftReady}
-                measurement={selected}
-                selectedKind={drawableKind}
-                selectedWork={selectedWork}
-                onCancel={() => {
-                  cancelDraft()
-                  setDetailsOpen(false)
-                }}
-                onChanged={async (measurement) => {
-                  cancelDraft()
-                  setSelectedId(measurement.id)
-                  await refreshWork(measurement.workItemId)
-                }}
-                onEdit={() => {
-                  if (selected) {
-                    setEditHistory(createHistory(selected.rawGeometry))
-                    setMode('edit')
-                  }
-                }}
-                onError={setError}
-              />
-            )}
-            <FieldPanel
-              measurement={selected}
-              workItem={selectedWork}
-              gpsKind={selectedKind === 'line' || selectedKind === 'point' ? selectedKind : null}
-              onError={setError}
-              onChanged={async (measurement) => {
-                setSelectedId(measurement.id)
+          <MapDetailsPanel
+            defaultName={defaultMeasurementName}
+            draftGeometry={draftGeometry}
+            draftReady={draftReady}
+            facilities={facilities}
+            initialCalculationInputs={initialCalculationInputs}
+            measurement={selected}
+            selectedKind={selectedKind}
+            selectedWork={selectedWork}
+            onCancel={() => {
+              cancelDraft()
+              setDetailsOpen(false)
+            }}
+            onChanged={async (measurement) => {
+              cancelDraft()
+              setSelectedId(measurement.id)
+              await refreshWork(measurement.workItemId)
+            }}
+            onClose={() => setDetailsOpen(false)}
+            onDataChanged={async (measurement) => {
+              if (measurement) setSelectedId(measurement.id)
+              if (selectedWork) await refreshWork(selectedWork.id)
+            }}
+            onEdit={() => {
+              if (selected) {
+                setEditHistory(createHistory(selected.rawGeometry))
+                setMode('edit')
+              }
+            }}
+            onError={setError}
+            onRoutePreview={setRoutePreview}
+            onRouteSaved={async (route) => {
+              setSelectedId(route.measurement.id)
+              await refreshWork(route.measurement.workItemId)
+            }}
+            onSaved={async (measurement, action) => {
+              if (action === 'continue' && drawableKind) {
+                startDrawing(drawableKind, measurement.workItemId)
                 await refreshWork(measurement.workItemId)
-              }}
-            />
-            <DataToolsPanel
-              allowImport={drawableKind !== null}
-              onError={setError}
-              workItem={selectedWork}
-              onChanged={async (measurement) => {
-                if (measurement) setSelectedId(measurement.id)
-                if (selectedWork) await refreshWork(selectedWork.id)
-              }}
-            />
-          </aside>
+                return
+              }
+              cancelDraft()
+              setSelectedId(measurement.id)
+              await refreshWork(measurement.workItemId)
+            }}
+          />
         )}
       </section>
     </main>

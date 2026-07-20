@@ -70,22 +70,19 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByText('Chưa có công tác đo')).toBeVisible()
   await expect(page.locator('.measurement-panel')).toHaveCount(0)
   await expect(page.locator('.map-status')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Điểm', exact: true })).toBeEnabled()
+  await expect(page.getByLabel('Công tác đang đo')).toBeVisible()
+  await expect(page.getByLabel('Tiến độ hồ sơ')).toHaveCount(0)
   await page
-    .getByRole('button', { name: 'Điểm', exact: true })
+    .getByRole('button', { name: 'Tạo công tác nhanh', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByRole('region', { name: 'Thiết lập đo Điểm' })).toBeVisible()
   await page
     .getByLabel('Loại công tác tạo nhanh')
     .selectOption({ label: 'Kiểm tra cột chiếu sáng' })
   await page.getByLabel('Tên công tác tạo nhanh').fill('Công tác điểm tạo nhanh E2E')
   await page
-    .getByRole('button', { name: 'Tạo và bắt đầu đo', exact: true })
+    .getByRole('button', { name: 'Tạo và bắt đầu', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByRole('button', { name: 'Điểm', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByRole('button', { name: 'Hủy', exact: true })).toBeVisible()
   await page
     .getByRole('button', { name: 'Hủy', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
@@ -121,6 +118,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .getByRole('button', { name: 'Mở bản đồ hiện trường' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
+  await expect(page.getByLabel('Tiến độ hồ sơ')).toBeVisible()
   await expect.poll(() => mapModuleResponses.length).toBeGreaterThan(0)
   await expect(page.getByLabel('Bản đồ nền')).toHaveValue('google-hybrid-direct')
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Google Maps')
@@ -157,33 +155,58 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
       }),
     ),
   })
-  await page
-    .getByRole('button', { name: 'Preview và kiểm schema' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  const previewImportButton = page.getByRole('button', { name: 'Preview và kiểm schema' })
+  await expect(previewImportButton).toBeEnabled()
+  await previewImportButton.evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByText('1 feature · line')).toBeVisible()
   await page
     .getByRole('button', { name: 'Import chính thức' })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByText('Tuyến import E2E', { exact: true })).toBeVisible()
+  await expect(page.getByText(/Tuyến import E2E/)).toBeVisible()
   await page
-    .getByRole('button', { name: 'Tuyến', exact: true })
+    .getByRole('button', { name: 'Thêm đoạn', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 330, y: 320 } })
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 390, y: 320 } })
+  await expect(page.getByLabel('Kết quả đo trực tiếp')).toContainText('Tổng tuyến bổ sung')
+  await expect(page.getByLabel('Kết quả đo trực tiếp')).toContainText(/[1-9]\d*\.\d{2} m/)
   await page
-    .getByRole('button', { name: 'Hoàn tác' })
+    .getByRole('button', { name: 'Lùi điểm' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await page
-    .getByRole('button', { name: 'Làm lại' })
+    .getByRole('button', { name: 'Khôi phục điểm' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await page
     .getByRole('button', { name: 'Kết thúc' })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await page.getByLabel('Tên phép đo').fill('Tuyến đo E2E')
+  const firstSuggestedName = await page.getByLabel('Tên phép đo').inputValue()
+  expect(firstSuggestedName).toMatch(/^Đoạn \d{2}$/)
   await page
-    .getByRole('button', { name: 'Lưu và tính máy chủ' })
+    .getByRole('button', { name: 'Lưu và tiếp tục' })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: new RegExp(firstSuggestedName) })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hủy', exact: true })).toBeVisible()
+  await page.getByLabel('Bản đồ phép đo').click({ position: { x: 350, y: 340 } })
+  await page.getByLabel('Bản đồ phép đo').click({ position: { x: 410, y: 340 } })
+  await page
+    .getByRole('button', { name: 'Kết thúc' })
+    .evaluate((element: HTMLButtonElement) => element.click())
+  const reviewMeasurementName = await page.getByLabel('Tên phép đo').inputValue()
+  expect(reviewMeasurementName).toMatch(/^Đoạn \d{2}$/)
+  expect(reviewMeasurementName).not.toBe(firstSuggestedName)
+  await page
+    .getByRole('button', { name: 'Lưu và xác nhận' })
+    .evaluate((element: HTMLButtonElement) => element.click())
+  await expect(page.getByRole('button', { name: new RegExp(reviewMeasurementName) })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('Đã lưu nháp')
+  await expect(page.getByLabel('Rà soát phép đo')).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Mở danh sách' })
+    .evaluate((element: HTMLButtonElement) => element.click())
+  await expect(
+    page.getByLabel('Rà soát phép đo').getByText(reviewMeasurementName, { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByLabel('Tổng Công tác E2E')).toContainText('0/3 bộ phận được cộng tổng')
 
   await page
     .getByRole('button', { name: 'Bắt đầu GPS' })
@@ -287,7 +310,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page
     .getByRole('button', { name: 'Lưu route chính thức' })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByText('Lộ trình đến cơ sở xử lý', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText(/Lộ trình đến cơ sở xử lý/).first()).toBeVisible()
   await page.getByLabel('Lý do tính lại').fill('Đối chứng route E2E')
   await page
     .getByRole('button', { name: 'Tính lại thành phiên bản mới' })
@@ -295,10 +318,11 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByText(/v2 · Đã xác nhận/)).toBeVisible()
   await page.getByLabel('Bản đồ nền').selectOption('technical-dark')
   await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-dark')
+  await expect(page.getByText(/Nền kỹ thuật chỉ là màu nền local/)).toBeVisible()
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText(
     'Nền kỹ thuật local · Không phải bản đồ địa chính',
   )
-  await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: new RegExp(reviewMeasurementName) })).toBeVisible()
 
   // Remount the map and explicitly fail the configured remote style without
   // depending on request counts or HTTP cache behavior.
@@ -314,7 +338,9 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
     await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
     await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
-    await expect(page.getByText('Tuyến đo E2E', { exact: true }).first()).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: new RegExp(reviewMeasurementName) }),
+    ).toBeVisible()
   }
 
   await page

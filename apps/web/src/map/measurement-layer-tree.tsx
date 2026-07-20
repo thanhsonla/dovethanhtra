@@ -1,5 +1,12 @@
 import type { MeasurementListResponse, ServiceGroup, WorkItem, WorkType } from '@dove/contracts'
 
+import {
+  confirmedSummary,
+  measurementBaseValue,
+  measurementPartLabel,
+  measurementQuantity,
+} from './measurement-summary.js'
+
 const statusLabels: Record<string, string> = {
   confirmed: 'Đã xác nhận',
   draft: 'Nháp',
@@ -43,56 +50,74 @@ export function MeasurementLayerTree(props: {
               <span className="catalog-dot" style={{ background: group.color ?? '#63736c' }} />
               {group.name}
             </h3>
-            {work.map((item) => (
-              <div className="layer-work" key={item.id}>
-                <div className="layer-work__row">
-                  <input
-                    aria-label={`Hiển thị ${item.name}`}
-                    type="checkbox"
-                    checked={!props.hidden.has(item.id)}
-                    onChange={() => props.onToggleWork(item.id)}
-                  />
-                  <button
-                    className={
-                      props.selectedWorkId === item.id
-                        ? 'layer-button layer-button--active'
-                        : 'layer-button'
-                    }
-                    onClick={() => props.onSelectWork(item)}
-                  >
-                    {item.name}
-                  </button>
+            {work.map((item) => {
+              const summary = props.summaries[item.id]
+              const confirmed = confirmedSummary(summary)
+              return (
+                <div className="layer-work" key={item.id}>
+                  <div className="layer-work__row">
+                    <input
+                      aria-label={`Hiển thị ${item.name}`}
+                      type="checkbox"
+                      checked={!props.hidden.has(item.id)}
+                      onChange={() => props.onToggleWork(item.id)}
+                    />
+                    <button
+                      className={
+                        props.selectedWorkId === item.id
+                          ? 'layer-button layer-button--active'
+                          : 'layer-button'
+                      }
+                      onClick={() => props.onSelectWork(item)}
+                    >
+                      {item.name}
+                    </button>
+                  </div>
+                  <div className="layer-work__summary" aria-label={`Tổng ${item.name}`}>
+                    <span>Tổng đã xác nhận</span>
+                    <strong>{confirmed.total}</strong>
+                    <small>
+                      {confirmed.count}/{summary?.items.length ?? 0} bộ phận được cộng tổng
+                    </small>
+                  </div>
+                  <ul>
+                    {(summary?.items ?? []).map((measurement, index) => (
+                      <li key={measurement.id}>
+                        <button
+                          className={
+                            props.selectedId === measurement.id
+                              ? 'measurement-link measurement-link--active'
+                              : 'measurement-link'
+                          }
+                          onClick={() => props.onSelectMeasurement(measurement.id)}
+                        >
+                          <span>
+                            {measurementPartLabel(measurement, index)} · {measurement.name}
+                          </span>
+                          <small>
+                            {measurementBaseValue(measurement)} · {measurementQuantity(measurement)}
+                          </small>
+                          <small>
+                            v{measurement.version} ·{' '}
+                            {statusLabels[measurement.status] ?? measurement.status}
+                          </small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {props.summaries[item.id]?.nextCursor && (
+                    <button
+                      className="layer-load-more"
+                      onClick={() =>
+                        props.onLoadMore(item.id, props.summaries[item.id]!.nextCursor!)
+                      }
+                    >
+                      Nạp thêm
+                    </button>
+                  )}
                 </div>
-                <ul>
-                  {(props.summaries[item.id]?.items ?? []).map((measurement) => (
-                    <li key={measurement.id}>
-                      <button
-                        className={
-                          props.selectedId === measurement.id
-                            ? 'measurement-link measurement-link--active'
-                            : 'measurement-link'
-                        }
-                        onClick={() => props.onSelectMeasurement(measurement.id)}
-                      >
-                        <span>{measurement.name}</span>
-                        <small>
-                          v{measurement.version} ·{' '}
-                          {statusLabels[measurement.status] ?? measurement.status}
-                        </small>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                {props.summaries[item.id]?.nextCursor && (
-                  <button
-                    className="layer-load-more"
-                    onClick={() => props.onLoadMore(item.id, props.summaries[item.id]!.nextCursor!)}
-                  >
-                    Nạp thêm
-                  </button>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )
       })}

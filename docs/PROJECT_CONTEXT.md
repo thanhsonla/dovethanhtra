@@ -275,3 +275,28 @@
 - Không gian bản đồ không còn panel trống bên phải hoặc thanh trạng thái phủ đáy.
   Điểm/Tuyến/Vùng tự dùng công tác tương thích hoặc mở form tạo nhanh; chi tiết phép
   đo chuyển thành ngăn đóng/mở và tự mở khi cần lưu kết quả.
+- Khi vẽ tuyến hoặc vùng, bản đồ hiển thị tổng chiều dài/diện tích tạm tính trong
+  nhãn gọn, bán trong suốt ngay dưới thanh công cụ và cập nhật sau từng điểm. Kết quả
+  máy chủ sau khi lưu vẫn là số liệu chính thức.
+- Thanh Điểm/Tuyến/Vùng nay luôn mở bước chọn công tác có sẵn để bổ sung thêm
+  đoạn/vùng/bộ phận vào cùng một công tác. Cây lớp hiển thị tổng đã xác nhận của
+  công tác và số liệu riêng từng phép đo để người dùng thấy rõ phần nào được cộng.
+- Draft vẽ bản đồ hiển thị từng điểm chọn bằng vòng tròn, điểm mới nhất bằng chữ
+  thập đỏ và đổi nút hoàn tác thành **Lùi điểm/Khôi phục điểm** trong lúc đang vẽ.
+  Form lưu phép đo hiển thị nhãn tiếng Việt và mô tả cho các biến công thức phổ biến
+  như `side_factor`, `frequency` và `service_days`.
+- Hai nền **Kỹ thuật sáng/tối · kiểm thử** được ghi rõ là nền màu local để
+  phát triển/fallback, không có ảnh vệ tinh hoặc địa danh; UI hiển thị mô tả này
+  ngay dưới combobox và bỏ focus combobox sau khi đổi nền để tránh chặn thao tác map.
+- Luồng nhập nhanh Ưu tiên 1 dùng thẻ **Công tác đang đo** được ghi nhớ theo hồ sơ
+  trong phiên trình duyệt. Loại công tác quyết định trực tiếp thao tác điểm/tuyến/
+  vùng/route; không còn bước chọn lại kiểu hình học và công tác cho mỗi phép đo.
+- Phiếu lưu tự sinh tên bộ phận, kế thừa đầu vào công thức hợp lệ gần nhất và hỗ trợ
+  **Lưu và tiếp tục** hoặc **Lưu và xác nhận**. Mọi cảnh báo đều chặn xác nhận nhanh,
+  giữ phép đo ở trạng thái nháp để bảo toàn bước rà soát và audit máy chủ.
+- Luồng nhập nhanh Ưu tiên 2 thêm hàng đợi **Cần rà soát** theo công tác ngay trong
+  bản đồ. Nháp không có cảnh báo được xác nhận một chạm và tải lại tổng máy chủ;
+  phép đo có cảnh báo chỉ mở chi tiết, không tự xác nhận hay tự cộng.
+- Luồng nhập nhanh Ưu tiên 3 thêm **Tiến độ hồ sơ** và điều hướng **Đến việc cần
+  làm**. Tiến độ chỉ nêu số công tác có dữ liệu, bộ phận confirmed và mục cần xử lý;
+  không tự gán trạng thái hoàn thành vì danh mục không có chỉ tiêu số lượng bắt buộc.

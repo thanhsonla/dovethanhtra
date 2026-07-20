@@ -1,0 +1,84 @@
+.work-progress-panel {
+  display: grid;
+  gap: 6px;
+}
+
+.work-progress-panel__toggle,
+.work-progress-panel__next {
+  width: 100%;
+  border-radius: 10px;
+  font-weight: 750;
+}
+
+.work-progress-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid #b9d1c4;
+  background: rgb(242 249 245 / 92%);
+  color: #295b47;
+}
+
+.work-progress-panel__toggle strong,
+.work-progress-panel__toggle small {
+  font-size: 0.72rem;
+}
+
+.work-progress-panel__toggle strong {
+  margin-left: auto;
+}
+
+.work-progress-panel__toggle small {
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: #f0c65c;
+  color: #493600;
+}
+
+.work-progress-panel__next {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid #b9d1c4;
+  background: rgb(255 255 255 / 88%);
+  color: #285c48;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.work-progress-panel__list {
+  display: grid;
+  gap: 6px;
+  max-height: 245px;
+  margin: 0;
+  padding: 7px;
+  overflow: auto;
+  border: 1px solid #b9d1c4;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 8px 24px rgb(18 62 48 / 14%);
+  list-style: none;
+}
+
+.work-progress-panel__list li button {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f6faf7;
+  color: #294d40;
+  text-align: left;
+}
+
+.work-progress-panel__list li.is-selected button {
+  border-color: #4c9473;
+  background: #e6f3eb;
+}
+
+.work-progress-panel__list span,
+.work-progress-panel__list small {
+  color: #66776f;
+  font-size: 0.7rem;
+}
