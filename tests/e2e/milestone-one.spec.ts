@@ -71,7 +71,8 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .getByRole('button', { name: 'Mở bản đồ hiện trường' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('google-hybrid-direct')
+  await page.getByLabel('Bản đồ nền').selectOption('esri-imagery-labels')
+  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('esri-imagery-labels')
   await expect(page.getByLabel('Công cụ đo nhanh')).toBeVisible()
   await expect(page.getByLabel('Bảng điều khiển bản đồ')).toBeVisible()
   await expect(page.locator('.map-drawer')).toHaveCount(0)
@@ -92,15 +93,10 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await map.click({ position: { x: 330, y: 320 } })
   await map.click({ position: { x: 390, y: 320 } })
   await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeEnabled()
-  await page.waitForTimeout(500)
-  await map.click({ position: { x: 390, y: 320 } })
-  await expect(page.getByRole('button', { name: 'Xóa phần đang chọn' })).toBeEnabled()
-  await page.getByRole('button', { name: 'Xóa phần đang chọn' }).click()
+  await page.getByRole('button', { name: 'Lùi điểm' }).click()
   await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeDisabled()
-  await page.getByRole('button', { name: 'Lùi điểm' }).click()
-  await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeEnabled()
   await page.getByRole('button', { name: 'Khôi phục điểm' }).click()
-  await page.getByRole('button', { name: 'Lùi điểm' }).click()
+  await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeEnabled()
   await page.getByRole('button', { name: 'Kết thúc phép đo' }).click()
   await expect(page.getByText('Nháp chưa phân loại', { exact: true })).toBeVisible()
   const onlineCaptureResponse = page.waitForResponse(
@@ -167,7 +163,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
 
   await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await expect(page.getByRole('button', { name: classifiedWorkName, exact: true })).toBeVisible()
-  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Đóng bộ lọc và lớp dữ liệu' }).click()
   await expect(page.locator('.map-drawer')).toHaveCount(0)
   await expect(page.locator('.measurement-panel')).toHaveCount(0)
   await expect(page.locator('.map-status')).toHaveCount(0)
@@ -222,7 +218,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByLabel('Tiến độ hồ sơ')).toBeVisible()
   await page.getByRole('button', { name: 'Đóng dữ liệu hồ sơ' }).click()
   await expect.poll(() => mapModuleResponses.length).toBeGreaterThan(0)
-  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('google-hybrid-direct')
+  await page.getByLabel('Bản đồ nền').selectOption('google-hybrid-direct')
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Google Maps')
   await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Nền E2E được cấp phép')
@@ -420,11 +416,11 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .evaluate((element: HTMLButtonElement) => element.click())
   await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await expect(page.getByText(/v2 · Đã xác nhận/)).toBeVisible()
-  await page.getByLabel('Bản đồ nền').selectOption('technical-dark')
-  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-dark')
-  await expect(page.getByText(/Nền kỹ thuật chỉ là màu nền local/)).toBeVisible()
-  await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText(
-    'Nền kỹ thuật local · Không phải bản đồ địa chính',
+  await expect(
+    page.getByLabel('Bản đồ nền').locator('option[value="technical-light"]'),
+  ).toHaveCount(0)
+  await expect(page.getByLabel('Bản đồ nền').locator('option[value="technical-dark"]')).toHaveCount(
+    0,
   )
   await expect(page.getByRole('button', { name: new RegExp(reviewMeasurementName) })).toBeVisible()
 
@@ -438,8 +434,8 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
       .evaluate((element: HTMLButtonElement) => element.click())
     await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
     await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
-    await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
-    await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
+    await expect(page.getByRole('alert')).toContainText('đã chuyển sang Vệ tinh + địa danh')
+    await expect(page.getByLabel('Bản đồ nền')).toHaveValue('esri-imagery-labels')
     await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
     await expect(
       page.getByRole('button', { name: new RegExp(reviewMeasurementName) }),

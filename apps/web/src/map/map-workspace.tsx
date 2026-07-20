@@ -82,9 +82,6 @@ export function MapWorkspace(props: {
     setDraftReady,
     setMode,
   } = drawingWorkflow
-  const localFallbackId =
-    basemaps.descriptors().find((item) => basemaps.supportsOffline(item.id))?.id ??
-    basemaps.defaultId
   const selectedBasemap = basemaps.get(basemapId)
   const classificationDraft = classificationSelection.find(drawingWorkflow.captureSync.drafts)
   const allMeasurements = Object.values(summaries).flatMap((summary) => summary.items)
@@ -239,12 +236,14 @@ export function MapWorkspace(props: {
             onSelectDraftVertex={(index) => dispatchDrawing({ index, type: 'select' })}
             onBasemapFallback={() => {
               const fallbackId =
-                basemapId === 'google-hybrid-upright' ? 'google-hybrid-direct' : localFallbackId
+                basemapId === 'google-hybrid-upright'
+                  ? 'google-hybrid-direct'
+                  : 'esri-imagery-labels'
               setBasemapId(fallbackId)
               setError(
                 fallbackId === 'google-hybrid-direct'
                   ? 'Không tải được lớp nhãn thẳng; đã chuyển sang Google hybrid raster.'
-                  : 'Không tải được nền đã cấu hình; đã chuyển sang nền kỹ thuật local.',
+                  : 'Không tải được nền đã chọn; đã chuyển sang Vệ tinh + địa danh.',
               )
             }}
             onSelect={selectMeasurement}

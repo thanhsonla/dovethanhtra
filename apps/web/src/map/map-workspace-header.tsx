@@ -10,7 +10,9 @@ export function MapWorkspaceHeader(props: {
   onBasemapChange(id: string): void
 }) {
   const selected = props.basemaps.get(props.basemapId)
-  const technical = props.basemaps.supportsOffline(props.basemapId)
+  const selectable = props.basemaps
+    .descriptors()
+    .filter((item) => !props.basemaps.supportsOffline(item.id))
 
   return (
     <header className="map-header">
@@ -38,23 +40,14 @@ export function MapWorkspaceHeader(props: {
             event.currentTarget.blur()
           }}
         >
-          {props.basemaps.descriptors().map((item) => (
+          {selectable.map((item) => (
             <option key={item.id} value={item.id}>
               {item.label}
             </option>
           ))}
         </select>
-        <small
-          className={
-            technical
-              ? 'map-header__basemap-help map-header__basemap-help--visible'
-              : 'map-header__basemap-help'
-          }
-          id="basemap-help"
-        >
-          {technical
-            ? 'Nền kỹ thuật chỉ là màu nền local để kiểm thử/fallback, không có ảnh vệ tinh hoặc địa danh.'
-            : selected.label}
+        <small className="map-header__basemap-help" id="basemap-help">
+          {selected.label}
         </small>
       </label>
     </header>

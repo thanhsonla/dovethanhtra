@@ -49,10 +49,10 @@
   phiên bản quy tắc, đầu vào và đầu ra tính toán.
 - Hiệu chỉnh phép đo đã xác nhận tạo phiên bản mới; phiên bản cũ chuyển
   `superseded`. Cảnh báo ngoài ranh giới/chồng lặp không tự cắt hoặc trừ hình học.
-- Mốc 2 dùng hai nền kỹ thuật local qua `BasemapProvider`, không cần khóa API và
-  không gọi tile bên thứ ba.
+- Style kỹ thuật local của Mốc 2 chỉ còn phục vụ kiểm thử tự động, không hiển thị
+  trong combobox bản đồ nền cho người dùng.
 - Basemap được cấp phép có thể cấu hình bằng HTTPS style URL + attribution; lỗi tải
-  style chuyển về nền local. Không có nhà cung cấp thật hoặc token nào được commit.
+  style chuyển về Esri **Vệ tinh + địa danh**. Không có token nào được commit.
 - Import địa giới yêu cầu FeatureCollection EPSG:4326, nguồn/phiên bản/ngày hiệu lực,
   lưu SHA-256 byte nguồn và từ chối ghi đè cùng phiên bản nếu hash thay đổi.
 - Danh mục 75 xã, phường Sơn La dùng Nghị quyết 1681/NQ-UBTVQH15 và Quyết định
@@ -182,7 +182,7 @@
   không phát hiện secret và không có remote/push nào được cấu hình.
 - Bundle có cổng CI: main 204,33 kB raw/63,77 kB gzip; map lazy 1.050,43 kB raw/
   278,25 kB gzip; CSS 77,85 kB raw/12,36 kB gzip, đều trong ngân sách ADR-010.
-- Đã có provider nền cấu hình, attribution động và fallback local. Rủi ro điều khoản
+- Đã có provider nền cấu hình, attribution động và fallback Esri. Rủi ro điều khoản
   chỉ được đóng hoàn toàn sau khi người dùng chọn nguồn được cấp phép và giới hạn key.
 - Đã có pipeline import địa giới kèm SHA-256, kiểm tra PostGIS và chống ghi đè cùng
   phiên bản. Chưa có ranh giới chính thức; fixture/example vẫn không dùng ngoài test.
@@ -303,7 +303,7 @@
   công tác trước khi đo; nút bản đồ không còn bị ẩn gây nhầm là chưa có chức năng.
 - Đã bổ sung nền `Vệ tinh Mapbox` qua raster Satellite Streets trong
   `BasemapProvider`. Public token chỉ được đọc từ `.env.local`, attribution được giữ
-  trên bản đồ và nền kỹ thuật local vẫn là fallback khi token/tiles không khả dụng.
+  trên bản đồ; Esri **Vệ tinh + địa danh** là fallback hiển thị khi token/tiles không khả dụng.
 - Đã bổ sung adapter Google Map Tiles phía API cho nền vệ tinh kèm nhãn đường/địa
   danh tiếng Việt. Khóa Google không vào bundle PWA; tile và attribution viewport
   đi qua route same-origin có auth, `no-store` và tắt access log tọa độ. Nền chỉ
@@ -335,9 +335,9 @@
   thập đỏ và đổi nút hoàn tác thành **Lùi điểm/Khôi phục điểm** trong lúc đang vẽ.
   Form lưu phép đo hiển thị nhãn tiếng Việt và mô tả cho các biến công thức phổ biến
   như `side_factor`, `frequency` và `service_days`.
-- Hai nền **Kỹ thuật sáng/tối · kiểm thử** được ghi rõ là nền màu local để
-  phát triển/fallback, không có ảnh vệ tinh hoặc địa danh; UI hiển thị mô tả này
-  ngay dưới combobox và bỏ focus combobox sau khi đổi nền để tránh chặn thao tác map.
+- Theo yêu cầu ngày 20/07/2026, hai style **Kỹ thuật sáng/tối · kiểm thử** đã được
+  bỏ khỏi combobox người dùng. Style local chỉ còn phục vụ kiểm thử tự động; lỗi
+  nền hiển thị chuyển sang Esri **Vệ tinh + địa danh** thay vì nền màu trống.
 - Luồng nhập nhanh Ưu tiên 1 dùng thẻ **Công tác đang đo** được ghi nhớ theo hồ sơ
   trong phiên trình duyệt. Loại công tác quyết định trực tiếp thao tác điểm/tuyến/
   vùng/route; không còn bước chọn lại kiểu hình học và công tác cho mỗi phép đo.

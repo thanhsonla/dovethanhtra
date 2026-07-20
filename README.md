@@ -93,11 +93,9 @@ PostgreSQL/PostGIS và MinIO, chạy migration mới nhất và seed dữ liệu
 `3000` và web tại cổng `5180`. Đăng nhập local bằng tài khoản giả trong
 `.env.example`. Không dùng các giá trị này cho staging hoặc production.
 
-Mốc 2 bổ sung không gian MapLibre ba vùng, hai nền kỹ thuật local qua
-`BasemapProvider`, vẽ/sửa điểm–tuyến–vùng và phép đo chính thức bằng PostGIS. Các
-nền local không gọi tile ngoài và không thay thế bản đồ địa chính; ranh giới seed
-chỉ là fixture kỹ thuật. Hai lựa chọn **Kỹ thuật sáng/tối · kiểm thử** chỉ là nền
-màu local để phát triển/fallback, không có ảnh vệ tinh, đường hoặc địa danh.
+Mốc 2 bổ sung không gian MapLibre ba vùng, vẽ/sửa điểm–tuyến–vùng và phép đo chính
+thức bằng PostGIS. Style kỹ thuật local vẫn phục vụ kiểm thử tự động nhưng không
+hiển thị trong danh sách bản đồ nền của người dùng; ranh giới seed chỉ là fixture kỹ thuật.
 
 Mốc 3 bổ sung cơ sở xử lý, waypoint, route nhiều phương án, phiên bản route và công
 thức xe.km/tấn.km/cự ly gia quyền. Local mặc định dùng `local-deterministic`, chỉ là
@@ -121,15 +119,14 @@ thiết bị và restore staging thật vẫn là cổng thủ công trước pr
 
 Có thể cấu hình một style MapLibre được cấp phép qua `VITE_BASEMAP_STYLE_URL`,
 `VITE_BASEMAP_LABEL` và `VITE_BASEMAP_ATTRIBUTION`. Cả URL và attribution phải có;
-nếu tải lỗi, ứng dụng tự trở về nền kỹ thuật local. Không đặt secret thật trong
+nếu tải lỗi, ứng dụng tự trở về **Vệ tinh + địa danh** của Esri. Không đặt secret thật trong
 `.env.example`; public browser token vẫn phải được giới hạn domain/API/quota.
 
 Theo ngoại lệ được chủ dự án chấp thuận tại ADR-022, ứng dụng mặc định dùng
 **Google vệ tinh + địa danh** từ `mt1.google.com` với lớp hybrid `lyrs=y`, tiếng Việt.
 URL chỉ tồn tại trong `BasemapProvider`, không được component gọi trực tiếp và không
 được service worker cache. Mapbox `satellite-streets-v12`, Esri World Imagery kèm
-reference layers, Google Map Tiles API chính thức và nền kỹ thuật local vẫn được giữ
-làm các lựa chọn/fallback độc lập.
+reference layers và Google Map Tiles API chính thức vẫn được giữ làm các lựa chọn/fallback.
 
 Khi có `VITE_MAPBOX_PUBLIC_TOKEN`, lựa chọn mặc định đổi thành **Google vệ tinh ·
 chữ luôn thẳng**: adapter dùng ảnh Google `lyrs=s` ở dưới và các lớp nhãn vector của
@@ -162,7 +159,7 @@ GOOGLE_MAP_TILES_API_KEY=your-server-side-key
 
 Khởi động lại API sau khi thêm key. Backend tạo session vệ tinh kèm `layerRoadmap`
 với ngôn ngữ `vi-VN`, chuyển tiếp tile cho người dùng đã đăng nhập và lấy attribution
-theo viewport. Tile Google không được cache; nền kỹ thuật local vẫn là fallback.
+theo viewport. Tile Google không được cache; Esri là fallback hiển thị không cần key.
 
 Nhập ranh giới chính thức sau khi migration đã chạy:
 
