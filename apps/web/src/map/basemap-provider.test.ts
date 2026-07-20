@@ -42,7 +42,7 @@ describe('configured basemap provider', () => {
     const satellite = provider.get('mapbox-satellite')
     const upright = provider.get('google-hybrid-upright')
     expect(provider.defaultId).toBe('google-hybrid-upright')
-    expect(upright.label).toBe('Google vệ tinh · chữ luôn thẳng')
+    expect(upright.label).toBe('Google vệ tinh · nhãn dễ đọc')
     expect(upright.loadStyle).toBeTypeOf('function')
     expect(provider.supportsOffline('mapbox-satellite')).toBe(false)
     expect(satellite).toMatchObject({
@@ -72,11 +72,27 @@ describe('configured basemap provider', () => {
           'source-layer': 'place_label',
           layout: { 'text-field': ['get', 'name'] },
         },
+        {
+          id: 'road-label',
+          type: 'symbol' as const,
+          source: 'composite',
+          'source-layer': 'road',
+          layout: { 'symbol-placement': 'line', 'text-field': ['get', 'name'] },
+        },
+        {
+          id: 'road-label-center',
+          type: 'symbol' as const,
+          source: 'composite',
+          'source-layer': 'road',
+          layout: { 'symbol-placement': 'line-center', 'text-field': ['get', 'name'] },
+        },
       ],
     } as StyleSpecification
 
     const style = prepareUprightGoogleHybridStyle(sourceStyle, 'pk.public-test-token')
     const label = style.layers.find((layer) => layer.id === 'place-label')
+    const roadLabel = style.layers.find((layer) => layer.id === 'road-label')
+    const centeredRoadLabel = style.layers.find((layer) => layer.id === 'road-label-center')
 
     expect(JSON.stringify(sourceStyle.layers[0])).toContain('mapbox-satellite')
     expect(JSON.stringify(style.layers[0])).toContain('google-satellite-upright')
@@ -87,6 +103,16 @@ describe('configured basemap provider', () => {
       'text-keep-upright': true,
       'text-pitch-alignment': 'viewport',
       'text-rotation-alignment': 'viewport',
+    })
+    expect(roadLabel?.layout).toMatchObject({
+      'symbol-placement': 'line',
+      'text-keep-upright': true,
+      'text-pitch-alignment': 'map',
+      'text-rotation-alignment': 'map',
+    })
+    expect(centeredRoadLabel?.layout).toMatchObject({
+      'text-pitch-alignment': 'map',
+      'text-rotation-alignment': 'map',
     })
   })
 

@@ -185,6 +185,8 @@ export function prepareUprightGoogleHybridStyle(
       return { ...layer, source: 'google-satellite-upright' }
     }
     if (layer.type !== 'symbol') return layer
+    const placement = layer.layout?.['symbol-placement']
+    const followsLine = placement === 'line' || placement === 'line-center'
     return {
       ...layer,
       layout: {
@@ -192,8 +194,8 @@ export function prepareUprightGoogleHybridStyle(
         'icon-pitch-alignment': 'viewport',
         'icon-rotation-alignment': 'viewport',
         'text-keep-upright': true,
-        'text-pitch-alignment': 'viewport',
-        'text-rotation-alignment': 'viewport',
+        'text-pitch-alignment': followsLine ? 'map' : 'viewport',
+        'text-rotation-alignment': followsLine ? 'map' : 'viewport',
       },
     }
   })
@@ -215,7 +217,7 @@ function uprightGoogleHybridDescriptor(
       '<a href="https://www.mapbox.com/about/maps/">© Mapbox</a> · ' +
       '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a>',
     id: 'google-hybrid-upright',
-    label: 'Google vệ tinh · chữ luôn thẳng',
+    label: 'Google vệ tinh · nhãn dễ đọc',
     style: technicalStyle('#18211d'),
     loadStyle: async () => {
       const response = await fetcher(styleUrl)
