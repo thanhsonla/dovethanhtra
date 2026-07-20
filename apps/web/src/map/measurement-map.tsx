@@ -1,4 +1,4 @@
-import type { GeoJsonGeometry, Measurement } from '@dove/contracts'
+import type { AdminAreaBoundary, GeoJsonGeometry, Measurement } from '@dove/contracts'
 import maplibregl, {
   type AttributionControl,
   type GeoJSONSource,
@@ -26,6 +26,7 @@ interface MeasurementMapProps {
   basemapId: string
   basemapProvider: BasemapProvider
   boundary: GeoJsonGeometry
+  communeBoundaries: AdminAreaBoundary[]
   draftGeometry: GeoJsonGeometry | null
   draftPositions: Position[]
   draftSelectedIndex: number | null
@@ -70,6 +71,18 @@ function boundaryCollection(boundary: GeoJsonGeometry) {
   }
 }
 
+function communeBoundaryCollection(boundaries: AdminAreaBoundary[]) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: boundaries.map((item) => ({
+      type: 'Feature' as const,
+      id: item.id,
+      properties: { code: item.code, name: item.name, sourceVersion: item.sourceVersion },
+      geometry: item.boundary,
+    })),
+  }
+}
+
 function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
   if (map.getSource('case-boundary')) return
   ensureCrosshairImage(map)
@@ -80,6 +93,10 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
   map.addSource('measurements', {
     type: 'geojson',
     data: asMapGeoJson(featureCollection(props)),
+  })
+  map.addSource('commune-boundaries', {
+    type: 'geojson',
+    data: asMapGeoJson(communeBoundaryCollection(props.communeBoundaries)),
   })
   addDraftSources(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
   map.addLayer({
@@ -93,6 +110,17 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     source: 'case-boundary',
     type: 'line',
     paint: { 'line-color': '#287052', 'line-dasharray': [3, 2], 'line-width': 2 },
+  })
+  map.addLayer({
+    id: 'commune-boundary-lines',
+    source: 'commune-boundaries',
+    type: 'line',
+    paint: {
+      'line-color': '#0b8b69',
+      'line-dasharray': [3, 2],
+      'line-opacity': 0.9,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.8, 13, 1.5, 17, 2.2],
+    },
   })
   map.addLayer({
     id: 'measurement-areas',
@@ -136,6 +164,9 @@ function syncData(map: MapLibreMap, props: MeasurementMapProps) {
     asMapGeoJson(boundaryCollection(props.boundary)),
   )
   ;(map.getSource('measurements') as GeoJSONSource).setData(asMapGeoJson(featureCollection(props)))
+  ;(map.getSource('commune-boundaries') as GeoJSONSource).setData(
+    asMapGeoJson(communeBoundaryCollection(props.communeBoundaries)),
+  )
   syncDraftData(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
 }
 
@@ -323,6 +354,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
     if (map) syncData(map, props)
   }, [
     props.boundary,
+    props.communeBoundaries,
     props.draftGeometry,
     props.draftPositions,
     props.draftSelectedIndex,

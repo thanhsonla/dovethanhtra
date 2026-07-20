@@ -152,6 +152,10 @@
   có lý do, còn nháp giữ luồng chỉnh sửa trực tiếp.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
+- Không gian bản đồ tải lớp ranh giới riêng từ 75 xã/phường Sơn La đang hiệu lực
+  (67 xã, 8 phường), mỗi mã chỉ lấy phiên bản mới nhất. Lớp chỉ vẽ đường viền trong
+  suốt trên nền vệ tinh; 12 khu vực quản lý vẫn chỉ là tên phân loại, không có
+  geometry.
 
 ## Trạng thái triển khai Mốc 1
 

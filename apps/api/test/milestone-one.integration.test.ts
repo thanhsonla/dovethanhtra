@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import type {
   AdminArea,
+  AdminAreaBoundary,
   CaseListResponse,
   Measurement,
   MeasurementListResponse,
@@ -51,18 +52,23 @@ describe('Milestone 1 API workflow', () => {
     const cookie = `dove_session=${sessionCookie!.value}; dove_csrf=${csrfCookie!.value}`
     const authHeaders = { cookie, 'x-csrf-token': csrfCookie!.value }
 
-    const [areasResponse, groupsResponse, typesResponse] = await Promise.all([
+    const [areasResponse, boundariesResponse, groupsResponse, typesResponse] = await Promise.all([
       app.inject({ headers: { cookie }, method: 'GET', url: '/api/v1/admin-areas' }),
+      app.inject({ headers: { cookie }, method: 'GET', url: '/api/v1/admin-areas/boundaries' }),
       app.inject({ headers: { cookie }, method: 'GET', url: '/api/v1/catalog/service-groups' }),
       app.inject({ headers: { cookie }, method: 'GET', url: '/api/v1/catalog/work-types' }),
     ])
     expect(areasResponse.statusCode).toBe(200)
+    expect(boundariesResponse.statusCode).toBe(200)
     expect(groupsResponse.statusCode).toBe(200)
     expect(typesResponse.statusCode).toBe(200)
     const areas = areasResponse.json<AdminArea[]>()
+    const boundaries = boundariesResponse.json<AdminAreaBoundary[]>()
     const groups = groupsResponse.json<ServiceGroup[]>()
     const workTypes = typesResponse.json<WorkType[]>()
     expect(groups).toHaveLength(6)
+    expect(new Set(boundaries.map((item) => item.code)).size).toBe(boundaries.length)
+    expect(boundaries.every((item) => ['commune', 'ward'].includes(item.areaType))).toBe(true)
     expect(workTypes.length).toBeGreaterThanOrEqual(15)
 
     const suffix = randomUUID().slice(0, 8)

@@ -1,4 +1,5 @@
 import type {
+  AdminAreaBoundary,
   GeoJsonGeometry,
   MeasurementListResponse,
   ManagementZone,
@@ -18,6 +19,7 @@ export function useMapWorkspaceResources(
   const [basemaps, setBasemaps] = useState(() => createBasemapProvider())
   const [basemapId, setBasemapId] = useState(basemaps.defaultId)
   const [boundary, setBoundary] = useState<GeoJsonGeometry | null>(null)
+  const [communeBoundaries, setCommuneBoundaries] = useState<AdminAreaBoundary[]>([])
   const [facilities, setFacilities] = useState<TreatmentFacility[]>([])
   const [summaries, setSummaries] = useState<Record<string, MeasurementListResponse>>({})
   const [zones, setZones] = useState<ManagementZone[]>([])
@@ -39,11 +41,13 @@ export function useMapWorkspaceResources(
       api.getCaseMapContext(caseId),
       api.listTreatmentFacilities(),
       api.listManagementZones(),
+      api.listAdminAreaBoundaries(),
     ])
-      .then(([context, treatmentFacilities, managementZones]) => {
+      .then(([context, treatmentFacilities, managementZones, currentCommuneBoundaries]) => {
         setBoundary(context.boundary)
         setFacilities(treatmentFacilities)
         setZones(managementZones)
+        setCommuneBoundaries(currentCommuneBoundaries)
       })
       .catch((reason: unknown) =>
         onError(reason instanceof Error ? reason.message : 'Không tải được bản đồ.'),
@@ -60,6 +64,7 @@ export function useMapWorkspaceResources(
     basemapId,
     basemaps,
     boundary,
+    communeBoundaries,
     facilities,
     refreshWork,
     setBasemapId,

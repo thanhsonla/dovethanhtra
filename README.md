@@ -204,6 +204,10 @@ ghi từng phần giao đã cắt và dùng diện tích mục tiêu để chọ
 từ `config/management-zones.example.json`. Danh mục này không có geometry, không
 tạo lớp ranh giới riêng và không được gộp/suy diễn từ 75 xã, phường.
 
+Bản đồ hiện trường hiển thị lớp đường ranh giới của đúng 75 xã/phường đang hiệu lực
+từ PostGIS (67 xã, 8 phường). API lấy phiên bản mới nhất theo mã đơn vị và giữ lớp
+ranh giới tách biệt với 12 khu vực quản lý.
+
 API Task 4 cho phép lưu geometry trước tại `POST /api/v1/cases/{caseId}/capture-drafts`
 với `X-Device-Id` và `Idempotency-Key`, sau đó phân loại bằng
 `POST /api/v1/capture-drafts/{draftId}/classify` kèm `If-Match`. Nháp chưa phân loại

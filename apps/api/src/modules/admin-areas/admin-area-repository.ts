@@ -1,4 +1,4 @@
-import type { AdminArea } from '@dove/contracts'
+import type { AdminArea, AdminAreaBoundary } from '@dove/contracts'
 import { sql } from 'kysely'
 
 import type { AppDatabase } from '../../platform/database.js'
@@ -33,5 +33,19 @@ export class AdminAreaRepository {
       validFrom: isoDate(row.validFrom),
       validTo: row.validTo ? isoDate(row.validTo) : null,
     }))
+  }
+
+  async listCurrentCommuneBoundaries(): Promise<AdminAreaBoundary[]> {
+    const result = await sql<AdminAreaBoundary>`
+      SELECT DISTINCT ON (code)
+        id, code, name, area_type AS "areaType", source_version AS "sourceVersion",
+        ST_AsGeoJSON(boundary)::json AS boundary
+      FROM admin_area
+      WHERE area_type IN ('commune','ward')
+        AND valid_from <= CURRENT_DATE
+        AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)
+      ORDER BY code, valid_from DESC, source_version DESC
+    `.execute(this.database)
+    return result.rows
   }
 }

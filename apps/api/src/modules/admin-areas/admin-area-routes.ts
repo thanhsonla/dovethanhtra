@@ -1,4 +1,4 @@
-import { AdminAreaSchema } from '@dove/contracts'
+import { AdminAreaBoundarySchema, AdminAreaSchema } from '@dove/contracts'
 import { Type } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
@@ -11,6 +11,14 @@ interface AdminAreaRouteOptions {
 }
 
 export const adminAreaRoutes: FastifyPluginAsync<AdminAreaRouteOptions> = async (app, options) => {
+  app.get(
+    '/boundaries',
+    {
+      preHandler: options.guards.requireUser,
+      schema: { response: { 200: Type.Array(AdminAreaBoundarySchema) }, tags: ['admin-areas'] },
+    },
+    async () => options.repository.listCurrentCommuneBoundaries(),
+  )
   app.get(
     '/',
     {

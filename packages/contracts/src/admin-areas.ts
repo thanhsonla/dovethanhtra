@@ -1,6 +1,7 @@
 import { Type, type Static } from '@sinclair/typebox'
 
 import { DateSchema, UuidSchema } from './common.js'
+import { GeoJsonGeometrySchema } from './measurements.js'
 
 export const AdminAreaSchema = Type.Object(
   {
@@ -18,3 +19,17 @@ export const AdminAreaSchema = Type.Object(
 )
 
 export type AdminArea = Static<typeof AdminAreaSchema>
+
+export const AdminAreaBoundarySchema = Type.Object(
+  {
+    id: UuidSchema,
+    code: Type.String(),
+    name: Type.String(),
+    areaType: Type.String(),
+    sourceVersion: Type.String(),
+    boundary: GeoJsonGeometrySchema,
+  },
+  { additionalProperties: false, $id: 'AdminAreaBoundary' },
+)
+
+export type AdminAreaBoundary = Static<typeof AdminAreaBoundarySchema>

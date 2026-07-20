@@ -1,5 +1,6 @@
 import type {
   AdminArea,
+  AdminAreaBoundary,
   CaseComparison,
   CaseMapContext,
   CaseListResponse,
@@ -227,6 +228,7 @@ export const api = {
     request<void>(`/measurements/${measurementId}`, { method: 'DELETE' }),
   getCaseMapContext: (caseId: string) => request<CaseMapContext>(`/cases/${caseId}/map-context`),
   listAdminAreas: () => request<AdminArea[]>('/admin-areas'),
+  listAdminAreaBoundaries: () => request<AdminAreaBoundary[]>('/admin-areas/boundaries'),
   listCases: (cursor?: string) =>
     request<CaseListResponse>(`/cases${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
   listDeletedCases: () => request<InspectionCase[]>('/cases/deleted'),

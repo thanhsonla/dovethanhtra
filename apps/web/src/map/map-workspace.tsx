@@ -45,8 +45,17 @@ export function MapWorkspace(props: {
     [props.workItems, props.workTypes],
   )
   const [error, setError] = useState('')
-  const { basemapId, basemaps, boundary, facilities, refreshWork, setBasemapId, summaries, zones } =
-    useMapWorkspaceResources(props.inspectionCase.id, measurable, setError)
+  const {
+    basemapId,
+    basemaps,
+    boundary,
+    communeBoundaries,
+    facilities,
+    refreshWork,
+    setBasemapId,
+    summaries,
+    zones,
+  } = useMapWorkspaceResources(props.inspectionCase.id, measurable, setError)
   const [selectedWorkId, setSelectedWorkId] = useState(() =>
     activeWorkId(props.inspectionCase.id, measurable),
   )
@@ -243,6 +252,7 @@ export function MapWorkspace(props: {
             basemapId={basemapId}
             basemapProvider={basemaps}
             boundary={boundary}
+            communeBoundaries={communeBoundaries}
             draftGeometry={draftGeometry}
             draftPositions={draftPositions}
             draftSelectedIndex={drawing.selectedIndex}

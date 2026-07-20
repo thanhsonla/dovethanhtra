@@ -4,7 +4,12 @@ export {
   type LivenessResponse,
   type ReadinessResponse,
 } from './health.js'
-export { AdminAreaSchema, type AdminArea } from './admin-areas.js'
+export {
+  AdminAreaBoundarySchema,
+  AdminAreaSchema,
+  type AdminArea,
+  type AdminAreaBoundary,
+} from './admin-areas.js'
 export {
   BasemapCapabilitiesSchema,
   BasemapViewportAttributionSchema,
