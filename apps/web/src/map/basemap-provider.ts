@@ -61,13 +61,13 @@ export class LocalTechnicalBasemapProvider implements BasemapProvider {
     {
       attribution: 'Nền kỹ thuật local · Không phải bản đồ địa chính',
       id: 'technical-light',
-      label: 'Kỹ thuật sáng',
+      label: 'Kỹ thuật sáng · kiểm thử',
       style: technicalStyle('#edf2ee'),
     },
     {
       attribution: 'Nền kỹ thuật local · Không phải bản đồ địa chính',
       id: 'technical-dark',
-      label: 'Kỹ thuật tối',
+      label: 'Kỹ thuật tối · kiểm thử',
       style: technicalStyle('#1d2924'),
     },
   ]

@@ -93,7 +93,8 @@ PostgreSQL/PostGIS và MinIO, chạy migration đến Mốc 5 (Mốc 6 không đ
 Mốc 2 bổ sung không gian MapLibre ba vùng, hai nền kỹ thuật local qua
 `BasemapProvider`, vẽ/sửa điểm–tuyến–vùng và phép đo chính thức bằng PostGIS. Các
 nền local không gọi tile ngoài và không thay thế bản đồ địa chính; ranh giới seed
-chỉ là fixture kỹ thuật.
+chỉ là fixture kỹ thuật. Hai lựa chọn **Kỹ thuật sáng/tối · kiểm thử** chỉ là nền
+màu local để phát triển/fallback, không có ảnh vệ tinh, đường hoặc địa danh.
 
 Mốc 3 bổ sung cơ sở xử lý, waypoint, route nhiều phương án, phiên bản route và công
 thức xe.km/tấn.km/cự ly gia quyền. Local mặc định dùng `local-deterministic`, chỉ là
@@ -133,11 +134,15 @@ Mapbox Satellite Streets ở trên. Nhãn được đặt `text-rotation-alignme
 và `text-pitch-alignment: viewport`, vì vậy vẫn nằm ngang theo màn hình khi xoay hoặc
 nghiêng bản đồ. Nếu style nhãn không tải được, ứng dụng trở về Google hybrid raster.
 
-Thanh Điểm/Tuyến/Vùng trên bản đồ có thể tự chọn công tác tương thích hoặc tạo nhanh
-công tác khi hồ sơ chưa có. Bảng chi tiết là ngăn đóng/mở và chỉ xuất hiện khi người
-dùng yêu cầu hoặc cần lưu kết quả; thanh trạng thái dưới bản đồ đã chuyển thành thông
-báo dành cho trình đọc màn hình để không che ảnh nền. Attribution nhà cung cấp vẫn
-được giữ trong nút thông tin thu gọn.
+Thẻ **Công tác đang đo** trên bản đồ ghi nhớ công tác trong phiên làm việc và tự hiện
+đúng hành động Ghi điểm/Thêm đoạn/Thêm vùng/Mở lộ trình theo danh mục, không yêu cầu
+chọn lại kiểu hình học. Có thể đổi hoặc tạo nhanh công tác ngay trên thẻ. Khi kết
+thúc hình học, phiếu lưu tự sinh tên bộ phận, kế thừa các đầu vào công thức hợp lệ
+gần nhất và cho chọn **Lưu và tiếp tục** hoặc **Lưu và xác nhận**. Phép đo có bất kỳ
+cảnh báo nào chỉ được lưu nháp để rà soát; kết quả chính thức vẫn do máy chủ tính.
+Bảng chi tiết chỉ xuất hiện khi cần, thanh trạng thái không che ảnh nền và attribution
+vẫn được giữ. Tổng tạm, điểm/chữ thập đỏ, lùi/khôi phục điểm và tổng từng công tác
+tiếp tục hiển thị trong không gian bản đồ.
 
 Để bật lớp **Vệ tinh Mapbox**, đặt public token giới hạn domain/API/quota trong tệp
 `.env.local` (tệp này bị Git bỏ qua): `VITE_MAPBOX_PUBLIC_TOKEN=pk...`. Ứng dụng dùng
