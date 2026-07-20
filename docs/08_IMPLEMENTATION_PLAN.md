@@ -274,9 +274,11 @@ giao diện.
   thực tế vào dataset. Draft tiếp tục chỉnh sửa trực tiếp, confirmed tạo phiên bản
   supersede kèm lý do; giao diện có nút tải GeoJSON và lịch sử thao tác.
 
-### Task 10 — Tương thích, nghiệm thu và rollout
+### Task 10 — Tương thích, nghiệm thu và rollout — đang nghiệm thu
 
 - Regression GPS/route/ảnh/import/comparison/export, migration drill, backup/restore,
   hướng dẫn sử dụng và feature flag/rollback UI nếu cần.
 - Chỉ đóng khi lint, typecheck, unit, integration, performance, Chromium/WebKit và
   field test luồng đo–phân loại–lọc–tải–sửa đều có bằng chứng đạt.
+- Checklist và bằng chứng local được ghi tại `docs/14_RELEASE_CHECKLIST.md`; field
+  test, staging restore và một số hồi quy thiết bị thực vẫn là điều kiện chặn.

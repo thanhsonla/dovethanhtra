@@ -59,6 +59,7 @@ export function MapFeatureFilterPanel(props: {
         <label>
           Khu vực
           <select
+            id="map-filter-zone"
             value={props.filters.managementZoneId}
             onChange={(event) => set('managementZoneId', event.target.value)}
           >
@@ -73,6 +74,7 @@ export function MapFeatureFilterPanel(props: {
         <label>
           Lĩnh vực
           <select
+            id="map-filter-group"
             value={props.filters.serviceGroupId}
             onChange={(event) => set('serviceGroupId', event.target.value)}
           >
@@ -87,6 +89,7 @@ export function MapFeatureFilterPanel(props: {
         <label>
           Công tác
           <select
+            id="map-filter-work"
             value={props.filters.workItemId}
             onChange={(event) => set('workItemId', event.target.value)}
           >
@@ -101,6 +104,7 @@ export function MapFeatureFilterPanel(props: {
         <label>
           Mục con
           <select
+            id="map-filter-component"
             disabled={!props.filters.workItemId}
             value={props.filters.componentId}
             onChange={(event) => set('componentId', event.target.value)}
@@ -116,6 +120,7 @@ export function MapFeatureFilterPanel(props: {
         <label>
           Công cụ
           <select
+            id="map-filter-kind"
             value={props.filters.geometryKind}
             onChange={(event) => set('geometryKind', event.target.value)}
           >
@@ -129,6 +134,7 @@ export function MapFeatureFilterPanel(props: {
         <label>
           Trạng thái
           <select
+            id="map-filter-status"
             value={props.filters.status}
             onChange={(event) => set('status', event.target.value)}
           >
