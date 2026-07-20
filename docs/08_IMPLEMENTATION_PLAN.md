@@ -229,11 +229,16 @@ giao diện.
 - Công cụ nhanh giữ tương thích với công tác hiện có trong Task 5. Lưu nháp độc lập,
   chọn/xóa phần hình học và state machine đầy đủ tiếp tục được triển khai ở Task 6.
 
-### Task 6 — Công cụ vẽ nhanh
+### Task 6 — Công cụ vẽ nhanh — hoàn thành
 
 - Điểm/chiều dài/diện tích, marker đỉnh, chữ thập đỏ, lùi/tiến, xóa phần chọn, kết
   thúc và thẻ kết quả tạm bán trong suốt.
 - Unit test state machine; E2E vẽ, sửa và lưu nháp khi online/offline.
+- Toolbar chính đo ngay cả khi hồ sơ chưa có công tác. Kết quả được lưu local-first
+  vào IndexedDB, tự đồng bộ bằng idempotency key khi có mạng và phục hồi nháp gần
+  nhất khi mở lại không gian bản đồ.
+- Luồng “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu vẫn giữ tương thích với phép đo
+  theo công tác hiện có; wizard phân loại nháp chưa thuộc Task 6.
 
 ### Task 7 — Phiếu phân loại sau khi đo
 

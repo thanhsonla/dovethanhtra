@@ -74,6 +74,11 @@ Mỗi mutation có khóa duy nhất do client tạo. Máy chủ lưu payload has
 Tạo `capture_draft` và phân loại dùng hai cặp khóa/hash riêng. API không trả hash,
 không ghi raw geometry/tọa độ vào audit và ràng buộc unique theo actor + device.
 
+Client Task 6 lưu capture draft trong object store `captureDrafts` của IndexedDB,
+ghi local trước khi gọi API và chỉ tự thử lại các mục `queued` khi nhận sự kiện
+online. Mỗi nháp giữ nguyên `localId`, device ID và idempotency key qua mọi lần thử;
+không dùng service worker để cache tile nền ngoài.
+
 ### Xung đột
 
 - Bản nháp chưa xác nhận: có thể merge trường không xung đột.

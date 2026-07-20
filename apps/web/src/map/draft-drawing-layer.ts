@@ -13,12 +13,12 @@ export function draftCollection(geometry: GeoJsonGeometry | null) {
   }
 }
 
-function draftVertexCollection(points: Position[]) {
+function draftVertexCollection(points: Position[], selectedIndex: number | null) {
   return {
     type: 'FeatureCollection' as const,
     features: points.map((position, index) => ({
       type: 'Feature' as const,
-      properties: { latest: index === points.length - 1 },
+      properties: { index, latest: index === points.length - 1, selected: index === selectedIndex },
       geometry: { type: 'Point' as const, coordinates: position },
     })),
   }
@@ -57,6 +57,7 @@ export function addDraftSources(
   map: MapLibreMap,
   geometry: GeoJsonGeometry | null,
   points: Position[],
+  selectedIndex: number | null,
 ) {
   map.addSource('measurement-draft', {
     type: 'geojson',
@@ -64,7 +65,7 @@ export function addDraftSources(
   })
   map.addSource('measurement-draft-vertices', {
     type: 'geojson',
-    data: asMapGeoJson(draftVertexCollection(points)),
+    data: asMapGeoJson(draftVertexCollection(points, selectedIndex)),
   })
 }
 
@@ -96,12 +97,22 @@ export function addDraftLayers(map: MapLibreMap) {
     paint: { 'circle-color': '#e07b22', 'circle-radius': 8 },
   })
   map.addLayer({
-    id: 'draft-vertices',
+    id: 'draft-vertex-hit',
     source: 'measurement-draft-vertices',
     type: 'circle',
     paint: {
       'circle-color': '#ffffff',
-      'circle-radius': 9,
+      'circle-opacity': 0.01,
+      'circle-radius': 22,
+    },
+  })
+  map.addLayer({
+    id: 'draft-vertices',
+    source: 'measurement-draft-vertices',
+    type: 'circle',
+    paint: {
+      'circle-color': ['case', ['boolean', ['get', 'selected'], false], '#d71920', '#ffffff'],
+      'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 11, 9],
       'circle-stroke-color': '#d71920',
       'circle-stroke-width': 3,
     },
@@ -124,11 +135,12 @@ export function syncDraftData(
   map: MapLibreMap,
   geometry: GeoJsonGeometry | null,
   points: Position[],
+  selectedIndex: number | null,
 ) {
   ;(map.getSource('measurement-draft') as GeoJSONSource).setData(
     asMapGeoJson(draftCollection(geometry)),
   )
   ;(map.getSource('measurement-draft-vertices') as GeoJSONSource).setData(
-    asMapGeoJson(draftVertexCollection(points)),
+    asMapGeoJson(draftVertexCollection(points, selectedIndex)),
   )
 }

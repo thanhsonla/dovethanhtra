@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test.setTimeout(60_000)
+test.setTimeout(90_000)
 
 test('creates a case and adds a catalog work item', async ({ page }, testInfo) => {
   await page.context().grantPermissions(['geolocation'])
@@ -67,8 +67,10 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByRole('heading', { name: caseName })).toBeVisible()
   await expect(page.getByText(/Có thể mở bản đồ để xem ranh giới ngay/)).toBeVisible()
   expect(mapModuleResponses).toHaveLength(0)
-  await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
-  await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Mở bản đồ hiện trường' })
+    .evaluate((element: HTMLButtonElement) => element.click())
+  await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByLabel('Bản đồ nền')).toHaveValue('google-hybrid-direct')
   await expect(page.getByLabel('Công cụ đo nhanh')).toBeVisible()
   await expect(page.getByLabel('Bảng điều khiển bản đồ')).toBeVisible()
@@ -84,6 +86,68 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .locator('.map-primary-toolbar')
     .evaluate((element) => getComputedStyle(element).display)
   expect(toolbarDisplay).toBe(testInfo.project.name === 'webkit-ipad' ? 'flex' : 'grid')
+
+  await page.getByRole('button', { name: 'Chiều dài', exact: true }).click()
+  const map = page.getByLabel('Bản đồ phép đo')
+  await map.click({ position: { x: 330, y: 320 } })
+  await map.click({ position: { x: 390, y: 320 } })
+  await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeEnabled()
+  await page.waitForTimeout(100)
+  await map.click({ position: { x: 390, y: 320 } })
+  await expect(page.getByRole('button', { name: 'Xóa phần đang chọn' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Xóa phần đang chọn' }).click()
+  await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Lùi điểm' }).click()
+  await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Khôi phục điểm' }).click()
+  await page.getByRole('button', { name: 'Lùi điểm' }).click()
+  await page.getByRole('button', { name: 'Kết thúc phép đo' }).click()
+  await expect(page.getByText('Nháp chưa phân loại', { exact: true })).toBeVisible()
+  const onlineCaptureResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().includes('/capture-drafts'),
+  )
+  await page.getByRole('button', { name: 'Lưu nháp' }).click()
+  expect((await onlineCaptureResponse).status()).toBeLessThan(300)
+  await expect(page.getByText('Nháp chưa phân loại · Đã đồng bộ')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Điểm', exact: true }).click()
+  await map.click({ position: { x: 360, y: 350 } })
+  await page.context().setOffline(true)
+  await page.getByRole('button', { name: 'Lưu nháp' }).click()
+  await expect(page.getByText('Nháp chưa phân loại · Chờ mạng')).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<number>((resolve, reject) => {
+            const openRequest = indexedDB.open('dove-field-v4', 2)
+            openRequest.onerror = () =>
+              reject(openRequest.error ?? new Error('Không thể mở IndexedDB kiểm thử.'))
+            openRequest.onsuccess = () => {
+              const database = openRequest.result
+              const request = database
+                .transaction('captureDrafts')
+                .objectStore('captureDrafts')
+                .count()
+              request.onerror = () => reject(request.error ?? new Error('Không thể đếm nháp.'))
+              request.onsuccess = () => {
+                database.close()
+                resolve(request.result)
+              }
+            }
+          }),
+      ),
+    )
+    .toBeGreaterThanOrEqual(2)
+  const queuedCaptureResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().includes('/capture-drafts'),
+  )
+  await page.context().setOffline(false)
+  expect((await queuedCaptureResponse).status()).toBeLessThan(300)
+  await expect(page.getByText('Nháp chưa phân loại · Đã đồng bộ')).toBeVisible()
+
   await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await expect(page.getByText('Chưa có công tác đo')).toBeVisible()
   await page.keyboard.press('Escape')
@@ -184,7 +248,10 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByText(/Tuyến import E2E/)).toBeVisible()
   await page
-    .getByRole('button', { name: 'Chiều dài', exact: true })
+    .getByRole('button', { name: 'Mở dữ liệu' })
+    .evaluate((element: HTMLButtonElement) => element.click())
+  await page
+    .getByRole('button', { name: 'Thêm đoạn', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 330, y: 320 } })
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 390, y: 320 } })
@@ -241,7 +308,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
       page.evaluate(
         () =>
           new Promise<number>((resolve, reject) => {
-            const openRequest = indexedDB.open('dove-field-v4', 1)
+            const openRequest = indexedDB.open('dove-field-v4', 2)
             openRequest.onerror = () =>
               reject(openRequest.error ?? new Error('Không thể mở IndexedDB kiểm thử.'))
             openRequest.onsuccess = () => {

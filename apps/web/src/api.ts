@@ -36,6 +36,9 @@ import type {
   GeoJsonImportCommitResponse,
   ExportJob,
   BasemapCapabilities,
+  CaptureDraft,
+  CaptureDraftMutationResponse,
+  CreateCaptureDraftRequest,
 } from '@dove/contracts'
 
 export class ApiClientError extends Error {
@@ -101,6 +104,19 @@ async function downloadFile(path: string) {
 
 export const api = {
   basemapCapabilities: () => request<BasemapCapabilities>('/basemaps'),
+  createCaptureDraft: (
+    caseId: string,
+    input: CreateCaptureDraftRequest,
+    idempotencyKey: string,
+    deviceId: string,
+  ) =>
+    request<CaptureDraftMutationResponse>(`/cases/${caseId}/capture-drafts`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+      headers: { 'idempotency-key': idempotencyKey, 'x-device-id': deviceId },
+    }),
+  listCaptureDrafts: (caseId: string) =>
+    request<CaptureDraft[]>(`/cases/${caseId}/capture-drafts?limit=200`),
   createCase: (input: CreateCaseRequest) =>
     request<InspectionCase>('/cases', { method: 'POST', body: JSON.stringify(input) }),
   createWorkItem: (caseId: string, input: CreateWorkItemRequest) =>

@@ -9,7 +9,7 @@ import type {
 import { useMemo, useState } from 'react'
 
 import { api } from '../api.js'
-import { DrawingToolbar } from './drawing-toolbar.js'
+import { DrawingToolbar, type MapPanelName } from './drawing-toolbar.js'
 import {
   createHistory,
   pushHistory,
@@ -17,16 +17,17 @@ import {
   undoHistory,
   type HistoryState,
 } from './geometry-history.js'
-import { geometryFromPositions, temporaryValue } from './map-geometry.js'
+import { geometryFromPositions, positionsFromGeometry, temporaryValue } from './map-geometry.js'
 import { MapWorkspaceHeader } from './map-workspace-header.js'
-import { mapModeLabel, quickToolDecision } from './map-quick-tool.js'
+import { mapModeLabel } from './map-quick-tool.js'
+import { MapCaptureStatus } from './map-capture-status.js'
 import { inheritedCalculationInputs, nextMeasurementName } from './measurement-entry-defaults.js'
-import { MeasurementMap, type MapMode, type Position } from './measurement-map.js'
+import { MeasurementMap } from './measurement-map.js'
 import { activeWorkId, measurementKindForWork, rememberActiveWork } from './map-workspace-state.js'
 import { MapWorkspaceDrawers } from './map-workspace-drawers.js'
+import { useMapDrawingWorkflow } from './use-map-drawing-workflow.js'
 import { useMapWorkspaceResources } from './use-map-workspace-resources.js'
 
-const emptyPositions = createHistory<Position[]>([])
 export function MapWorkspace(props: {
   groups: ServiceGroup[]
   inspectionCase: InspectionCase
@@ -55,12 +56,26 @@ export function MapWorkspace(props: {
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
-  const [mode, setMode] = useState<MapMode>('view')
-  const [positions, setPositions] = useState<HistoryState<Position[]>>(emptyPositions)
-  const [draftReady, setDraftReady] = useState(false)
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [routePreview, setRoutePreview] = useState<GeoJsonGeometry | null>(null)
-  const [activePanel, setActivePanel] = useState<'data' | 'details' | 'filters' | null>(null)
+  const [activePanel, setActivePanel] = useState<MapPanelName | null>(null)
+  const drawingWorkflow = useMapDrawingWorkflow({
+    caseId: props.inspectionCase.id,
+    locked: props.inspectionCase.status === 'locked',
+    onError: setError,
+    onPanel: setActivePanel,
+  })
+  const {
+    capturePending,
+    captureSync,
+    clearCapture,
+    dispatchDrawing,
+    draftReady,
+    drawing,
+    mode,
+    setDraftReady,
+    setMode,
+  } = drawingWorkflow
   const localFallbackId =
     basemaps.descriptors().find((item) => basemaps.supportsOffline(item.id))?.id ??
     basemaps.defaultId
@@ -75,10 +90,27 @@ export function MapWorkspace(props: {
     selectedKind === 'point' || selectedKind === 'line' || selectedKind === 'area'
       ? selectedKind
       : null
+  const restoredCapture = captureSync.latest
+    ? {
+        geometry: captureSync.latest.input.geometry,
+        kind: captureSync.latest.input.geometryKind,
+      }
+    : null
+  const visibleCapture = capturePending ?? restoredCapture
+  const drawingKind = mode === 'point' || mode === 'line' || mode === 'area' ? mode : null
+  const measurementDraftGeometry =
+    draftReady && drawableKind ? geometryFromPositions(drawableKind, drawing.history.present) : null
   const draftGeometry =
     routePreview ??
     editHistory?.present ??
-    (drawableKind ? geometryFromPositions(drawableKind, positions.present) : null)
+    (drawingKind ? geometryFromPositions(drawingKind, drawing.history.present) : null) ??
+    measurementDraftGeometry ??
+    visibleCapture?.geometry ??
+    null
+  const draftPositions =
+    drawingKind || measurementDraftGeometry
+      ? drawing.history.present
+      : positionsFromGeometry(visibleCapture?.geometry ?? null)
   const editMeasurement =
     selected && editHistory ? { ...selected, rawGeometry: editHistory.present } : null
   const defaultMeasurementName = drawableKind
@@ -92,39 +124,22 @@ export function MapWorkspace(props: {
   const startDrawing = (nextMode: DrawableMeasurementGeometryKind, workItemId: string) => {
     setSelectedWorkId(workItemId)
     rememberActiveWork(props.inspectionCase.id, workItemId)
-    setMode(nextMode)
-    setPositions(createHistory([]))
+    drawingWorkflow.start(nextMode, 'measurement')
     setEditHistory(null)
-    setDraftReady(false)
     setRoutePreview(null)
     setSelectedId(null)
-    setActivePanel(null)
   }
 
-  const finishDrawing = () => {
-    if (!selectedKind || !geometryFromPositions(selectedKind, positions.present)) {
-      setError('Cần ít nhất 2 điểm cho tuyến hoặc 3 điểm cho vùng.')
-      return
-    }
-    setMode('view')
-    setDraftReady(true)
-    setActivePanel('details')
-  }
-
-  const addPosition = (position: Position) => {
-    setPositions((current) => pushHistory(current, [...current.present, position]))
-    if (mode === 'point') {
-      setMode('view')
-      setDraftReady(true)
-      setActivePanel('details')
-    }
+  const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind) => {
+    if (!drawingWorkflow.start(nextMode, 'capture')) return
+    setEditHistory(null)
+    setRoutePreview(null)
+    setSelectedId(null)
   }
 
   const cancelDraft = () => {
-    setMode('view')
-    setPositions(createHistory([]))
+    drawingWorkflow.cancel()
     setEditHistory(null)
-    setDraftReady(false)
   }
 
   const selectWork = (item: WorkItem) => {
@@ -139,7 +154,7 @@ export function MapWorkspace(props: {
     if (editHistory) {
       setEditHistory(direction === 'undo' ? undoHistory(editHistory) : redoHistory(editHistory))
     } else {
-      setPositions(direction === 'undo' ? undoHistory(positions) : redoHistory(positions))
+      dispatchDrawing({ type: direction })
     }
   }
 
@@ -151,24 +166,9 @@ export function MapWorkspace(props: {
     rememberActiveWork(props.inspectionCase.id, measurement.workItemId)
     setMode('view')
     setEditHistory(null)
+    clearCapture()
     setDraftReady(false)
     setActivePanel('details')
-  }
-
-  const startQuickTool = (kind: DrawableMeasurementGeometryKind) => {
-    const decision = quickToolDecision(
-      kind,
-      props.inspectionCase.status === 'locked',
-      selectedWork,
-      measurable,
-      props.workTypes,
-    )
-    if (!decision.target) {
-      if (decision.openData) setActivePanel('data')
-      setError(decision.error ?? 'Không thể bắt đầu phép đo.')
-      return
-    }
-    startDrawing(kind, decision.target.id)
   }
 
   if (!boundary) {
@@ -197,38 +197,40 @@ export function MapWorkspace(props: {
         <section className="map-stage">
           <DrawingToolbar
             activePanel={activePanel}
-            canDelete={false}
+            canDelete={drawing.selectedIndex !== null}
             canFinish={
-              (mode === 'line' && positions.present.length >= 2) ||
-              (mode === 'area' && positions.present.length >= 3)
+              (mode === 'line' && drawing.history.present.length >= 2) ||
+              (mode === 'area' && drawing.history.present.length >= 3)
             }
-            canRedo={Boolean((editHistory ?? positions).future.length)}
-            canUndo={Boolean((editHistory ?? positions).past.length)}
+            canRedo={Boolean((editHistory ?? drawing.history).future.length)}
+            canUndo={Boolean((editHistory ?? drawing.history).past.length)}
             mode={mode}
             onCancel={cancelDraft}
-            onDelete={() => undefined}
-            onFinish={finishDrawing}
+            onDelete={() => dispatchDrawing({ type: 'delete-selected' })}
+            onFinish={drawingWorkflow.finish}
             onHistory={changeHistory}
             onOpenPanel={(panel) => setActivePanel((current) => (current === panel ? null : panel))}
-            onStart={startQuickTool}
+            onStart={startCaptureDrawing}
           />
           <MeasurementMap
             basemapId={basemapId}
             basemapProvider={basemaps}
             boundary={boundary}
             draftGeometry={draftGeometry}
-            draftPositions={positions.present}
+            draftPositions={draftPositions}
+            draftSelectedIndex={drawing.selectedIndex}
             editMeasurement={editMeasurement}
             hiddenWorkItemIds={hidden}
             measurements={allMeasurements}
             mode={mode}
-            onAddPosition={addPosition}
+            onAddPosition={drawingWorkflow.addPosition}
             onEditGeometry={(geometry) =>
               setEditHistory((history) =>
                 history ? pushHistory(history, geometry) : createHistory(geometry),
               )
             }
-            onFinishDrawing={finishDrawing}
+            onFinishDrawing={drawingWorkflow.finish}
+            onSelectDraftVertex={(index) => dispatchDrawing({ index, type: 'select' })}
             onBasemapFallback={() => {
               const fallbackId =
                 basemapId === 'google-hybrid-upright' ? 'google-hybrid-direct' : localFallbackId
@@ -252,6 +254,7 @@ export function MapWorkspace(props: {
               <strong>{temporaryValue(draftGeometry)}</strong>
             </output>
           )}
+          {captureSync.latest && mode === 'view' && <MapCaptureStatus draft={captureSync.latest} />}
           <div className="map-status-sr" aria-live="polite">
             Chế độ {mapModeLabel(mode)}. Nền {selectedBasemap.label}.
           </div>
@@ -259,6 +262,7 @@ export function MapWorkspace(props: {
 
         <MapWorkspaceDrawers
           activePanel={activePanel}
+          capture={drawingWorkflow.capturePanel}
           data={{
             inspectionCase: props.inspectionCase,
             mode,

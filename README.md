@@ -215,8 +215,13 @@ không tham gia tổng; transaction phân loại mới tạo measurement và tí
 Task 5 chuyển không gian bản đồ sang khung map-first: sau header gọn, bản đồ chiếm
 toàn bộ vùng nội dung; toolbar đo dọc trên desktop và ngang trên iPad/điện thoại.
 Dữ liệu, bộ lọc/lớp và chi tiết/nâng cao nằm trong drawer hoặc bottom sheet đóng
-được hoàn toàn. GPS, route, ảnh và import cũ vẫn nằm trong ngăn Nâng cao; Task 5
-chưa thay luồng lưu nháp/phân loại của Task 6–7.
+được hoàn toàn. GPS, route, ảnh và import cũ vẫn nằm trong ngăn Nâng cao.
+
+Task 6 cho phép chọn Điểm/Chiều dài/Diện tích và vẽ ngay, không cần tạo công tác
+trước. Mỗi đỉnh có marker và chữ thập đỏ; có thể chọn một đỉnh để xóa, lùi/tiến và
+xem kết quả tạm trên nền bán trong suốt. “Lưu nháp” ghi local-first vào IndexedDB,
+tự đồng bộ khi có mạng và không đưa nháp chưa phân loại vào tổng chính thức. Việc
+chọn khu vực, lĩnh vực, công tác và mục con sau khi đo thuộc Task 7.
 
 Các cổng kiểm tra:
 

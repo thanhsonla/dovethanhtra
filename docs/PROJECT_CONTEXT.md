@@ -131,8 +131,13 @@
 - Task 5 đã chuyển UI sang shell map-first toàn vùng: header 64/58 px, toolbar dọc
   desktop và ngang tới iPad, control tối thiểu 44 px; Dữ liệu, Bộ lọc và Nâng cao
   là drawer/bottom sheet đóng hoàn toàn, hỗ trợ Escape và ARIA. GPS, route, ảnh,
-  import và các luồng Mốc 1–6 vẫn được giữ trong Nâng cao. Task 6 (công cụ vẽ nhanh
-  và lưu capture draft online/offline) là bước tiếp theo.
+  import và các luồng Mốc 1–6 vẫn được giữ trong Nâng cao.
+- Task 6 đã nối toolbar chính với luồng đo trước–phân loại sau: Điểm/Chiều dài/Diện
+  tích hoạt động khi chưa có công tác, marker đỉnh/chữ thập đỏ hỗ trợ chọn-xóa,
+  lùi/tiến và kết quả tạm gọn. Capture draft được ghi IndexedDB trước, đồng bộ qua
+  API bằng idempotency key, tự thử lại khi online và phục hồi nháp gần nhất. Luồng
+  đo theo công tác cũ vẫn vào từ ngăn Dữ liệu; Task 7 (phiếu phân loại) là bước kế
+  tiếp.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

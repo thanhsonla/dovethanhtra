@@ -2,7 +2,8 @@ import type { DrawableMeasurementGeometryKind } from '@dove/contracts'
 
 import type { MapMode } from './measurement-map.js'
 
-type PanelName = 'data' | 'details' | 'filters'
+export type MapPanelName = 'capture' | 'data' | 'details' | 'filters'
+type ToolbarPanelName = Exclude<MapPanelName, 'capture'>
 
 function ToolIcon(props: {
   name: 'area' | 'cancel' | 'delete' | 'finish' | 'line' | 'point' | 'redo' | 'undo'
@@ -26,7 +27,7 @@ function ToolIcon(props: {
   )
 }
 
-function PanelIcon(props: { name: PanelName }) {
+function PanelIcon(props: { name: ToolbarPanelName }) {
   if (props.name === 'data') {
     return <span aria-hidden="true">☰</span>
   }
@@ -37,7 +38,7 @@ function PanelIcon(props: { name: PanelName }) {
 }
 
 export function DrawingToolbar(props: {
-  activePanel: PanelName | null
+  activePanel: MapPanelName | null
   canDelete: boolean
   canFinish: boolean
   canRedo: boolean
@@ -47,7 +48,7 @@ export function DrawingToolbar(props: {
   onDelete: () => void
   onFinish: () => void
   onHistory: (direction: 'undo' | 'redo') => void
-  onOpenPanel: (panel: PanelName) => void
+  onOpenPanel: (panel: ToolbarPanelName) => void
   onStart: (mode: DrawableMeasurementGeometryKind) => void
 }) {
   const tools: Array<{ kind: DrawableMeasurementGeometryKind; label: string }> = [

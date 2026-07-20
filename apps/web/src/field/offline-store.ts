@@ -1,4 +1,21 @@
-import type { CreateGpsPointRequest, CreateGpsTrackRequest } from '@dove/contracts'
+import type {
+  CaptureDraft,
+  CreateCaptureDraftRequest,
+  CreateGpsPointRequest,
+  CreateGpsTrackRequest,
+} from '@dove/contracts'
+
+export interface StoredCaptureDraft {
+  caseId: string
+  deviceId: string
+  error?: string
+  idempotencyKey: string
+  input: CreateCaptureDraftRequest
+  localId: string
+  serverDraft?: CaptureDraft
+  status: 'queued' | 'syncing' | 'synced' | 'conflict' | 'failed'
+  updatedAt: string
+}
 
 interface QueuedGpsMutationBase {
   deviceId: string
@@ -12,14 +29,21 @@ export type QueuedGpsMutation =
   | (QueuedGpsMutationBase & { kind: 'track'; input: CreateGpsTrackRequest })
 
 const databaseName = 'dove-field-v4'
-const version = 1
+const version = 2
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, version)
     request.onupgradeneeded = () => {
-      request.result.createObjectStore('gpsDrafts')
-      request.result.createObjectStore('mutations', { keyPath: 'idempotencyKey' })
+      if (!request.result.objectStoreNames.contains('gpsDrafts')) {
+        request.result.createObjectStore('gpsDrafts')
+      }
+      if (!request.result.objectStoreNames.contains('mutations')) {
+        request.result.createObjectStore('mutations', { keyPath: 'idempotencyKey' })
+      }
+      if (!request.result.objectStoreNames.contains('captureDrafts')) {
+        request.result.createObjectStore('captureDrafts', { keyPath: 'localId' })
+      }
     }
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error ?? new Error('Không thể mở IndexedDB.'))
@@ -42,6 +66,8 @@ async function transact<T>(
 }
 
 export const offlineStore = {
+  deleteCaptureDraft: (localId: string) =>
+    transact('captureDrafts', 'readwrite', (store) => store.delete(localId)),
   deleteDraft: (workItemId: string) =>
     transact('gpsDrafts', 'readwrite', (store) => store.delete(workItemId)),
   deleteMutation: (key: string) => transact('mutations', 'readwrite', (store) => store.delete(key)),
@@ -57,10 +83,22 @@ export const offlineStore = {
       'readonly',
       (store) => store.getAll() as IDBRequest<QueuedGpsMutation[]>,
     ),
+  listCaptureDrafts: async (caseId: string) => {
+    const items = await transact<StoredCaptureDraft[]>(
+      'captureDrafts',
+      'readonly',
+      (store) => store.getAll() as IDBRequest<StoredCaptureDraft[]>,
+    )
+    return items
+      .filter((item) => item.caseId === caseId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  },
   putDraft: (workItemId: string, input: CreateGpsTrackRequest) =>
     transact('gpsDrafts', 'readwrite', (store) => store.put(input, workItemId)),
   putMutation: (mutation: QueuedGpsMutation) =>
     transact('mutations', 'readwrite', (store) => store.put(mutation)),
+  putCaptureDraft: (draft: StoredCaptureDraft) =>
+    transact('captureDrafts', 'readwrite', (store) => store.put(draft)),
 }
 
 export function deviceId(): string {

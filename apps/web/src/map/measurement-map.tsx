@@ -27,6 +27,7 @@ interface MeasurementMapProps {
   boundary: GeoJsonGeometry
   draftGeometry: GeoJsonGeometry | null
   draftPositions: Position[]
+  draftSelectedIndex: number | null
   editMeasurement: Measurement | null
   hiddenWorkItemIds: Set<string>
   measurements: Measurement[]
@@ -35,6 +36,7 @@ interface MeasurementMapProps {
   onBasemapFallback(): void
   onEditGeometry(geometry: GeoJsonGeometry): void
   onFinishDrawing(): void
+  onSelectDraftVertex(index: number): void
   onSelect(id: string): void
   selectedId: string | null
 }
@@ -77,7 +79,7 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     type: 'geojson',
     data: asMapGeoJson(featureCollection(props)),
   })
-  addDraftSources(map, props.draftGeometry, props.draftPositions)
+  addDraftSources(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
   map.addLayer({
     id: 'case-boundary-fill',
     source: 'case-boundary',
@@ -132,7 +134,7 @@ function syncData(map: MapLibreMap, props: MeasurementMapProps) {
     asMapGeoJson(boundaryCollection(props.boundary)),
   )
   ;(map.getSource('measurements') as GeoJSONSource).setData(asMapGeoJson(featureCollection(props)))
-  syncDraftData(map, props.draftGeometry, props.draftPositions)
+  syncDraftData(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
 }
 
 function positions(geometry: GeoJsonGeometry): Position[] | null {
@@ -236,6 +238,14 @@ export function MeasurementMap(props: MeasurementMapProps) {
         map.on('click', (event) => {
           const current = latest.current
           if (['point', 'line', 'area'].includes(current.mode)) {
+            const vertex = map.queryRenderedFeatures(event.point, {
+              layers: ['draft-vertex-hit', 'draft-vertices'],
+            })[0]
+            const index: unknown = vertex?.properties?.index
+            if (typeof index === 'number') {
+              current.onSelectDraftVertex(index)
+              return
+            }
             current.onAddPosition([event.lngLat.lng, event.lngLat.lat])
             return
           }
@@ -285,6 +295,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
     props.boundary,
     props.draftGeometry,
     props.draftPositions,
+    props.draftSelectedIndex,
     props.hiddenWorkItemIds,
     props.measurements,
     props.selectedId,

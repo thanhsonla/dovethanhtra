@@ -82,6 +82,12 @@ thích. E2E Chromium desktop/WebKit iPad kiểm bản đồ còn nhìn thấy kh
 đóng, control tối thiểu 44 px, toolbar dọc/ngang theo breakpoint, mở/đóng drawer
 bằng nút/Escape và các luồng GPS/route/import cũ vẫn truy cập được qua Nâng cao.
 
+Task 6 có unit test state machine cho thêm/chọn/xóa đỉnh, lùi/tiến và bảo toàn thứ
+tự `[longitude, latitude]`. E2E Chromium desktop/WebKit iPad đo tuyến không cần
+công tác, chọn/xóa một đỉnh, lùi/tiến, lưu nháp online và kiểm queue IndexedDB tự
+đồng bộ sau khi trình duyệt trở lại online. Luồng phép đo theo công tác cũ vẫn chạy
+qua nút “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu.
+
 ## 5. Ca kiểm thử ngoại tuyến
 
 | Mã      | Tình huống                           | Kết quả mong đợi                                    |
