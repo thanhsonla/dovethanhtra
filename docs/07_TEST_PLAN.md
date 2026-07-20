@@ -77,6 +77,11 @@ payload conflict, IDOR, tạo công tác/mục con trong transaction, hồ sơ k
 GeoJSON sai cấu trúc. Kiểm tra tổng xác nhận phải vẫn bằng 0 sau khi chỉ tạo nháp
 hoặc measurement chưa xác nhận.
 
+Task 5 có unit test cho hợp đồng ARIA của toolbar/drawer và chọn công tác tương
+thích. E2E Chromium desktop/WebKit iPad kiểm bản đồ còn nhìn thấy khi mọi drawer
+đóng, control tối thiểu 44 px, toolbar dọc/ngang theo breakpoint, mở/đóng drawer
+bằng nút/Escape và các luồng GPS/route/import cũ vẫn truy cập được qua Nâng cao.
+
 ## 5. Ca kiểm thử ngoại tuyến
 
 | Mã      | Tình huống                           | Kết quả mong đợi                                    |

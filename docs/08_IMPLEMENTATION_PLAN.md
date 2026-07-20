@@ -219,11 +219,15 @@ giao diện.
 - Migration lưu khóa/hash phân loại riêng; API hỗ trợ ETag, IDOR, xóa mềm/phục hồi,
   chọn hoặc tạo công tác/mục con và liên kết measurement trong một transaction.
 
-### Task 5 — Khung giao diện map-first
+### Task 5 — Khung giao diện map-first — hoàn thành
 
 - Bản đồ toàn vùng, header/chữ gọn, toolbar dọc desktop/ngang mobile, drawer/bottom
   sheet cho dữ liệu, bộ lọc và chi tiết; menu nâng cao giữ GPS/route/ảnh/import.
 - E2E Chromium/WebKit kiểm vùng bản đồ, 44 px, keyboard/ARIA và responsive.
+- Đã tách shell khỏi drawer nội dung, đóng hoàn toàn mọi panel để trả vùng nhìn cho
+  bản đồ; Escape đóng drawer, `aria-controls`/`aria-expanded` phản ánh trạng thái.
+- Công cụ nhanh giữ tương thích với công tác hiện có trong Task 5. Lưu nháp độc lập,
+  chọn/xóa phần hình học và state machine đầy đủ tiếp tục được triển khai ở Task 6.
 
 ### Task 6 — Công cụ vẽ nhanh
 

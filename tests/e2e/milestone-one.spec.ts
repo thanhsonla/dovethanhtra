@@ -55,21 +55,42 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page.getByLabel('Từ ngày').fill('2026-07-01')
   await page.getByLabel('Đến ngày').fill('2026-07-31')
   await page.getByLabel('Địa bàn').selectOption({ index: 1 })
+  const initialWorkItemsResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' && /\/cases\/[^/]+\/work-items$/.test(response.url()),
+  )
   await page
     .getByRole('button', { name: 'Lưu hồ sơ' })
     .evaluate((element: HTMLButtonElement) => element.click())
+  expect((await initialWorkItemsResponse).status()).toBe(200)
 
   await expect(page.getByRole('heading', { name: caseName })).toBeVisible()
   await expect(page.getByText(/Có thể mở bản đồ để xem ranh giới ngay/)).toBeVisible()
   expect(mapModuleResponses).toHaveLength(0)
-  await page
-    .getByRole('button', { name: 'Mở bản đồ hiện trường' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
   await expect(page.getByLabel('Bản đồ nền')).toHaveValue('google-hybrid-direct')
+  await expect(page.getByLabel('Công cụ đo nhanh')).toBeVisible()
+  await expect(page.getByLabel('Bảng điều khiển bản đồ')).toBeVisible()
+  await expect(page.locator('.map-drawer')).toHaveCount(0)
+  const toolSizes = await page.locator('.map-primary-toolbar button').evaluateAll((buttons) =>
+    buttons.map((button) => {
+      const box = button.getBoundingClientRect()
+      return { height: box.height, width: box.width }
+    }),
+  )
+  expect(toolSizes.every((size) => size.height >= 44 && size.width >= 44)).toBe(true)
+  const toolbarDisplay = await page
+    .locator('.map-primary-toolbar')
+    .evaluate((element) => getComputedStyle(element).display)
+  expect(toolbarDisplay).toBe(testInfo.project.name === 'webkit-ipad' ? 'flex' : 'grid')
+  await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await expect(page.getByText('Chưa có công tác đo')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.map-drawer')).toHaveCount(0)
   await expect(page.locator('.measurement-panel')).toHaveCount(0)
   await expect(page.locator('.map-status')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Mở dữ liệu' }).click()
   await expect(page.getByLabel('Công tác đang đo')).toBeVisible()
   await expect(page.getByLabel('Tiến độ hồ sơ')).toHaveCount(0)
   await page
@@ -82,12 +103,12 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page
     .getByRole('button', { name: 'Tạo và bắt đầu', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByRole('button', { name: 'Hủy', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hủy thao tác', exact: true })).toBeVisible()
   await page
-    .getByRole('button', { name: 'Hủy', exact: true })
+    .getByRole('button', { name: 'Hủy thao tác', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
   await page
-    .getByRole('button', { name: '← Hồ sơ' })
+    .getByRole('button', { name: 'Quay lại hồ sơ' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(
     page.locator('.work-list').getByText('Công tác điểm tạo nhanh E2E', { exact: true }),
@@ -114,11 +135,11 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.locator('.work-list').getByText('GPS point E2E', { exact: true })).toBeVisible()
 
-  await page
-    .getByRole('button', { name: 'Mở bản đồ hiện trường' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
   await expect(page.getByLabel('Bản đồ phép đo')).toBeVisible()
+  await page.getByRole('button', { name: 'Mở dữ liệu' }).click()
   await expect(page.getByLabel('Tiến độ hồ sơ')).toBeVisible()
+  await page.getByRole('button', { name: 'Đóng dữ liệu hồ sơ' }).click()
   await expect.poll(() => mapModuleResponses.length).toBeGreaterThan(0)
   await expect(page.getByLabel('Bản đồ nền')).toHaveValue('google-hybrid-direct')
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Google Maps')
@@ -126,12 +147,11 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Nền E2E được cấp phép')
   await page.getByLabel('Bản đồ nền').selectOption('google-hybrid-direct')
   await expect(page.locator('.maplibregl-ctrl-attrib')).toContainText('Google Maps')
+  await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await page
     .getByRole('button', { name: 'Công tác E2E', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await page
-    .getByRole('button', { name: 'Chi tiết', exact: true })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByRole('button', { name: 'Mở nâng cao' }).click()
   await page.getByText('Import GeoJSON', { exact: true }).press('Enter')
   await page.getByLabel('Tệp GeoJSON').setInputFiles({
     name: 'import-e2e.geojson',
@@ -164,7 +184,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByText(/Tuyến import E2E/)).toBeVisible()
   await page
-    .getByRole('button', { name: 'Thêm đoạn', exact: true })
+    .getByRole('button', { name: 'Chiều dài', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 330, y: 320 } })
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 390, y: 320 } })
@@ -177,19 +197,18 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .getByRole('button', { name: 'Khôi phục điểm' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await page
-    .getByRole('button', { name: 'Kết thúc' })
+    .getByRole('button', { name: 'Kết thúc phép đo' })
     .evaluate((element: HTMLButtonElement) => element.click())
   const firstSuggestedName = await page.getByLabel('Tên phép đo').inputValue()
   expect(firstSuggestedName).toMatch(/^Đoạn \d{2}$/)
   await page
     .getByRole('button', { name: 'Lưu và tiếp tục' })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByRole('button', { name: new RegExp(firstSuggestedName) })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Hủy', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hủy thao tác', exact: true })).toBeVisible()
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 350, y: 340 } })
   await page.getByLabel('Bản đồ phép đo').click({ position: { x: 410, y: 340 } })
   await page
-    .getByRole('button', { name: 'Kết thúc' })
+    .getByRole('button', { name: 'Kết thúc phép đo' })
     .evaluate((element: HTMLButtonElement) => element.click())
   const reviewMeasurementName = await page.getByLabel('Tên phép đo').inputValue()
   expect(reviewMeasurementName).toMatch(/^Đoạn \d{2}$/)
@@ -197,8 +216,8 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page
     .getByRole('button', { name: 'Lưu và xác nhận' })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByRole('button', { name: new RegExp(reviewMeasurementName) })).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('Đã lưu nháp')
+  await page.getByRole('button', { name: 'Mở dữ liệu' }).click()
   await expect(page.getByLabel('Rà soát phép đo')).toBeVisible()
   await page
     .getByRole('button', { name: 'Mở danh sách' })
@@ -206,8 +225,11 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(
     page.getByLabel('Rà soát phép đo').getByText(reviewMeasurementName, { exact: true }),
   ).toBeVisible()
+  await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
+  await expect(page.getByRole('button', { name: new RegExp(reviewMeasurementName) })).toBeVisible()
   await expect(page.getByLabel('Tổng Công tác E2E')).toContainText('0/3 bộ phận được cộng tổng')
 
+  await page.getByRole('button', { name: 'Mở nâng cao' }).click()
   await page
     .getByRole('button', { name: 'Bắt đầu GPS' })
     .evaluate((element: HTMLButtonElement) => element.click())
@@ -240,15 +262,12 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page
     .getByRole('button', { name: new RegExp(caseName) })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await page
-    .getByRole('button', { name: 'Mở bản đồ hiện trường' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
+  await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await page
     .getByRole('button', { name: 'Công tác E2E', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await page
-    .getByRole('button', { name: 'Chi tiết', exact: true })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByRole('button', { name: 'Mở nâng cao' }).click()
   await expect(page.getByText('GPS track: 2 điểm')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Đồng bộ: local_only')).toBeVisible()
   await page
@@ -281,12 +300,11 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByText('Đồng bộ: synced')).toBeVisible()
   await expect(page.getByText(/GPS \d/).first()).toBeVisible()
 
+  await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await page
     .getByRole('button', { name: 'GPS point E2E', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await page
-    .getByRole('button', { name: 'Chi tiết', exact: true })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByRole('button', { name: 'Mở nâng cao' }).click()
   const pointResponsePromise = page.waitForResponse((response) =>
     response.url().includes('/gps-points'),
   )
@@ -298,6 +316,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByText('Đồng bộ: synced')).toBeVisible()
   await expect(page.getByText(/Vị trí GPS \d/).first()).toBeVisible()
 
+  await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await page
     .getByRole('button', { name: 'Route vận chuyển E2E', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
@@ -310,11 +329,12 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await page
     .getByRole('button', { name: 'Lưu route chính thức' })
     .evaluate((element: HTMLButtonElement) => element.click())
-  await expect(page.getByText(/Lộ trình đến cơ sở xử lý/).first()).toBeVisible()
+  await expect(page.getByLabel('Tên route')).toHaveValue('Lộ trình đến cơ sở xử lý')
   await page.getByLabel('Lý do tính lại').fill('Đối chứng route E2E')
   await page
     .getByRole('button', { name: 'Tính lại thành phiên bản mới' })
     .evaluate((element: HTMLButtonElement) => element.click())
+  await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
   await expect(page.getByText(/v2 · Đã xác nhận/)).toBeVisible()
   await page.getByLabel('Bản đồ nền').selectOption('technical-dark')
   await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-dark')
@@ -332,19 +352,18 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     await page
       .getByRole('button', { name: new RegExp(caseName) })
       .evaluate((element: HTMLButtonElement) => element.click())
-    await page
-      .getByRole('button', { name: 'Mở bản đồ hiện trường' })
-      .evaluate((element: HTMLButtonElement) => element.click())
+    await page.getByRole('button', { name: 'Mở bản đồ hiện trường' }).click()
     await page.getByLabel('Bản đồ nền').selectOption('configured-remote')
     await expect(page.getByRole('alert')).toContainText('đã chuyển sang nền kỹ thuật local')
     await expect(page.getByLabel('Bản đồ nền')).toHaveValue('technical-light')
+    await page.getByRole('button', { name: 'Mở bộ lọc' }).click()
     await expect(
       page.getByRole('button', { name: new RegExp(reviewMeasurementName) }),
     ).toBeVisible()
   }
 
   await page
-    .getByRole('button', { name: '← Hồ sơ' })
+    .getByRole('button', { name: 'Quay lại hồ sơ' })
     .evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByRole('heading', { name: 'Khối lượng nguồn' })).toBeVisible()
   await page

@@ -22,7 +22,6 @@ export function MapDetailsPanel(props: {
   measurement: Measurement | null
   onCancel(): void
   onChanged(measurement: Measurement): Promise<void>
-  onClose(): void
   onDataChanged(measurement?: Measurement): Promise<void>
   onEdit(): void
   onError(message: string): void
@@ -38,11 +37,7 @@ export function MapDetailsPanel(props: {
       : null
 
   return (
-    <aside className="measurement-panel">
-      <div className="measurement-panel__heading">
-        <strong>Chi tiết phép đo</strong>
-        <button onClick={() => props.onClose()}>Đóng</button>
-      </div>
+    <section className="measurement-panel">
       {props.selectedKind === 'route' && props.selectedWork ? (
         <RoutePlanner
           facilities={props.facilities}
@@ -85,6 +80,6 @@ export function MapDetailsPanel(props: {
         workItem={props.selectedWork}
         onChanged={(measurement) => props.onDataChanged(measurement)}
       />
-    </aside>
+    </section>
   )
 }

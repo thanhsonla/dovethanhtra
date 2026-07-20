@@ -127,7 +127,12 @@
 - Task 4 đã triển khai CRUD `capture_draft`, idempotency riêng cho tạo/phân loại,
   optimistic concurrency, IDOR và transaction tạo/liên kết công tác, mục con,
   measurement. Raw geometry được giữ nguyên; nháp và measurement chưa confirmed
-  không tham gia tổng. Task 5 (khung giao diện map-first) là bước tiếp theo.
+  không tham gia tổng.
+- Task 5 đã chuyển UI sang shell map-first toàn vùng: header 64/58 px, toolbar dọc
+  desktop và ngang tới iPad, control tối thiểu 44 px; Dữ liệu, Bộ lọc và Nâng cao
+  là drawer/bottom sheet đóng hoàn toàn, hỗ trợ Escape và ARIA. GPS, route, ảnh,
+  import và các luồng Mốc 1–6 vẫn được giữ trong Nâng cao. Task 6 (công cụ vẽ nhanh
+  và lưu capture draft online/offline) là bước tiếp theo.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

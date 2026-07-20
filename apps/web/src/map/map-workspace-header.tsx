@@ -14,15 +14,21 @@ export function MapWorkspaceHeader(props: {
 
   return (
     <header className="map-header">
-      <button className="button button--quiet" onClick={() => props.onBack()}>
-        ← Hồ sơ
+      <button
+        aria-label="Quay lại hồ sơ"
+        className="map-header__back"
+        onClick={() => props.onBack()}
+        title="Quay lại hồ sơ"
+      >
+        <span aria-hidden="true">←</span>
+        <span>Hồ sơ</span>
       </button>
-      <div>
-        <p className="eyebrow">Bản đồ, hiện trường và ngoại tuyến</p>
+      <div className="map-header__title">
+        <p>Bản đồ hiện trường</p>
         <h1>{props.inspectionCase.name}</h1>
       </div>
       <label className="basemap-select">
-        Bản đồ nền
+        <span>Bản đồ nền</span>
         <select
           aria-describedby="basemap-help"
           aria-label="Bản đồ nền"
@@ -38,7 +44,14 @@ export function MapWorkspaceHeader(props: {
             </option>
           ))}
         </select>
-        <small id="basemap-help">
+        <small
+          className={
+            technical
+              ? 'map-header__basemap-help map-header__basemap-help--visible'
+              : 'map-header__basemap-help'
+          }
+          id="basemap-help"
+        >
           {technical
             ? 'Nền kỹ thuật chỉ là màu nền local để kiểm thử/fallback, không có ảnh vệ tinh hoặc địa danh.'
             : selected.label}

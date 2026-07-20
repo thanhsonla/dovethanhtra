@@ -212,6 +212,12 @@ với `X-Device-Id` và `Idempotency-Key`, sau đó phân loại bằng
 `POST /api/v1/capture-drafts/{draftId}/classify` kèm `If-Match`. Nháp chưa phân loại
 không tham gia tổng; transaction phân loại mới tạo measurement và tính bằng PostGIS.
 
+Task 5 chuyển không gian bản đồ sang khung map-first: sau header gọn, bản đồ chiếm
+toàn bộ vùng nội dung; toolbar đo dọc trên desktop và ngang trên iPad/điện thoại.
+Dữ liệu, bộ lọc/lớp và chi tiết/nâng cao nằm trong drawer hoặc bottom sheet đóng
+được hoàn toàn. GPS, route, ảnh và import cũ vẫn nằm trong ngăn Nâng cao; Task 5
+chưa thay luồng lưu nháp/phân loại của Task 6–7.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`
