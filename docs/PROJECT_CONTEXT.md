@@ -147,7 +147,9 @@
   trạng thái; truy vấn bbox/cursor server-side chỉ tổng hợp dữ liệu đã xác nhận.
   Chọn feature trên bản đồ sẽ highlight/zoom và hiện thẻ chi tiết gọn; dữ liệu
   ngoài vùng nhìn được nạp thêm theo cursor. Task 9 (mở, tải xuống và chỉnh sửa)
-  là bước tiếp theo.
+  đã bổ sung endpoint lịch sử phép đo, tải GeoJSON đơn/tập lọc có hash và audit;
+  export áp dụng filter thực tế. Phiên bản confirmed được chỉnh sửa qua supersede
+  có lý do, còn nháp giữ luồng chỉnh sửa trực tiếp.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 

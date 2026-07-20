@@ -35,7 +35,11 @@ export interface RecoverableExportJob {
 export class ExportRepository {
   constructor(private readonly database: AppDatabase) {}
 
-  async dataset(caseId: string, ownerId: string) {
+  async dataset(caseId: string, ownerId: string, filters: Record<string, unknown> = {}) {
+    const filter = (key: string) => {
+      const value = filters[key]
+      return typeof value === 'string' && value.length > 0 ? value : null
+    }
     const caseResult = await sql<CaseRow>`SELECT c.id,c.case_code AS "caseCode",c.name,
       a.name AS "adminAreaName",c.period_start AS "periodStart",c.period_end AS "periodEnd",c.status
       FROM inspection_case c JOIN admin_area a ON a.id=c.admin_area_id
@@ -53,6 +57,13 @@ export class ExportRepository {
       JOIN inspection_case c ON c.id=w.inspection_case_id
       WHERE c.id=${caseId}::uuid AND c.owner_id=${ownerId}::uuid AND c.deleted_at IS NULL
         AND w.deleted_at IS NULL AND m.deleted_at IS NULL
+        AND (${filter('workItemId')}::uuid IS NULL OR w.id=${filter('workItemId')}::uuid)
+        AND (${filter('serviceGroupId')}::uuid IS NULL OR g.id=${filter('serviceGroupId')}::uuid)
+        AND (${filter('managementZoneId')}::uuid IS NULL OR w.management_zone_id=${filter('managementZoneId')}::uuid)
+        AND (${filter('componentId')}::uuid IS NULL OR m.work_component_id=${filter('componentId')}::uuid)
+        AND (${filter('geometryKind')}::measurement_kind IS NULL OR m.geometry_kind=${filter('geometryKind')}::measurement_kind)
+        AND (${filter('status')}::measurement_status IS NULL OR m.status=${filter('status')}::measurement_status)
+        AND (${filter('status')}::measurement_status IS NOT NULL OR m.status NOT IN ('superseded','deleted'))
       ORDER BY g.display_order,w.created_at,m.created_at`.execute(this.database)
     const sources = await sql<SourceRow>`SELECT s.id,s.case_work_item_id AS "workItemId",
       s.source_kind AS "sourceKind",s.document_no AS "documentNo",s.document_date AS "documentDate",

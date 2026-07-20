@@ -264,11 +264,15 @@ giao diện.
   Bổ sung index GIST cho hình học hiệu dụng và kiểm thử integration, performance
   5.000 geometry cùng E2E Chromium/WebKit.
 
-### Task 9 — Mở, tải xuống và chỉnh sửa
+### Task 9 — Mở, tải xuống và chỉnh sửa — hoàn thành
 
 - Mở toàn bộ metadata/history, tải một hoặc tập lọc GeoJSON có quyền/hash/audit;
   sửa nháp trực tiếp và sửa confirmed bằng supersede có lý do.
 - Integration/E2E bao phủ IDOR, filter export, version và phục hồi.
+- Đã hoàn thành: mở chi tiết phép đo kèm lịch sử audit/version; tải GeoJSON một
+  phép đo hoặc tập đã lọc với SHA-256, quyền sở hữu và audit; export lọc áp dụng
+  thực tế vào dataset. Draft tiếp tục chỉnh sửa trực tiếp, confirmed tạo phiên bản
+  supersede kèm lý do; giao diện có nút tải GeoJSON và lịch sử thao tác.
 
 ### Task 10 — Tương thích, nghiệm thu và rollout
 

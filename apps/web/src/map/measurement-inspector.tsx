@@ -1,10 +1,11 @@
 import type {
+  AuditEvent,
   GeoJsonGeometry,
   Measurement,
   DrawableMeasurementGeometryKind,
   WorkItem,
 } from '@dove/contracts'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 
 import { api } from '../api.js'
 import { calculationInputMeta, requiredInputs, temporaryValue } from './map-geometry.js'
@@ -39,6 +40,17 @@ export interface MeasurementInspectorProps {
 
 export function MeasurementInspector(props: MeasurementInspectorProps) {
   const [busy, setBusy] = useState(false)
+  const [history, setHistory] = useState<AuditEvent[]>([])
+  useEffect(() => {
+    if (!props.measurement) {
+      setHistory([])
+      return
+    }
+    void api
+      .listMeasurementHistory(props.measurement.id)
+      .then(setHistory)
+      .catch(() => setHistory([]))
+  }, [props.measurement?.id])
   const deliverSaved = async (measurement: Measurement, action: 'continue' | 'done') => {
     try {
       await props.onSaved(measurement, action)
@@ -235,6 +247,19 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
       props.onError(reason instanceof Error ? reason.message : 'Không thể xóa.')
     }
   }
+  const downloadGeoJson = async () => {
+    try {
+      const result = await api.downloadMeasurementGeoJson(measurement.id)
+      const url = URL.createObjectURL(result.blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = result.fileName
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (reason) {
+      props.onError(reason instanceof Error ? reason.message : 'Không thể tải GeoJSON.')
+    }
+  }
   return (
     <div className="measurement-detail">
       <p className="section-kicker">Kết quả máy chủ</p>
@@ -272,6 +297,9 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
         </ul>
       )}
       <div className="button-row">
+        <button className="button button--quiet" onClick={() => void downloadGeoJson()}>
+          Tải GeoJSON
+        </button>
         {['draft', 'needs_attention'].includes(measurement.status) && (
           <button className="button" disabled={hasErrors} onClick={() => void confirm()}>
             Xác nhận
@@ -286,6 +314,22 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
           Xóa mềm
         </button>
       </div>
+      <details className="measurement-history">
+        <summary>Lịch sử phiên bản và thao tác</summary>
+        {history.length === 0 ? (
+          <p>Chưa có lịch sử.</p>
+        ) : (
+          <ol>
+            {history.map((event) => (
+              <li key={event.id}>
+                <strong>{event.action}</strong> ·{' '}
+                {new Date(event.occurredAt).toLocaleString('vi-VN')}
+                {event.reason ? ` · ${event.reason}` : ''}
+              </li>
+            ))}
+          </ol>
+        )}
+      </details>
       {measurement.status === 'confirmed' && props.draftGeometry && (
         <form className="supersede-form" onSubmit={(event) => void supersede(event)}>
           <label>

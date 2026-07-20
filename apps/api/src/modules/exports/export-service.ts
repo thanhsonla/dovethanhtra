@@ -57,7 +57,7 @@ export class ExportService {
     filters: Record<string, unknown> = {},
   ) {
     this.consumeQuota(ownerId)
-    const base = await this.repository.dataset(caseId, ownerId)
+    const base = await this.repository.dataset(caseId, ownerId, filters)
     if (!base) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
     if (base.inspectionCase.status !== 'locked')
       throw new AppError(
@@ -117,7 +117,7 @@ export class ExportService {
     if (!this.storage?.putObject || !this.storage.getObject) {
       throw new AppError(503, 'OBJECT_STORAGE_UNAVAILABLE', 'Kho tệp chưa hỗ trợ export queue.')
     }
-    const base = await this.repository.dataset(caseId, ownerId)
+    const base = await this.repository.dataset(caseId, ownerId, filters)
     if (!base) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
     if (base.inspectionCase.status !== 'locked') {
       throw new AppError(409, 'CASE_MUST_BE_LOCKED_FOR_EXPORT', 'Hãy khóa hồ sơ trước khi xuất.')
@@ -171,7 +171,7 @@ export class ExportService {
   ) {
     if (!(await this.repository.claim(id))) return
     try {
-      const base = await this.repository.dataset(caseId, ownerId)
+      const base = await this.repository.dataset(caseId, ownerId, filters)
       if (!base) throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
       const comparison = await this.comparison.get(caseId, ownerId)
       const artifact = await this.provider.create(format, {

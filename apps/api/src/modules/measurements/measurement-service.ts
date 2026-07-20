@@ -199,6 +199,10 @@ export class MeasurementService {
     return found
   }
 
+  async history(measurementId: string, ownerId: string) {
+    return this.audit.listForEntity(measurementId, ownerId)
+  }
+
   async validate(measurementId: string, ownerId: string, traceId: string) {
     return this.database.transaction().execute(async (transaction) => {
       const before = await this.repository.get(transaction, measurementId, ownerId)

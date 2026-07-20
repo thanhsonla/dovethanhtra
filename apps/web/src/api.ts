@@ -25,6 +25,7 @@ import type {
   TreatmentFacility,
   TransportRoute,
   Attachment,
+  AuditEvent,
   CreateGpsPointRequest,
   CreateGpsTrackRequest,
   GpsPointResponse,
@@ -109,6 +110,23 @@ async function downloadFile(path: string) {
   }
 }
 
+async function downloadPostFile(path: string, body: unknown) {
+  const response = await fetch(`/api/v1${path}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) throw new ApiClientError('Không thể tải tệp.', response.status)
+  return {
+    blob: await response.blob(),
+    fileName:
+      response.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1] ??
+      'export.geojson',
+    sha256: response.headers.get('x-file-sha256'),
+  }
+}
+
 export const api = {
   basemapCapabilities: () => request<BasemapCapabilities>('/basemaps'),
   createCaptureDraft: (
@@ -182,13 +200,19 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ reason }),
     }),
-  exportCase: (caseId: string, format: 'excel' | 'geojson') =>
+  exportCase: (caseId: string, format: 'excel' | 'geojson', filters: Record<string, string> = {}) =>
     request<ExportJob>(`/cases/${caseId}/export-jobs/${format === 'excel' ? 'xlsx' : 'geojson'}`, {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ filters }),
     }),
   getExportJob: (exportId: string) => request<ExportJob>(`/exports/${exportId}`),
   downloadExport: (exportId: string) => downloadFile(`/exports/${exportId}/download`),
+  downloadMeasurementGeoJson: (measurementId: string) =>
+    downloadFile(`/measurements/${measurementId}/download.geojson`),
+  downloadFilteredGeoJson: (caseId: string, filters: Record<string, string>) =>
+    downloadPostFile(`/cases/${caseId}/map-features/download.geojson`, { filters }),
+  listMeasurementHistory: (measurementId: string) =>
+    request<AuditEvent[]>(`/measurements/${measurementId}/history`),
   createMeasurement: (workItemId: string, input: CreateMeasurementRequest) =>
     request<Measurement>(`/work-items/${workItemId}/measurements`, {
       method: 'POST',

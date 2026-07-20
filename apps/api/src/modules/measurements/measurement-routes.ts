@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import {
   ConfirmMeasurementRequestSchema,
   CreateMeasurementRequestSchema,
@@ -13,6 +15,7 @@ import {
   GeoJsonImportPreviewSchema,
   GeoJsonImportCommitResponseSchema,
   type GeoJsonImportRequest,
+  AuditEventSchema,
 } from '@dove/contracts'
 import { Type } from '@sinclair/typebox'
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
@@ -169,6 +172,57 @@ export const measurementRoutes: FastifyPluginAsync<MeasurementRouteOptions> = as
       },
     },
     (request) => options.service.get(request.params.measurementId, ownerId(request)),
+  )
+
+  app.get<{ Params: { measurementId: string } }>(
+    '/measurements/:measurementId/history',
+    {
+      preHandler: options.guards.requireUser,
+      schema: {
+        params: MeasurementParams,
+        response: { 200: Type.Array(AuditEventSchema) },
+        tags: ['measurements'],
+      },
+    },
+    async (request) => {
+      const measurement = await options.service.get(request.params.measurementId, ownerId(request))
+      return options.service.history(measurement.id, ownerId(request))
+    },
+  )
+
+  app.get<{ Params: { measurementId: string } }>(
+    '/measurements/:measurementId/download.geojson',
+    {
+      preHandler: options.guards.requireUser,
+      schema: { params: MeasurementParams, tags: ['measurements'] },
+    },
+    async (request, reply) => {
+      const measurement = await options.service.get(request.params.measurementId, ownerId(request))
+      const payload = JSON.stringify({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: measurement.id,
+            properties: {
+              code: measurement.code,
+              name: measurement.name,
+              version: measurement.version,
+              status: measurement.status,
+              unit: measurement.unit,
+              calculatedQuantity: measurement.calculatedQuantity,
+            },
+            geometry: measurement.normalizedGeometry ?? measurement.rawGeometry,
+          },
+        ],
+      })
+      const hash = createHash('sha256').update(payload).digest('hex')
+      return reply
+        .header('content-type', 'application/geo+json')
+        .header('content-disposition', `attachment; filename="${measurement.code}.geojson"`)
+        .header('x-file-sha256', hash)
+        .send(payload)
+    },
   )
 
   app.post<{ Params: { measurementId: string } }>(

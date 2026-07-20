@@ -231,6 +231,10 @@ Task 8 bổ sung bộ lọc server-side theo Khu vực, Lĩnh vực, Công tác,
 được đưa vào tổng; chọn đối tượng sẽ highlight/zoom trên bản đồ và hiện thẻ chi tiết
 gọn. Task 9 tiếp tục với mở metadata/history, tải GeoJSON và chỉnh sửa theo version.
 
+Task 9 đã bổ sung lịch sử audit cho từng phép đo, tải GeoJSON đơn hoặc tập đã lọc
+kèm SHA-256, kiểm tra quyền sở hữu và ghi audit export. Phép đo đã xác nhận được
+hiệu chỉnh bằng phiên bản supersede có lý do; bản nháp vẫn chỉnh sửa trực tiếp.
+
 Các cổng kiểm tra:
 
 - `GET http://127.0.0.1:3000/api/v1/health/live`
