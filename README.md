@@ -54,6 +54,7 @@ Mỗi địa bàn/huyện được quản lý bằng một hoặc nhiều **hồ
 11. `docs/11_OPERATIONS_RUNBOOK.md` — phát hành, backup và phục hồi.
 12. `docs/12_FIELD_TEST_PROTOCOL.md` — biên bản chạy thử thiết bị/địa bàn.
 13. `docs/13_PHASE_2_BACKLOG.md` — backlog sau MVP.
+14. `docs/SESSION_HANDOFF.md` — bàn giao ngắn để tiếp tục nhanh ở phiên sau.
 
 Tệp kỹ thuật khởi tạo:
 
