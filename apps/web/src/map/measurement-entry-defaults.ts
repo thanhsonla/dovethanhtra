@@ -4,8 +4,15 @@ import { requiredInputs } from './map-geometry.js'
 
 const partLabels: Record<DrawableMeasurementGeometryKind, string> = {
   area: 'Vùng',
-  line: 'Đoạn',
+  line: 'Tuyến',
   point: 'Điểm',
+}
+
+export function measurementPartName(
+  kind: DrawableMeasurementGeometryKind,
+  sequence: number,
+): string {
+  return `${partLabels[kind]} ${String(sequence).padStart(2, '0')}`
 }
 
 export function nextMeasurementName(
@@ -15,7 +22,7 @@ export function nextMeasurementName(
   const sequence =
     measurements.filter((item) => item.geometryKind === kind && item.status !== 'superseded')
       .length + 1
-  return `${partLabels[kind]} ${String(sequence).padStart(2, '0')}`
+  return measurementPartName(kind, sequence)
 }
 
 export function inheritedCalculationInputs(

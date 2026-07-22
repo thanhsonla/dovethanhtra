@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   confirmedSummary,
+  measurementBaseTotal,
   measurementBaseValue,
   measurementPartLabel,
   measurementQuantity,
@@ -67,5 +68,16 @@ describe('measurement summaries', () => {
     }
 
     expect(confirmedSummary(summary)).toEqual({ count: 1, total: '241,00 m' })
+  })
+
+  it('adds active base values while excluding superseded and deleted parts', () => {
+    expect(
+      measurementBaseTotal([
+        measurement({ baseValue: 120.5 }),
+        measurement({ baseValue: 29.5, id: 'part-2' }),
+        measurement({ baseValue: 999, id: 'old', status: 'superseded' }),
+        measurement({ baseValue: 999, deletedAt: '2026-07-22T00:00:00.000Z', id: 'deleted' }),
+      ]),
+    ).toBe('150,00 m')
   })
 })

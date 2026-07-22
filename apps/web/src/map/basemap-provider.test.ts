@@ -35,13 +35,13 @@ describe('configured basemap provider', () => {
     expect(provider.descriptors()).toHaveLength(5)
   })
 
-  it('adds an attributed Mapbox satellite raster layer for a public token', () => {
+  it('uses readable Google satellite labels by default when a public token is available', () => {
     const provider = new ConfiguredBasemapProvider({
       VITE_MAPBOX_PUBLIC_TOKEN: 'pk.public-test-token',
     })
     const satellite = provider.get('mapbox-satellite')
     const upright = provider.get('google-hybrid-upright')
-    expect(provider.defaultId).toBe('google-hybrid-stores')
+    expect(provider.defaultId).toBe('google-hybrid-upright')
     expect(upright.label).toBe('Google vệ tinh · nhãn dễ đọc')
     expect(upright.loadStyle).toBeTypeOf('function')
     expect(provider.supportsOffline('mapbox-satellite')).toBe(false)

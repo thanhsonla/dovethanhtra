@@ -61,6 +61,8 @@ export function MapWorkspace(props: {
     activeWorkId(props.inspectionCase.id, measurable),
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [focusVersion, setFocusVersion] = useState(0)
+  const [compactAddition, setCompactAddition] = useState(false)
   const [showCommunes, setShowCommunes] = useState(true)
   const hidden = useMemo(() => new Set<string>(), [])
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
@@ -107,6 +109,8 @@ export function MapWorkspace(props: {
   const allMeasurements = mapFeatures.inventoryItems.map((feature) => feature.measurement)
   const selectedFeatureFromItems =
     mapFeatures.items.find((item) => item.measurement.id === selectedId) ?? null
+  const selectedFeatureFromInventory =
+    mapFeatures.inventoryItems.find((item) => item.measurement.id === selectedId) ?? null
   // Ref caches the last feature found for the current selectedId. It is written
   // synchronously inside selectMapFeature (before React re-renders), so it
   // survives concurrent mapFeatures.refresh() calls that temporarily empty items.
@@ -119,9 +123,14 @@ export function MapWorkspace(props: {
   const measurementWork = selectedMeasurement
     ? (measurable.find((item) => item.id === selectedMeasurement.workItemId) ?? null)
     : null
+  const cachedSelectedFeature =
+    lastSelectedFeatureRef.current?.measurement.id === selectedId
+      ? lastSelectedFeatureRef.current
+      : null
   const selectedFeature = selectedId
     ? (selectedFeatureFromItems ??
-      lastSelectedFeatureRef.current ??
+      selectedFeatureFromInventory ??
+      cachedSelectedFeature ??
       (selectedMeasurement
         ? {
             managementZoneId: null,
@@ -134,6 +143,15 @@ export function MapWorkspace(props: {
           }
         : null))
     : null
+  const mapMeasurements =
+    selectedMeasurement && !visibleMeasurements.some((item) => item.id === selectedMeasurement.id)
+      ? [...visibleMeasurements, selectedMeasurement]
+      : visibleMeasurements
+  const renderedMapFeatures =
+    selectedFeature &&
+    !mapFeatures.items.some((item) => item.measurement.id === selectedFeature.measurement.id)
+      ? [...mapFeatures.items, selectedFeature]
+      : mapFeatures.items
   const selected = selectedFeature?.measurement ?? null
   const selectedWork = measurable.find((item) => item.id === selectedWorkId) ?? null
   const selectedSummary = selectedWork ? summaries[selectedWork.id] : undefined
@@ -193,6 +211,7 @@ export function MapWorkspace(props: {
     const feature = mapFeatures.items.find((item) => item.measurement.id === id) ?? null
     lastSelectedFeatureRef.current = feature
     setSelectedId(id)
+    setFocusVersion((current) => current + 1)
     setMode('view')
     setEditHistory(null)
     clearCapture()
@@ -211,6 +230,7 @@ export function MapWorkspace(props: {
     const measurement = allMeasurements.find((item) => item.id === id)
     if (!measurement) return
     setSelectedId(id)
+    setFocusVersion((current) => current + 1)
     setSelectedWorkId(measurement.workItemId)
     rememberActiveWork(props.inspectionCase.id, measurement.workItemId)
     setMode('view')
@@ -220,7 +240,12 @@ export function MapWorkspace(props: {
     setActivePanel(null)
   }
 
-  const startDrawing = (nextMode: DrawableMeasurementGeometryKind, workItemId: string) => {
+  const startDrawing = (
+    nextMode: DrawableMeasurementGeometryKind,
+    workItemId: string,
+    asCompactAddition = false,
+  ) => {
+    setCompactAddition(asCompactAddition)
     setSelectedWorkId(workItemId)
     rememberActiveWork(props.inspectionCase.id, workItemId)
     drawingWorkflow.start(nextMode, 'measurement')
@@ -229,6 +254,7 @@ export function MapWorkspace(props: {
     setSelectedId(null)
   }
   const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind | 'measure') => {
+    setCompactAddition(false)
     if (nextMode === 'measure') {
       setMode('measure')
       dispatchDrawing({ type: 'reset' })
@@ -245,6 +271,7 @@ export function MapWorkspace(props: {
   const cancelDraft = () => {
     drawingWorkflow.cancel()
     setEditHistory(null)
+    setCompactAddition(false)
   }
   const selectWork = (item: WorkItem) => {
     setSelectedWorkId(item.id)
@@ -311,9 +338,10 @@ export function MapWorkspace(props: {
             draftPositions={draftPositions}
             draftSelectedIndex={drawing.selectedIndex}
             editMeasurement={editMeasurement}
+            focusVersion={focusVersion}
             hiddenWorkItemIds={hidden}
-            mapFeatures={mapFeatures.items}
-            measurements={visibleMeasurements}
+            mapFeatures={renderedMapFeatures}
+            measurements={mapMeasurements}
             mode={mode}
             onAddPosition={drawingWorkflow.addPosition}
             onEditGeometry={(geometry) =>
@@ -347,6 +375,11 @@ export function MapWorkspace(props: {
             draftGeometry={draftGeometry}
             mode={mode}
             groups={props.groups}
+            onAddFeature={() => {
+              if (!selected || selected.geometryKind === 'route') return
+              startDrawing(selected.geometryKind, selected.workItemId, true)
+              setActivePanel(null)
+            }}
             onClearSelection={() => setSelectedId(null)}
             onEditFeature={() => {
               if (!selected || selected.geometryKind === 'route' || selected.status !== 'confirmed')
@@ -367,6 +400,9 @@ export function MapWorkspace(props: {
             onWorkChanged={props.onWorkChanged}
             workItem={props.workItems.find(
               (item) => item.id === selectedFeature?.measurement.workItemId,
+            )}
+            workMeasurements={allMeasurements.filter(
+              (measurement) => measurement.workItemId === selectedFeature?.measurement.workItemId,
             )}
             workTypes={props.workTypes}
             zones={zones}
@@ -415,6 +451,7 @@ export function MapWorkspace(props: {
             workTypes: props.workTypes,
           }}
           details={{
+            compactAddition,
             defaultName: defaultMeasurementName,
             draftGeometry,
             draftReady,
@@ -456,6 +493,7 @@ export function MapWorkspace(props: {
                 return
               }
               cancelDraft()
+              setCompactAddition(false)
               setSelectedId(measurement.id)
               await refreshMeasurementData(measurement.workItemId)
             },

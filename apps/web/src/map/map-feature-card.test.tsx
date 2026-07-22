@@ -55,19 +55,39 @@ function feature(input: Partial<Measurement> = {}): MapFeature {
 }
 
 describe('map feature card', () => {
-  it('shows the creation date without presenting a classification zone as an address', () => {
+  it('shows the creation date, management zone and add action without calling it an address', () => {
+    const primary = feature()
+    const addition = feature({
+      baseValue: 29.5,
+      id: '00000000-0000-4000-8000-000000000005',
+      name: 'Đoạn bổ sung 01',
+    })
     const html = renderToString(
-      <MapFeatureCard feature={feature()} onClose={() => undefined} onEdit={() => undefined} />,
+      <MapFeatureCard
+        feature={primary}
+        onAdd={() => undefined}
+        onClose={() => undefined}
+        onEdit={() => undefined}
+        workMeasurements={[primary.measurement, addition.measurement]}
+      />,
     )
 
     expect(html).toContain('Sửa hình dạng')
     expect(html).toContain('Ngày lập:')
     expect(html).toContain('22/07/2026')
+    expect(html).toContain('Khu vực:')
+    expect(html).toContain('Mộc Châu')
+    expect(html).toContain('Tổng số liệu:')
+    expect(html).toContain('150,00 m')
+    expect(html).toContain('Tuyến 01')
+    expect(html).toContain('120,50 m')
+    expect(html).toContain('Tuyến 02')
+    expect(html).toContain('29,50 m')
+    expect(html).toContain('>Thêm<')
     expect(html).toContain('>Xóa<')
     expect(html).toContain('Sửa tên, khu vực và dịch vụ')
     expect(html).not.toContain('Địa chỉ:')
     expect(html).not.toContain('>Thông tin<')
-    expect(html).not.toContain('Mộc Châu')
   })
 
   it('does not crash when a business note starts like malformed JSON', () => {

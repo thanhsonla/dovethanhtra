@@ -194,6 +194,37 @@
   gap: 10px;
 }
 
+.measurement-form--addition {
+  gap: 8px;
+}
+
+.measurement-form--addition label {
+  gap: 3px;
+  color: #36594b;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.measurement-form--addition input {
+  min-height: 36px;
+  padding: 6px 9px;
+  font-size: 0.82rem;
+}
+
+.measurement-form--addition > .button {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+}
+
+.measurement-quick-summary--addition {
+  padding: 8px 10px;
+}
+
+.measurement-quick-summary--addition strong {
+  font-size: 1.08rem;
+}
+
 .measurement-quick-summary {
   display: grid;
   gap: 3px;

@@ -1,8 +1,16 @@
-import type { ManagementZone, MapFeature, ServiceGroup, WorkItem, WorkType } from '@dove/contracts'
+import type {
+  ManagementZone,
+  MapFeature,
+  Measurement,
+  ServiceGroup,
+  WorkItem,
+  WorkType,
+} from '@dove/contracts'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { api } from '../api.js'
-import { measurementBaseValue } from './measurement-summary.js'
+import { measurementPartName } from './measurement-entry-defaults.js'
+import { measurementBaseTotal, measurementBaseValue } from './measurement-summary.js'
 
 const COLOR_PALETTE = [
   { name: 'Xanh lá', value: '#10b981' },
@@ -34,17 +42,27 @@ function createdDate(value: string): string {
 export function MapFeatureCard(props: {
   feature: MapFeature
   groups?: ServiceGroup[] | undefined
-  onClose(): void
+  onAdd?: (() => void) | undefined
+  onClose: () => void
   onEdit?: (() => void) | undefined
   onRefresh?: (() => Promise<void> | void) | undefined
   onRemoveFeature?: ((measurementId: string) => void) | undefined
   onReplaceFeature?: ((previousId: string, feature: MapFeature) => void) | undefined
   onWorkChanged?: ((item: WorkItem) => void) | undefined
   workItem?: WorkItem | null | undefined
+  workMeasurements?: Measurement[] | undefined
   workTypes?: WorkType[] | undefined
   zones?: ManagementZone[] | undefined
 }) {
   const item = props.feature.measurement
+  const workMeasurements = (props.workMeasurements ?? [item])
+    .filter(
+      (measurement) =>
+        measurement.workItemId === item.workItemId &&
+        !measurement.deletedAt &&
+        measurement.status !== 'superseded',
+    )
+    .toSorted((left, right) => left.createdAt.localeCompare(right.createdAt))
   const noteData = noteMetadata(item.note)
   const initialColor = (noteData?.color as string | undefined) ?? '#10b981'
   const [selectedColor, setSelectedColor] = useState(initialColor)
@@ -55,6 +73,7 @@ export function MapFeatureCard(props: {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const cardRef = useRef<HTMLElement | null>(null)
   const colorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(
@@ -63,6 +82,22 @@ export function MapFeatureCard(props: {
     },
     [],
   )
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') props.onClose()
+    }
+    const closeOnOutside = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Node && !cardRef.current?.contains(target)) props.onClose()
+    }
+    document.addEventListener('keydown', closeOnEscape, true)
+    document.addEventListener('pointerdown', closeOnOutside)
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape, true)
+      document.removeEventListener('pointerdown', closeOnOutside)
+    }
+  }, [props.onClose])
 
   const compatibleGroups = useMemo(() => {
     const workTypes = props.workTypes ?? []
@@ -200,7 +235,7 @@ export function MapFeatureCard(props: {
   }
 
   return (
-    <article className="map-feature-card" aria-label="Thông tin đối tượng đã chọn">
+    <article className="map-feature-card" aria-label="Thông tin đối tượng đã chọn" ref={cardRef}>
       <button
         className="map-feature-card__close"
         aria-label="Đóng thẻ"
@@ -299,14 +334,32 @@ export function MapFeatureCard(props: {
           {error && <div className="map-feature-card__error">{error}</div>}
           <div className="map-feature-card__info-grid">
             <div className="map-feature-card__item">
-              <span className="map-feature-card__label">Số liệu:</span>
+              <span className="map-feature-card__label">Tổng số liệu:</span>
               <strong className="map-feature-card__val-highlight">
-                {measurementBaseValue(item)}
+                {measurementBaseTotal(workMeasurements)}
               </strong>
+            </div>
+            <div className="map-feature-card__parts" aria-label="Các lần đo">
+              {workMeasurements.map((measurement, index) => (
+                <div className="map-feature-card__part" key={measurement.id}>
+                  <span>
+                    {measurement.geometryKind === 'route'
+                      ? `Lộ trình ${String(index + 1).padStart(2, '0')}`
+                      : measurementPartName(measurement.geometryKind, index + 1)}
+                  </span>
+                  <strong>{measurementBaseValue(measurement)}</strong>
+                </div>
+              ))}
             </div>
             <div className="map-feature-card__item">
               <span className="map-feature-card__label">Ngày lập:</span>
               <span className="map-feature-card__val">{createdDate(item.createdAt)}</span>
+            </div>
+            <div className="map-feature-card__item">
+              <span className="map-feature-card__label">Khu vực:</span>
+              <span className="map-feature-card__val">
+                {props.feature.managementZoneName ?? 'Chưa gán'}
+              </span>
             </div>
             <div className="map-feature-card__item">
               <span className="map-feature-card__label">Loại dịch vụ:</span>
@@ -361,6 +414,11 @@ export function MapFeatureCard(props: {
             </div>
           ) : (
             <>
+              {item.geometryKind !== 'route' && props.onAdd && (
+                <button className="map-feature-card__add-btn" onClick={props.onAdd} type="button">
+                  Thêm
+                </button>
+              )}
               {item.status === 'confirmed' && item.geometryKind !== 'route' && props.onEdit && (
                 <button className="map-feature-card__edit-btn" onClick={props.onEdit} type="button">
                   Sửa hình dạng

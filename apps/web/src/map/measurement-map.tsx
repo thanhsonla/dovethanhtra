@@ -48,6 +48,7 @@ interface MeasurementMapProps {
   draftPositions: Position[]
   draftSelectedIndex: number | null
   editMeasurement: Measurement | null
+  focusVersion?: number
   hiddenWorkItemIds: Set<string>
   mapFeatures?: MapFeature[]
   measurements: Measurement[]
@@ -306,7 +307,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const attributionRequest = useRef(0)
   const styleRequest = useRef(0)
   const fallbackRequested = useRef(false)
-  const lastZoomedId = useRef<string | null>(null)
+  const lastZoomedSelection = useRef<string | null>(null)
   const activeBasemapId = useRef(props.basemapId)
   const activeSnapTargetRef = useRef<SnapTarget | null>(null)
 
@@ -604,12 +605,14 @@ export function MeasurementMap(props: MeasurementMapProps) {
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !props.selectedId || lastZoomedId.current === props.selectedId) return
+    if (!map || !props.selectedId) return
+    const selectionKey = `${props.selectedId}:${props.focusVersion ?? 0}`
+    if (lastZoomedSelection.current === selectionKey) return
     const measurement = props.measurements.find((item) => item.id === props.selectedId)
     if (!measurement) return
     const extent = geometryExtent(measurement.normalizedGeometry ?? measurement.rawGeometry)
     if (!extent) return
-    lastZoomedId.current = props.selectedId
+    lastZoomedSelection.current = selectionKey
     if (extent.west === extent.east && extent.south === extent.north) {
       map.easeTo({
         center: [extent.west, extent.south],
@@ -629,7 +632,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
         },
       )
     }
-  }, [props.measurements, props.selectedId])
+  }, [props.focusVersion, props.measurements, props.selectedId])
 
   useEffect(() => {
     markers.current.forEach((marker) => marker.remove())

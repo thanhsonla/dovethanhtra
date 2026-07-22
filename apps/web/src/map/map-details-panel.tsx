@@ -15,6 +15,7 @@ import { MeasurementInspector } from './measurement-inspector.js'
 import { RoutePlanner } from './route-planner.js'
 
 export function MapDetailsPanel(props: {
+  compactAddition: boolean
   defaultName: string
   draftGeometry: GeoJsonGeometry | null
   draftReady: boolean
@@ -72,6 +73,7 @@ export function MapDetailsPanel(props: {
         />
       ) : (
         <MeasurementInspector
+          compactAddition={props.compactAddition}
           defaultName={props.defaultName}
           draftGeometry={props.draftGeometry}
           draftReady={props.draftReady}
@@ -87,23 +89,27 @@ export function MapDetailsPanel(props: {
           onSaved={(measurement, action) => props.onSaved(measurement, action)}
         />
       )}
-      <FieldPanel
-        measurement={props.measurement}
-        workItem={props.selectedWork}
-        gpsKind={
-          props.selectedKind === 'line' || props.selectedKind === 'point'
-            ? props.selectedKind
-            : null
-        }
-        onError={(message) => props.onError(message)}
-        onChanged={(measurement) => props.onChanged(measurement)}
-      />
-      <DataToolsPanel
-        allowImport={drawableKind !== null}
-        onError={(message) => props.onError(message)}
-        workItem={props.selectedWork}
-        onChanged={(measurement) => props.onDataChanged(measurement)}
-      />
+      {!props.compactAddition && (
+        <>
+          <FieldPanel
+            measurement={props.measurement}
+            workItem={props.selectedWork}
+            gpsKind={
+              props.selectedKind === 'line' || props.selectedKind === 'point'
+                ? props.selectedKind
+                : null
+            }
+            onError={(message) => props.onError(message)}
+            onChanged={(measurement) => props.onChanged(measurement)}
+          />
+          <DataToolsPanel
+            allowImport={drawableKind !== null}
+            onError={(message) => props.onError(message)}
+            workItem={props.selectedWork}
+            onChanged={(measurement) => props.onDataChanged(measurement)}
+          />
+        </>
+      )}
     </section>
   )
 }

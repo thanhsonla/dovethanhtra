@@ -78,14 +78,18 @@ export function MapWorkspaceDrawers(props: {
     props.details.measurement &&
     !props.details.draftReady &&
     !props.details.editMode
+  const compactAddition =
+    props.details.compactAddition && props.details.draftReady && !props.details.editMode
 
   return (
     <MapDrawer
       id="map-details-drawer"
-      label={compactInfo ? 'Thông tin' : 'Chi tiết và nâng cao'}
+      label={
+        compactAddition ? 'Lưu phần bổ sung' : compactInfo ? 'Thông tin' : 'Chi tiết và nâng cao'
+      }
       onClose={props.onClose}
       side="right"
-      {...(compactInfo ? { variant: 'compact' as const } : {})}
+      {...(compactInfo || compactAddition ? { variant: 'compact' as const } : {})}
     >
       <MapDetailsPanel {...props.details} />
     </MapDrawer>

@@ -23,6 +23,7 @@ const statusLabels: Record<string, string> = {
 }
 
 export interface MeasurementInspectorProps {
+  compactAddition: boolean
   defaultName: string
   draftGeometry: GeoJsonGeometry | null
   draftReady: boolean
@@ -74,6 +75,10 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
         name: field(values, 'name'),
         note: field(values, 'note') || null,
       })
+      if (props.compactAddition) {
+        await deliverSaved(created, 'done')
+        return
+      }
       if (action === 'continue') {
         await deliverSaved(created, 'continue')
         return
@@ -154,6 +159,34 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
   }
 
   if (props.draftReady && props.draftGeometry) {
+    if (props.compactAddition) {
+      return (
+        <form
+          className="measurement-form measurement-form--addition"
+          onSubmit={(event) => void save(event)}
+        >
+          <div className="measurement-quick-summary measurement-quick-summary--addition">
+            <span>Số liệu phần bổ sung</span>
+            <strong>{temporaryValue(props.draftGeometry)}</strong>
+          </div>
+          <label>
+            Tên vùng đo bổ sung
+            <input autoFocus name="name" defaultValue={props.defaultName} required />
+          </label>
+          {requiredInputs(props.selectedWork).map((name) => (
+            <input
+              key={name}
+              name={name}
+              type="hidden"
+              value={props.initialCalculationInputs[name] ?? 1}
+            />
+          ))}
+          <button className="button" disabled={busy} type="submit">
+            {busy ? 'Đang lưu…' : 'Lưu'}
+          </button>
+        </form>
+      )
+    }
     return (
       <form
         className="measurement-form measurement-form--quick"

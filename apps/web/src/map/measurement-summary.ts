@@ -26,6 +26,18 @@ export function measurementBaseValue(measurement: Measurement): string {
   return formatQuantity(measurement.baseValue, baseUnits[measurement.geometryKind])
 }
 
+export function measurementBaseTotal(measurements: Measurement[]): string {
+  const active = measurements.filter(
+    (item) => !item.deletedAt && item.status !== 'superseded' && item.baseValue !== null,
+  )
+  const kind = active[0]?.geometryKind ?? measurements[0]?.geometryKind
+  if (!kind) return 'Chưa tính'
+  return formatQuantity(
+    active.reduce((total, item) => total + (item.baseValue ?? 0), 0),
+    baseUnits[kind],
+  )
+}
+
 export function measurementQuantity(measurement: Measurement): string {
   return formatQuantity(measurement.calculatedQuantity, measurement.unit)
 }

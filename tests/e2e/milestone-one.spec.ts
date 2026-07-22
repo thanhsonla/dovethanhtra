@@ -269,10 +269,33 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByLabel('Thông tin đối tượng đã chọn')).toContainText(
     classifiedMeasurementName,
   )
+  const selectedCard = page.getByLabel('Thông tin đối tượng đã chọn')
+  await expect(selectedCard.locator('.map-feature-card__parts')).toContainText('Tuyến 01')
+  const cardPlacement = await selectedCard.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    return {
+      fontSize: Number.parseFloat(getComputedStyle(element).fontSize),
+      rightGap: window.innerWidth - box.right,
+    }
+  })
+  expect(cardPlacement.rightGap).toBeLessThanOrEqual(24)
+  expect(cardPlacement.fontSize).toBeLessThan(13)
+  await page.keyboard.press('Escape')
+  await expect(selectedCard).toHaveCount(0)
+  await expect(page.locator('.map-drawer')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Tìm kiếm', exact: true }).click()
+  const repeatedFilteredFeature = page.getByRole('button', {
+    name: new RegExp(classifiedMeasurementName),
+  })
+  await repeatedFilteredFeature.evaluate((element: HTMLButtonElement) => element.click())
+  await expect(selectedCard).toBeVisible()
   await page.getByRole('button', { name: 'Đóng tìm kiếm dữ liệu' }).click()
+  await expect(selectedCard).toHaveCount(0)
   await expect(page.locator('.map-drawer')).toHaveCount(0)
   await expect(page.locator('.measurement-panel')).toHaveCount(0)
   await expect(page.locator('.map-status')).toHaveCount(0)
+
   await page.getByRole('button', { name: 'Quản lý số liệu', exact: true }).click()
   const dataSidebarFit = await page.locator('#map-data-drawer').evaluate((drawer) => {
     const body = drawer.querySelector<HTMLElement>('.map-drawer__body')
@@ -412,7 +435,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .getByRole('button', { name: 'Kết thúc phép đo' })
     .evaluate((element: HTMLButtonElement) => element.click())
   const firstSuggestedName = await page.getByLabel('Tên phép đo').inputValue()
-  expect(firstSuggestedName).toMatch(/^Đoạn \d{2}$/)
+  expect(firstSuggestedName).toMatch(/^Tuyến \d{2}$/)
   await page
     .getByRole('button', { name: 'Lưu và tiếp tục' })
     .evaluate((element: HTMLButtonElement) => element.click())
@@ -423,7 +446,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .getByRole('button', { name: 'Kết thúc phép đo' })
     .evaluate((element: HTMLButtonElement) => element.click())
   const reviewMeasurementName = await page.getByLabel('Tên phép đo').inputValue()
-  expect(reviewMeasurementName).toMatch(/^Đoạn \d{2}$/)
+  expect(reviewMeasurementName).toMatch(/^Tuyến \d{2}$/)
   expect(reviewMeasurementName).not.toBe(firstSuggestedName)
   await page
     .getByRole('button', { name: 'Lưu và xác nhận' })

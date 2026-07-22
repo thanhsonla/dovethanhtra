@@ -2,6 +2,7 @@ import type {
   GeoJsonGeometry,
   ManagementZone,
   MapFeature,
+  Measurement,
   ServiceGroup,
   WorkItem,
   WorkType,
@@ -18,6 +19,7 @@ export function MapWorkspaceOverlays(props: {
   capture: StoredCaptureDraft | null
   draftGeometry: GeoJsonGeometry | null
   mode: MapMode
+  onAddFeature?: (() => void) | undefined
   onClearSelection(): void
   onEditFeature?: (() => void) | undefined
   onOpenCapture(): void
@@ -28,6 +30,7 @@ export function MapWorkspaceOverlays(props: {
   selectedFeature: MapFeature | null
   groups: ServiceGroup[]
   workItem?: WorkItem | null | undefined
+  workMeasurements?: Measurement[] | undefined
   workTypes: WorkType[]
   zones: ManagementZone[]
 }) {
@@ -44,6 +47,7 @@ export function MapWorkspaceOverlays(props: {
           key={props.selectedFeature.measurement.id}
           feature={props.selectedFeature}
           groups={props.groups}
+          onAdd={props.onAddFeature}
           onClose={() => props.onClearSelection()}
           onEdit={props.onEditFeature}
           onRemoveFeature={props.onRemoveFeature}
@@ -51,6 +55,7 @@ export function MapWorkspaceOverlays(props: {
           onRefresh={props.onRefreshFeatures}
           onWorkChanged={props.onWorkChanged}
           workItem={props.workItem}
+          workMeasurements={props.workMeasurements}
           workTypes={props.workTypes}
           zones={props.zones}
         />

@@ -388,7 +388,7 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
     this.satellite = mapboxSatelliteDescriptor(environment)
     this.uprightGoogle = uprightGoogleHybridDescriptor(environment, fetcher)
     this.google = capabilities.googleMapTiles ? googleSatelliteDescriptor(fetcher) : null
-    this.defaultId = this.googleStores.id
+    this.defaultId = this.uprightGoogle?.id ?? this.googleStores.id
   }
 
   descriptors() {

@@ -70,7 +70,7 @@ describe('measurement entry defaults', () => {
       measurement({ id: '00000000-0000-4000-8000-000000000005', status: 'superseded' }),
     ]
 
-    expect(nextMeasurementName('line', measurements)).toBe('Đoạn 02')
+    expect(nextMeasurementName('line', measurements)).toBe('Tuyến 02')
     expect(nextMeasurementName('area', measurements)).toBe('Vùng 01')
   })
 

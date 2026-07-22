@@ -449,3 +449,17 @@
   trường này chỉ còn nhãn đúng nghĩa **Khu vực** trong biểu mẫu chỉnh sửa. Chọn một
   dòng trong **Quản lý số liệu** chỉ chọn đối tượng và mở thẻ gọn, không tự bung
   drawer **Thông tin** cũ.
+- Thẻ đối tượng bổ sung dòng **Khu vực** và nút **Thêm**. Nút này dùng quan hệ một
+  công tác–nhiều phép đo sẵn có để vẽ thêm Điểm/Chiều dài/Diện tích trong cùng công
+  tác, giữ từng geometry và audit độc lập. Chọn tên trong **Quản lý số liệu** đưa
+  MapLibre tới geometry lấy từ inventory toàn hồ sơ, nên hoạt động cả khi đối tượng
+  nằm ngoài bbox hiện tại; mỗi lần bấm đều phát sinh yêu cầu định vị mới.
+- Nền mặc định ưu tiên **Google vệ tinh · nhãn dễ đọc** khi có Mapbox public token
+  hợp lệ; nếu thiếu token thì dùng nền Google vệ tinh có địa danh/cửa hàng làm
+  fallback. Luồng **Thêm** dùng drawer compact chỉ gồm số liệu phần bổ sung, tên và
+  nút **Lưu**. Thẻ đối tượng cộng các phép đo còn hiệu lực thành **Tổng số liệu** và
+  liệt kê từng phép đo bên dưới; geometry và audit của từng lần vẫn độc lập.
+- Nhãn thành phần trên thẻ được chuẩn hóa theo geometry và thứ tự:
+  **Điểm/Tuyến/Vùng 01, 02…**, không lặp lại tên đầy đủ của đối tượng. Thẻ chuyển
+  sang góc phải, giảm typography/kích thước và hỗ trợ đóng bằng **Esc** hoặc nhấp ra
+  ngoài bên cạnh nút ×.

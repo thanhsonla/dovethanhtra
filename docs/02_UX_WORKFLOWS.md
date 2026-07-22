@@ -101,11 +101,19 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
 6. Xử lý cảnh báo và xác nhận. Hệ số, ảnh và thuộc tính chi tiết được bổ sung trong
    phần **Nâng cao** khi công tác yêu cầu.
 
-Thẻ đối tượng hiển thị trực tiếp tên, ngày lập, số liệu, loại dịch vụ, màu nét và
-các thao tác sửa/xóa. Không hiển thị khu vực phân loại dưới nhãn **Địa chỉ**, vì 12
+Thẻ đối tượng hiển thị trực tiếp tên, ngày lập, khu vực, số liệu, loại dịch vụ, màu
+nét và các thao tác **Thêm**/sửa/xóa. **Thêm** khởi động đúng công cụ Điểm/Chiều
+dài/Diện tích để tạo một phép đo mới trong cùng công tác, không ghi đè geometry cũ.
+Sau khi kết thúc geometry bổ sung, drawer gọn chỉ hiển thị số liệu tạm, tên phần bổ
+sung và một nút **Lưu**. Thẻ đối tượng hiển thị **Tổng số liệu** của các phép đo còn
+hiệu lực, bên dưới là số thứ tự chuẩn **Điểm/Tuyến/Vùng 01, 02…** và số liệu của
+từng lần đo để truy vết; tên đầy đủ của đối tượng chỉ hiển thị ở tiêu đề. Thẻ nằm ở
+góc phải, đóng bằng nút ×, phím **Esc** hoặc nhấp ra ngoài thẻ.
+Không hiển thị khu vực phân loại dưới nhãn **Địa chỉ**, vì 12
 khu vực quản lý không có geometry để xác minh địa chỉ theo tọa độ. Nút **Thông tin**
 được bỏ khỏi thẻ để giảm một bước và tiết kiệm không gian bản đồ; chọn đối tượng từ
-**Quản lý số liệu** chỉ mở thẻ này, không tự mở thêm drawer thông tin.
+**Quản lý số liệu** chỉ mở thẻ này, không tự mở thêm drawer thông tin và luôn đưa
+bản đồ tới toàn bộ geometry của đối tượng, kể cả khi đối tượng đang ngoài viewport.
 
 ### FLOW-03A — Quản lý cấu trúc dữ liệu
 

@@ -120,6 +120,18 @@ qua nút “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu.
 - Lùi/tiến và xóa phần đang chọn hoạt động cho point/line/polygon; từng đỉnh và chữ
   thập đỏ hiện đúng trong lúc vẽ.
 - Kết quả tạm cập nhật trực tiếp nhưng luôn có nhãn phân biệt với số chính thức.
+- Chọn tên phép đo trong **Quản lý số liệu** phải `easeTo`/`fitBounds` tới geometry
+  từ kho toàn hồ sơ, không phụ thuộc bbox hiện tại; chọn lại cùng một tên vẫn định
+  vị lại. Nút **Thêm** trên thẻ phải mở đúng công cụ và lưu phép đo mới trong cùng
+  công tác, không sửa hoặc gộp geometry của phép đo trước.
+- Drawer phát sinh từ nút **Thêm** dùng biến thể compact, chỉ có số liệu phần bổ
+  sung, tên và một nút **Lưu**; không hiện hệ số, ghi chú hoặc hai luồng lưu cũ. Sau
+  khi lưu, thẻ phải tính tổng các phép đo còn hiệu lực và liệt kê đúng từng phần.
+- Thành phần đầu tiên phải mang nhãn **Điểm/Tuyến/Vùng 01** thay vì lặp lại tên đầy
+  đủ của đối tượng. Thẻ nằm bên phải, đóng được bằng nút ×, phím **Esc** và thao tác
+  pointer bên ngoài; thao tác bên trong thẻ không được làm thẻ tự đóng.
+- Khi có token Mapbox công khai hợp lệ, nền mặc định là **Google vệ tinh · nhãn dễ
+  đọc**; khi không có token phải lùi an toàn về Google vệ tinh có địa danh/cửa hàng.
 
 ## 7. Kiểm thử bảo mật
 
