@@ -167,7 +167,12 @@ describe('Map-first editable structure API', () => {
       app.inject({ headers: { cookie }, method: 'GET', url: '/api/v1/catalog/management-zones' }),
     ])
     const area = areasResponse.json<AdminArea[]>()[0]!
-    const type = typesResponse.json<WorkType[]>().find((item) => item.measurementKind === 'line')!
+    const types = typesResponse.json<WorkType[]>()
+    const type = types.find((item) => item.measurementKind === 'line')!
+    const compatibleType = types.find(
+      (item) => item.measurementKind === 'line' && item.id !== type.id,
+    )!
+    const incompatibleType = types.find((item) => item.measurementKind === 'point')!
     const zone = zonesResponse.json<ManagementZone[]>()[0]!
     const suffix = randomUUID().slice(0, 8)
     const caseResponse = await app.inject({
@@ -225,8 +230,34 @@ describe('Map-first editable structure API', () => {
     })
     expect(idor.statusCode).toBe(404)
 
-    const renamedResponse = await app.inject({
+    const reclassifiedResponse = await app.inject({
       headers: { ...mutationHeaders, 'if-match': '"1"' },
+      method: 'PATCH',
+      url: `/api/v1/work-items/${item.id}`,
+      payload: { workTypeId: compatibleType.id },
+    })
+    expect(reclassifiedResponse.statusCode).toBe(200)
+    expect(reclassifiedResponse.json<WorkItem>()).toMatchObject({
+      serviceGroupId: compatibleType.serviceGroupId,
+      unit: compatibleType.baseUnit,
+      version: 2,
+      workTypeCode: compatibleType.code,
+      workTypeId: compatibleType.id,
+    })
+
+    const incompatibleResponse = await app.inject({
+      headers: { ...mutationHeaders, 'if-match': '"2"' },
+      method: 'PATCH',
+      url: `/api/v1/work-items/${item.id}`,
+      payload: { workTypeId: incompatibleType.id },
+    })
+    expect(incompatibleResponse.statusCode).toBe(422)
+    expect(incompatibleResponse.json<{ code: string }>()).toMatchObject({
+      code: 'WORK_TYPE_INCOMPATIBLE',
+    })
+
+    const renamedResponse = await app.inject({
+      headers: { ...mutationHeaders, 'if-match': '"2"' },
       method: 'PATCH',
       url: `/api/v1/work-items/${item.id}`,
       payload: { name: 'Chiều dài đường đã rà soát' },
@@ -234,7 +265,7 @@ describe('Map-first editable structure API', () => {
     expect(renamedResponse.json<WorkItem>()).toMatchObject({
       id: item.id,
       name: 'Chiều dài đường đã rà soát',
-      version: 2,
+      version: 3,
     })
 
     const componentResponse = await app.inject({
@@ -254,7 +285,7 @@ describe('Map-first editable structure API', () => {
     expect(componentUpdate.json<WorkComponent>()).toMatchObject({ id: component.id, version: 2 })
 
     const blockedParentDelete = await app.inject({
-      headers: { ...mutationHeaders, 'if-match': '"2"' },
+      headers: { ...mutationHeaders, 'if-match': '"3"' },
       method: 'DELETE',
       url: `/api/v1/work-items/${item.id}`,
       payload: { reason: 'Kiểm tra chặn dữ liệu con' },
@@ -271,13 +302,13 @@ describe('Map-first editable structure API', () => {
     expect(deletedComponent.version).toBe(3)
     expect(typeof deletedComponent.deletedAt).toBe('string')
     const removedItem = await app.inject({
-      headers: { ...mutationHeaders, 'if-match': '"2"' },
+      headers: { ...mutationHeaders, 'if-match': '"3"' },
       method: 'DELETE',
       url: `/api/v1/work-items/${item.id}`,
       payload: { reason: 'Lưu trữ công tác thử' },
     })
     const deletedItem = removedItem.json<WorkItem>()
-    expect(deletedItem.version).toBe(3)
+    expect(deletedItem.version).toBe(4)
     expect(typeof deletedItem.deletedAt).toBe('string')
   })
 })

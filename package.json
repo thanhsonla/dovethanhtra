@@ -29,7 +29,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:down": "docker compose down",
-    "infra:up": "docker compose up -d --wait",
+    "infra:up": "docker compose up -d --wait postgis minio clamav && docker compose up -d minio-init",
     "lint": "eslint . --max-warnings 0",
     "test": "pnpm -r test",
     "test:integration": "pnpm db:test:prepare && dotenv -e .env.example -- node scripts/with-test-database.mjs pnpm --filter @dove/api test:integration",

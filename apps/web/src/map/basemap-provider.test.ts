@@ -10,7 +10,7 @@ describe('configured basemap provider', () => {
       VITE_BASEMAP_LABEL: 'Nền kiểm thử',
       VITE_BASEMAP_STYLE_URL: 'https://maps.example.test/style.json',
     })
-    expect(provider.defaultId).toBe('google-hybrid-direct')
+    expect(provider.defaultId).toBe('google-hybrid-stores')
     expect(provider.get('configured-remote')).toMatchObject({
       attribution: '© Nhà cung cấp kiểm thử',
       label: 'Nền kiểm thử',
@@ -31,8 +31,8 @@ describe('configured basemap provider', () => {
     },
   ])('rejects incomplete or unsafe remote configuration', (environment) => {
     const provider = new ConfiguredBasemapProvider(environment)
-    expect(provider.defaultId).toBe('google-hybrid-direct')
-    expect(provider.descriptors()).toHaveLength(4)
+    expect(provider.defaultId).toBe('google-hybrid-stores')
+    expect(provider.descriptors()).toHaveLength(5)
   })
 
   it('adds an attributed Mapbox satellite raster layer for a public token', () => {
@@ -41,7 +41,7 @@ describe('configured basemap provider', () => {
     })
     const satellite = provider.get('mapbox-satellite')
     const upright = provider.get('google-hybrid-upright')
-    expect(provider.defaultId).toBe('google-hybrid-upright')
+    expect(provider.defaultId).toBe('google-hybrid-stores')
     expect(upright.label).toBe('Google vệ tinh · nhãn dễ đọc')
     expect(upright.loadStyle).toBeTypeOf('function')
     expect(provider.supportsOffline('mapbox-satellite')).toBe(false)
@@ -122,7 +122,7 @@ describe('configured basemap provider', () => {
     const esri = provider.get('esri-imagery-labels')
     const style = JSON.stringify(esri.style)
 
-    expect(provider.defaultId).toBe('google-hybrid-direct')
+    expect(provider.defaultId).toBe('google-hybrid-stores')
     expect(esri.label).toBe('Vệ tinh + địa danh')
     expect(style).toContain('World_Imagery/MapServer/tile/{z}/{y}/{x}')
     expect(style).toContain('World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')
@@ -134,10 +134,10 @@ describe('configured basemap provider', () => {
     const provider = new ConfiguredBasemapProvider({})
     const google = provider.get('google-hybrid-direct')
 
-    expect(google.label).toBe('Google vệ tinh + địa danh · khóa hướng Bắc')
+    expect(google.label).toBe('Google vệ tinh · khóa hướng Bắc')
     expect(google.lockRotation).toBe(true)
     expect(JSON.stringify(google.style)).toContain(
-      'https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+      'https://mt1.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}',
     )
     expect(google.attribution).toContain('Google Maps')
     expect(provider.supportsOffline(google.id)).toBe(false)
@@ -157,7 +157,7 @@ describe('configured basemap provider', () => {
     const provider = new ConfiguredBasemapProvider({}, { googleMapTiles: true }, fetcher)
     const google = provider.get('google-satellite-labels')
 
-    expect(provider.defaultId).toBe('google-satellite-labels')
+    expect(provider.defaultId).toBe('google-hybrid-stores')
     expect(provider.supportsOffline(google.id)).toBe(false)
     expect(JSON.stringify(google.style)).toContain('/api/v1/basemaps/google/tiles/{z}/{x}/{y}')
     await expect(

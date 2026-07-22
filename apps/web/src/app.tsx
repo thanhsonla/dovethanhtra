@@ -26,6 +26,8 @@ interface WorkspaceData {
 }
 
 const emptyData: WorkspaceData = { adminAreas: [], cases: [], groups: [], workTypes: [] }
+const legacyCaseDashboard = import.meta.env.VITE_LEGACY_CASE_DASHBOARD === 'true'
+let internalCaseCreation: Promise<InspectionCase> | null = null
 
 const statusLabel: Record<InspectionCase['status'], string> = {
   archived: 'Lưu trữ',
@@ -55,7 +57,11 @@ export function App() {
   const [deletedCases, setDeletedCases] = useState<InspectionCase[]>([])
   const [restoreReason, setRestoreReason] = useState('Phục hồi theo yêu cầu người dùng')
   const [caseCursor, setCaseCursor] = useState<string | null>(null)
-  const [mapOpen, setMapOpen] = useState(false)
+  const [mapOpen, setMapOpen] = useState(
+    () =>
+      !legacyCaseDashboard ||
+      (typeof window !== 'undefined' && window.location.hash !== '#dashboard'),
+  )
   const [error, setError] = useState('')
 
   const loadWorkspace = async () => {
@@ -65,8 +71,37 @@ export function App() {
       api.listServiceGroups(),
       api.listWorkTypes(),
     ])
-    setData({ adminAreas, cases: caseResponse.items, groups, workTypes })
+    let cases = caseResponse.items
+    let defaultCase = cases[0]
+    if (!legacyCaseDashboard && !defaultCase) {
+      const adminArea = adminAreas[0]
+      if (!adminArea) throw new Error('Chưa có địa bàn để khởi tạo không gian bản đồ.')
+      const year = new Date().getFullYear()
+      internalCaseCreation ??= api.createCase({
+        adminAreaId: adminArea.id,
+        caseCode: `MAP-${Date.now().toString(36).toUpperCase()}`,
+        description: 'Không gian nội bộ tự động cho giao diện bản đồ.',
+        name: 'Dữ liệu hiện trường',
+        periodEnd: `${year}-12-31`,
+        periodStart: `${year}-01-01`,
+      })
+      defaultCase = await internalCaseCreation
+      cases = [defaultCase]
+    }
+    setData({ adminAreas, cases, groups, workTypes })
     setCaseCursor(caseResponse.nextCursor)
+    if (defaultCase) {
+      setSelected(defaultCase)
+      if (!legacyCaseDashboard || window.location.hash !== '#dashboard') {
+        if (!legacyCaseDashboard) window.history.replaceState(null, '', '#map')
+        setMapOpen(true)
+      }
+      try {
+        setWorkItems(await api.listWorkItems(defaultCase.id))
+      } catch (reason) {
+        setError(message(reason))
+      }
+    }
   }
 
   useEffect(() => {
@@ -84,6 +119,7 @@ export function App() {
 
   const selectCase = async (item: InspectionCase) => {
     setSelected(item)
+    window.location.hash = '#dashboard'
     setMapOpen(false)
     setError('')
     try {
@@ -109,6 +145,9 @@ export function App() {
             const current = await api.login(email, password)
             setSession(current)
             await loadWorkspace()
+            if (!legacyCaseDashboard || window.location.hash !== '#dashboard') {
+              setMapOpen(true)
+            }
           } catch (reason) {
             setError(message(reason))
           }
@@ -129,12 +168,30 @@ export function App() {
         <MapWorkspace
           groups={data.groups}
           inspectionCase={selected}
-          onBack={() => setMapOpen(false)}
+          {...(legacyCaseDashboard
+            ? {
+                onBack: () => {
+                  window.location.hash = '#dashboard'
+                  setMapOpen(false)
+                },
+              }
+            : {})}
           onWorkCreated={(created) => setWorkItems((items) => [...items, created])}
+          onWorkChanged={(updated) =>
+            setWorkItems((items) => items.map((item) => (item.id === updated.id ? updated : item)))
+          }
           workItems={workItems}
           workTypes={data.workTypes}
         />
       </Suspense>
+    )
+  }
+
+  if (!legacyCaseDashboard) {
+    return (
+      <main className="center-card" role={error ? 'alert' : 'status'}>
+        {error || 'Đang chuẩn bị dữ liệu bản đồ…'}
+      </main>
     )
   }
 
@@ -265,7 +322,35 @@ export function App() {
 
           <div className="case-list">
             {data.cases.length === 0 && (
-              <p className="empty">Chưa có hồ sơ. Hãy tạo hồ sơ đầu tiên.</p>
+              <div className="empty-state">
+                <svg
+                  className="empty-state__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                  />
+                </svg>
+                <h3 className="empty-state__title">Chưa có hồ sơ</h3>
+                <p className="empty-state__description">
+                  Hãy tạo hồ sơ kiểm tra đầu tiên để bắt đầu công việc khảo sát và đo đạc khối lượng
+                  hiện trường.
+                </p>
+                <button
+                  className="button"
+                  onClick={() => {
+                    setError('')
+                    setShowCreate(true)
+                  }}
+                >
+                  Tạo hồ sơ đầu tiên
+                </button>
+              </div>
             )}
             {data.cases.map((item) => (
               <button
@@ -311,7 +396,10 @@ export function App() {
             workTypes={data.workTypes}
             onCreated={(created) => setWorkItems((items) => [...items, created])}
             onError={setError}
-            onOpenMap={() => setMapOpen(true)}
+            onOpenMap={() => {
+              sessionStorage.setItem('defaultView', 'map')
+              setMapOpen(true)
+            }}
           />
           {selected && (
             <ComparisonPanel

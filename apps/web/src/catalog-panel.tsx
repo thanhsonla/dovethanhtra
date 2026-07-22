@@ -1,5 +1,5 @@
 import type { MeasurementKind, ServiceGroup, UserRole, WorkType } from '@dove/contracts'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type CSSProperties, type FormEvent, useMemo, useState } from 'react'
 
 import { api } from './api.js'
 
@@ -79,7 +79,15 @@ export function CatalogPanel(props: {
       <ul>
         {props.groups.map((group) => (
           <li key={group.id}>
-            <span className="catalog-dot" style={{ background: group.color ?? '#63736c' }} />
+            <span
+              className="catalog-dot"
+              style={
+                {
+                  background: group.color ?? '#63736c',
+                  '--dot-color': group.color ?? '#63736c',
+                } as CSSProperties & { '--dot-color': string }
+              }
+            />
             <span>{group.name}</span>
             <strong>{counts.get(group.id) ?? 0}</strong>
           </li>

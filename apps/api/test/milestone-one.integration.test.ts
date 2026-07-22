@@ -344,7 +344,7 @@ describe('Milestone 2 measurement workflow', () => {
     expect(superseded.statusCode, superseded.body).toBe(201)
     expect(superseded.json<Measurement>()).toMatchObject({
       code: lineOne.code,
-      status: 'needs_attention',
+      status: 'confirmed',
       supersedesId: lineOne.id,
       version: 2,
     })

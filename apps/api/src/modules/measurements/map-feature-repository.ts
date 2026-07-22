@@ -21,6 +21,7 @@ export interface MapFeatureFilters {
   geometryKind?: MeasurementGeometryKind
   limit: number
   managementZoneId?: string
+  search?: string
   serviceGroupId?: string
   status?: MeasurementStatus
   workItemId?: string
@@ -70,6 +71,9 @@ function filtersSql(caseId: string, ownerId: string, filters: MapFeatureFilters)
       OR m.status=${filters.status ?? null}::measurement_status)
     AND (${filters.status ?? null}::measurement_status IS NOT NULL
       OR m.status NOT IN ('superseded','deleted'))
+    AND (${filters.search ?? null}::text IS NULL OR position(
+      lower(${filters.search ?? null}::text) IN lower(concat_ws(' ',m.name,w.name,wc.name,g.name,z.name))
+    ) > 0)
     AND (${bbox}::double precision[] IS NULL OR ST_Intersects(
       COALESCE(m.normalized_geometry,m.raw_geometry),
       ST_MakeEnvelope(${bbox?.[0] ?? null},${bbox?.[1] ?? null},

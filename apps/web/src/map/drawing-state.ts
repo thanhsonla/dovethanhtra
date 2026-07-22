@@ -15,10 +15,12 @@ export interface DrawingState {
 export type DrawingAction =
   | { type: 'add'; position: Position }
   | { type: 'delete-selected' }
+  | { type: 'insert-position'; index: number; position: Position }
   | { type: 'redo' }
   | { type: 'reset'; positions?: Position[] }
   | { type: 'select'; index: number | null }
   | { type: 'undo' }
+  | { type: 'update-position'; index: number; position: Position }
 
 export function createDrawingState(positions: Position[] = []): DrawingState {
   return { history: createHistory(positions), selectedIndex: null }
@@ -34,6 +36,23 @@ export function drawingReducer(state: DrawingState, action: DrawingAction): Draw
     return {
       history: pushHistory(state.history, [...state.history.present, action.position]),
       selectedIndex: null,
+    }
+  }
+  if (action.type === 'insert-position') {
+    const updated = [...state.history.present]
+    updated.splice(action.index, 0, action.position)
+    return {
+      history: pushHistory(state.history, updated),
+      selectedIndex: action.index,
+    }
+  }
+  if (action.type === 'update-position') {
+    if (state.history.present[action.index] === undefined) return state
+    const updated = [...state.history.present]
+    updated[action.index] = action.position
+    return {
+      history: pushHistory(state.history, updated),
+      selectedIndex: state.selectedIndex,
     }
   }
   if (action.type === 'delete-selected') {

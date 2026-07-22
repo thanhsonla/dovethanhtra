@@ -24,7 +24,7 @@ export default defineConfig({
     },
     {
       command:
-        'pnpm exec dotenv -e .env.example -v VITE_API_PROXY_TARGET=http://127.0.0.1:3100 -v VITE_BASEMAP_STYLE_URL=http://127.0.0.1:4173/basemaps/e2e-style.json -v VITE_BASEMAP_LABEL="Nền E2E" -v VITE_BASEMAP_ATTRIBUTION="Nền E2E được cấp phép" -v VITE_MAPBOX_PUBLIC_TOKEN=disabled-for-e2e -- pnpm --filter @dove/web dev --host 127.0.0.1 --port 4173',
+        'pnpm exec dotenv -e .env.example -v VITE_LEGACY_CASE_DASHBOARD=true -v VITE_API_PROXY_TARGET=http://127.0.0.1:3100 -v VITE_BASEMAP_STYLE_URL=http://127.0.0.1:4173/basemaps/e2e-style.json -v VITE_BASEMAP_LABEL="Nền E2E" -v VITE_BASEMAP_ATTRIBUTION="Nền E2E được cấp phép" -v VITE_MAPBOX_PUBLIC_TOKEN=disabled-for-e2e -- pnpm --filter @dove/web dev --host 127.0.0.1 --port 4173',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !process.env.CI,
     },

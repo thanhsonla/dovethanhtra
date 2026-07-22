@@ -5,9 +5,8 @@ import type {
   ServiceGroup,
   WorkItem,
   WorkType,
-  WorkComponent,
 } from '@dove/contracts'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { api } from '../api.js'
 import { DrawingToolbar, type MapPanelName } from './drawing-toolbar.js'
@@ -21,6 +20,7 @@ import {
 import { geometryFromPositions, positionsFromGeometry } from './map-geometry.js'
 import { MapWorkspaceHeader } from './map-workspace-header.js'
 import { inheritedCalculationInputs, nextMeasurementName } from './measurement-entry-defaults.js'
+import { MapAlert } from './map-alert.js'
 import { MeasurementMap } from './measurement-map.js'
 import { MapWorkspaceOverlays } from './map-workspace-overlays.js'
 import { activeWorkId, measurementKindForWork, rememberActiveWork } from './map-workspace-state.js'
@@ -35,8 +35,9 @@ import { useMapFeatures } from './use-map-features.js'
 export function MapWorkspace(props: {
   groups: ServiceGroup[]
   inspectionCase: InspectionCase
-  onBack: () => void
+  onBack?: () => void
   onWorkCreated: (item: WorkItem) => void
+  onWorkChanged: (item: WorkItem) => void
   workItems: WorkItem[]
   workTypes: WorkType[]
 }) {
@@ -60,8 +61,8 @@ export function MapWorkspace(props: {
     activeWorkId(props.inspectionCase.id, measurable),
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showCommunes, setShowCommunes] = useState(true)
   const hidden = useMemo(() => new Set<string>(), [])
-  const [components, setComponents] = useState<WorkComponent[]>([])
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [routePreview, setRoutePreview] = useState<GeoJsonGeometry | null>(null)
   const [activePanel, setActivePanel] = useState<MapPanelName | null>(null)
@@ -72,6 +73,21 @@ export function MapWorkspace(props: {
     onError: setError,
     onPanel: setActivePanel,
     onClassifyReady: classificationSelection.open,
+    quickSave: {
+      enabled: import.meta.env.VITE_LEGACY_CASE_DASHBOARD !== 'true',
+      groups: props.groups,
+      onDone: async (result) => {
+        const latestItems = await api.listWorkItems(props.inspectionCase.id)
+        latestItems
+          .filter((item) => !props.workItems.some((current) => current.id === item.id))
+          .forEach(props.onWorkCreated)
+        setSelectedWorkId(result.measurement.workItemId)
+        setSelectedId(result.measurement.id)
+        await refreshMeasurementData(result.measurement.workItemId)
+      },
+      workTypes: props.workTypes,
+      zones,
+    },
   })
   const {
     capturePending,
@@ -87,9 +103,37 @@ export function MapWorkspace(props: {
   const selectedBasemap = basemaps.get(basemapId)
   const mapFeatures = useMapFeatures(props.inspectionCase.id, setError)
   const classificationDraft = classificationSelection.find(drawingWorkflow.captureSync.drafts)
-  const allMeasurements = mapFeatures.items.map((feature) => feature.measurement)
-  const selectedFeature =
+  const visibleMeasurements = mapFeatures.items.map((feature) => feature.measurement)
+  const allMeasurements = mapFeatures.inventoryItems.map((feature) => feature.measurement)
+  const selectedFeatureFromItems =
     mapFeatures.items.find((item) => item.measurement.id === selectedId) ?? null
+  // Ref caches the last feature found for the current selectedId. It is written
+  // synchronously inside selectMapFeature (before React re-renders), so it
+  // survives concurrent mapFeatures.refresh() calls that temporarily empty items.
+  const lastSelectedFeatureRef = useRef<typeof selectedFeatureFromItems | null>(null)
+  const selectedMeasurement = selectedId
+    ? (allMeasurements.find((item) => item.id === selectedId) ??
+      lastSelectedFeatureRef.current?.measurement ??
+      null)
+    : null
+  const measurementWork = selectedMeasurement
+    ? (measurable.find((item) => item.id === selectedMeasurement.workItemId) ?? null)
+    : null
+  const selectedFeature = selectedId
+    ? (selectedFeatureFromItems ??
+      lastSelectedFeatureRef.current ??
+      (selectedMeasurement
+        ? {
+            managementZoneId: null,
+            managementZoneName: null,
+            measurement: selectedMeasurement,
+            serviceGroupId: measurementWork?.serviceGroupId ?? '',
+            serviceGroupName: 'Dịch vụ công ích',
+            workComponentName: null,
+            workItemName: measurementWork?.name ?? 'Công tác',
+          }
+        : null))
+    : null
   const selected = selectedFeature?.measurement ?? null
   const selectedWork = measurable.find((item) => item.id === selectedWorkId) ?? null
   const selectedSummary = selectedWork ? summaries[selectedWork.id] : undefined
@@ -105,7 +149,12 @@ export function MapWorkspace(props: {
       }
     : null
   const visibleCapture = capturePending ?? restoredCapture
-  const drawingKind = mode === 'point' || mode === 'line' || mode === 'area' ? mode : null
+  const drawingKind =
+    mode === 'point' || mode === 'line' || mode === 'area'
+      ? mode
+      : mode === 'measure'
+        ? 'line'
+        : null
   const measurementDraftGeometry =
     draftReady && drawableKind ? geometryFromPositions(drawableKind, drawing.history.present) : null
   const draftGeometry =
@@ -140,16 +189,36 @@ export function MapWorkspace(props: {
       void refreshWork(selectedWorkId).catch(() => undefined)
   }, [selectedWorkId])
 
-  useEffect(() => {
-    if (!mapFeatures.filters.workItemId) {
-      setComponents([])
-      return
+  const selectMapFeature = (id: string) => {
+    const feature = mapFeatures.items.find((item) => item.measurement.id === id) ?? null
+    lastSelectedFeatureRef.current = feature
+    setSelectedId(id)
+    setMode('view')
+    setEditHistory(null)
+    clearCapture()
+    setDraftReady(false)
+  }
+
+  const replaceMapFeature = (previousId: string, feature: NonNullable<typeof selectedFeature>) => {
+    mapFeatures.replaceFeature(previousId, feature)
+    if (selectedId === previousId) {
+      lastSelectedFeatureRef.current = feature
+      setSelectedId(feature.measurement.id)
     }
-    void api
-      .listWorkComponents(mapFeatures.filters.workItemId)
-      .then(setComponents)
-      .catch(() => setComponents([]))
-  }, [mapFeatures.filters.workItemId])
+  }
+
+  const selectMeasurement = (id: string) => {
+    const measurement = allMeasurements.find((item) => item.id === id)
+    if (!measurement) return
+    setSelectedId(id)
+    setSelectedWorkId(measurement.workItemId)
+    rememberActiveWork(props.inspectionCase.id, measurement.workItemId)
+    setMode('view')
+    setEditHistory(null)
+    clearCapture()
+    setDraftReady(false)
+    setActivePanel(null)
+  }
 
   const startDrawing = (nextMode: DrawableMeasurementGeometryKind, workItemId: string) => {
     setSelectedWorkId(workItemId)
@@ -159,7 +228,15 @@ export function MapWorkspace(props: {
     setRoutePreview(null)
     setSelectedId(null)
   }
-  const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind) => {
+  const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind | 'measure') => {
+    if (nextMode === 'measure') {
+      setMode('measure')
+      dispatchDrawing({ type: 'reset' })
+      setEditHistory(null)
+      setRoutePreview(null)
+      setSelectedId(null)
+      return
+    }
     if (!drawingWorkflow.start(nextMode, 'capture')) return
     setEditHistory(null)
     setRoutePreview(null)
@@ -183,29 +260,6 @@ export function MapWorkspace(props: {
       dispatchDrawing({ type: direction })
     }
   }
-  const selectMeasurement = (id: string) => {
-    const measurement = allMeasurements.find((item) => item.id === id)
-    if (!measurement) return
-    setSelectedId(id)
-    setSelectedWorkId(measurement.workItemId)
-    rememberActiveWork(props.inspectionCase.id, measurement.workItemId)
-    setMode('view')
-    setEditHistory(null)
-    clearCapture()
-    setDraftReady(false)
-    setActivePanel('details')
-  }
-  const selectMapFeature = (id: string) => {
-    const feature = mapFeatures.items.find((item) => item.measurement.id === id)
-    if (!feature) return
-    setSelectedId(id)
-    setSelectedWorkId(feature.measurement.workItemId)
-    rememberActiveWork(props.inspectionCase.id, feature.measurement.workItemId)
-    setMode('view')
-    setEditHistory(null)
-    clearCapture()
-    setDraftReady(false)
-  }
 
   if (!boundary) {
     return (
@@ -220,15 +274,12 @@ export function MapWorkspace(props: {
       <MapWorkspaceHeader
         basemapId={basemapId}
         basemaps={basemaps}
-        inspectionCase={props.inspectionCase}
-        onBack={() => props.onBack()}
+        {...(props.onBack ? { onBack: props.onBack } : {})}
         onBasemapChange={setBasemapId}
+        showCommunes={showCommunes}
+        onShowCommunesChange={setShowCommunes}
       />
-      {error && (
-        <div className="alert map-alert" role="alert">
-          {error}
-        </div>
-      )}
+      {error && <MapAlert message={error} onClose={() => setError('')} />}
       <section className="map-layout">
         <section className="map-stage">
           <DrawingToolbar
@@ -236,13 +287,16 @@ export function MapWorkspace(props: {
             canDelete={drawing.selectedIndex !== null}
             canFinish={
               (mode === 'line' && drawing.history.present.length >= 2) ||
+              (mode === 'measure' && drawing.history.present.length >= 2) ||
               (mode === 'area' && drawing.history.present.length >= 3)
             }
             canRedo={Boolean((editHistory ?? drawing.history).future.length)}
             canUndo={Boolean((editHistory ?? drawing.history).past.length)}
             mode={mode}
             onCancel={cancelDraft}
-            onDelete={() => dispatchDrawing({ type: 'delete-selected' })}
+            onDelete={() => {
+              dispatchDrawing({ type: 'delete-selected' })
+            }}
             onFinish={drawingWorkflow.finish}
             onHistory={changeHistory}
             onOpenPanel={(panel) => setActivePanel((current) => (current === panel ? null : panel))}
@@ -258,7 +312,8 @@ export function MapWorkspace(props: {
             draftSelectedIndex={drawing.selectedIndex}
             editMeasurement={editMeasurement}
             hiddenWorkItemIds={hidden}
-            measurements={allMeasurements}
+            mapFeatures={mapFeatures.items}
+            measurements={visibleMeasurements}
             mode={mode}
             onAddPosition={drawingWorkflow.addPosition}
             onEditGeometry={(geometry) =>
@@ -268,6 +323,7 @@ export function MapWorkspace(props: {
             }
             onFinishDrawing={drawingWorkflow.finish}
             onSelectDraftVertex={(index) => dispatchDrawing({ index, type: 'select' })}
+            onUpdateDraftPosition={drawingWorkflow.updatePosition}
             onBasemapFallback={() => {
               const fallbackId =
                 basemapId === 'google-hybrid-upright'
@@ -283,16 +339,37 @@ export function MapWorkspace(props: {
             onSelect={selectMapFeature}
             onViewportChange={mapFeatures.setBbox}
             selectedId={selectedId}
+            showCommunes={showCommunes}
           />
           <MapWorkspaceOverlays
             basemapLabel={selectedBasemap.label}
             capture={captureSync.latest}
             draftGeometry={draftGeometry}
             mode={mode}
+            groups={props.groups}
             onClearSelection={() => setSelectedId(null)}
+            onEditFeature={() => {
+              if (!selected || selected.geometryKind === 'route' || selected.status !== 'confirmed')
+                return
+              setEditHistory(createHistory(selected.rawGeometry))
+              setMode('edit')
+              setActivePanel('details')
+            }}
             onOpenCapture={() => classificationSelection.open(captureSync.latest!)}
-            onOpenFeature={() => setActivePanel('details')}
+            onRemoveFeature={(measurementId) => mapFeatures.removeFeature(measurementId)}
+            onReplaceFeature={replaceMapFeature}
+            onRefreshFeatures={async () => {
+              if (selectedFeature) {
+                await refreshMeasurementData(selectedFeature.measurement.workItemId)
+              }
+            }}
             selectedFeature={selectedFeature}
+            onWorkChanged={props.onWorkChanged}
+            workItem={props.workItems.find(
+              (item) => item.id === selectedFeature?.measurement.workItemId,
+            )}
+            workTypes={props.workTypes}
+            zones={zones}
           />
         </section>
 
@@ -341,6 +418,7 @@ export function MapWorkspace(props: {
             defaultName: defaultMeasurementName,
             draftGeometry,
             draftReady,
+            editMode: mode === 'edit',
             facilities,
             initialCalculationInputs,
             measurement: selected,
@@ -383,7 +461,6 @@ export function MapWorkspace(props: {
             },
           }}
           filters={{
-            components,
             confirmedTotals: mapFeatures.confirmedTotals,
             filters: mapFeatures.filters,
             groups: props.groups,
@@ -403,6 +480,12 @@ export function MapWorkspace(props: {
             selectedId,
             workItems: measurable,
             zones,
+          }}
+          sidebar={{
+            loading: mapFeatures.inventoryLoading,
+            measurements: allMeasurements,
+            selectedId,
+            onSelect: (measurement) => selectMeasurement(measurement.id),
           }}
           onClose={() => setActivePanel(null)}
         />

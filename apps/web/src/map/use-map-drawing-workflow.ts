@@ -1,4 +1,11 @@
-import type { DrawableMeasurementGeometryKind, GeoJsonGeometry } from '@dove/contracts'
+import type {
+  ClassifyCaptureDraftResponse,
+  DrawableMeasurementGeometryKind,
+  GeoJsonGeometry,
+  ManagementZone,
+  ServiceGroup,
+  WorkType,
+} from '@dove/contracts'
 import { useCallback, useReducer, useState, type ComponentProps } from 'react'
 
 import type { CaptureDraftPanel } from './capture-draft-panel.js'
@@ -7,6 +14,7 @@ import { geometryFromPositions } from './map-geometry.js'
 import type { MapPanelName } from './drawing-toolbar.js'
 import type { MapMode, Position } from './measurement-map.js'
 import type { StoredCaptureDraft } from '../field/offline-store.js'
+import { classificationPayload, compatibleWorkTypes } from './capture-classification-options.js'
 import { useCaptureDraftSync } from './use-capture-draft-sync.js'
 
 type DrawingTarget = 'capture' | 'measurement'
@@ -17,6 +25,13 @@ export function useMapDrawingWorkflow(options: {
   onError: (message: string) => void
   onPanel: (panel: MapPanelName | null) => void
   onClassifyReady: (draft: StoredCaptureDraft) => void
+  quickSave: {
+    enabled: boolean
+    groups: ServiceGroup[]
+    onDone: (result: ClassifyCaptureDraftResponse) => Promise<void>
+    workTypes: WorkType[]
+    zones: ManagementZone[]
+  }
 }) {
   const [mode, setMode] = useState<MapMode>('view')
   const [drawing, dispatchDrawing] = useReducer(drawingReducer, undefined, () =>
@@ -92,35 +107,108 @@ export function useMapDrawingWorkflow(options: {
           cancel()
           options.onPanel(null)
         },
-        onSave: () => {
-          setSavingCapture(true)
-          void captureSync
-            .save(capturePending.kind, capturePending.geometry)
-            .then(() => options.onPanel(null))
-            .catch((reason) =>
-              options.onError(reason instanceof Error ? reason.message : 'Không thể lưu nháp.'),
-            )
-            .finally(() => setSavingCapture(false))
-        },
-        onSaveAndClassify: () => {
-          setSavingCapture(true)
-          void captureSync
-            .save(capturePending.kind, capturePending.geometry)
-            .then((draft) => {
-              if (draft.serverDraft) options.onClassifyReady(draft)
-              else {
-                options.onError('Nháp đã lưu trên thiết bị. Có thể phân loại sau khi có mạng.')
-                options.onPanel(null)
-              }
-            })
-            .catch((reason) =>
-              options.onError(reason instanceof Error ? reason.message : 'Không thể lưu nháp.'),
-            )
-            .finally(() => setSavingCapture(false))
-        },
         saving: savingCapture,
+        ...(options.quickSave.enabled
+          ? {
+              onQuickSave: (name: string, zoneId: string) => {
+                const groups = [
+                  ...options.quickSave.groups.filter((item) => item.quickDefault),
+                  ...options.quickSave.groups.filter((item) => !item.quickDefault),
+                ]
+                const selection = groups
+                  .map((group) => ({
+                    group,
+                    workType: compatibleWorkTypes(
+                      options.quickSave.workTypes,
+                      group.id,
+                      capturePending.kind,
+                    )[0],
+                  }))
+                  .find((item) => item.workType)
+                const selectedWorkType = selection?.workType
+                if (!selectedWorkType) {
+                  options.onError('Chưa có cấu hình công tác phù hợp với công cụ đo này.')
+                  return
+                }
+                setSavingCapture(true)
+                void captureSync
+                  .save(capturePending.kind, capturePending.geometry)
+                  .then(async (draft) => {
+                    if (!draft.serverDraft) {
+                      options.onError('Cần kết nối mạng để hoàn tất lưu số liệu.')
+                      return
+                    }
+                    const result = await captureSync.classify(
+                      draft,
+                      classificationPayload({
+                        componentId: '',
+                        componentName: '',
+                        measurementName: name,
+                        note: '',
+                        workItemId: 'new',
+                        workItemName: name,
+                        workTypeId: selectedWorkType.id,
+                        zoneId,
+                      }),
+                      `classify-${crypto.randomUUID()}`,
+                    )
+                    cancel()
+                    options.onPanel(null)
+                    await options.quickSave.onDone(result)
+                  })
+                  .catch((reason) =>
+                    options.onError(
+                      reason instanceof Error ? reason.message : 'Không thể lưu số liệu.',
+                    ),
+                  )
+                  .finally(() => setSavingCapture(false))
+              },
+              zones: options.quickSave.zones,
+            }
+          : {
+              onSave: () => {
+                setSavingCapture(true)
+                void captureSync
+                  .save(capturePending.kind, capturePending.geometry)
+                  .then(() => options.onPanel(null))
+                  .catch((reason) =>
+                    options.onError(
+                      reason instanceof Error ? reason.message : 'Không thể lưu nháp.',
+                    ),
+                  )
+                  .finally(() => setSavingCapture(false))
+              },
+              onSaveAndClassify: () => {
+                setSavingCapture(true)
+                void captureSync
+                  .save(capturePending.kind, capturePending.geometry)
+                  .then((draft) => {
+                    if (draft.serverDraft) options.onClassifyReady(draft)
+                    else {
+                      options.onError(
+                        'Nháp đã lưu trên thiết bị. Có thể phân loại sau khi có mạng.',
+                      )
+                      options.onPanel(null)
+                    }
+                  })
+                  .catch((reason) =>
+                    options.onError(
+                      reason instanceof Error ? reason.message : 'Không thể lưu nháp.',
+                    ),
+                  )
+                  .finally(() => setSavingCapture(false))
+              },
+            }),
       }
     : null
+
+  const insertPosition = (index: number, position: Position) => {
+    dispatchDrawing({ type: 'insert-position', index, position })
+  }
+
+  const updatePosition = (index: number, position: Position) => {
+    dispatchDrawing({ type: 'update-position', index, position })
+  }
 
   return {
     addPosition,
@@ -133,9 +221,11 @@ export function useMapDrawingWorkflow(options: {
     draftReady,
     drawing,
     finish,
+    insertPosition,
     mode,
     setDraftReady,
     setMode,
     start,
+    updatePosition,
   }
 }

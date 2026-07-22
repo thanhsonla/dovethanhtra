@@ -3,7 +3,6 @@ import type {
   ClassifyCaptureDraftResponse,
   ManagementZone,
   ServiceGroup,
-  WorkComponent,
   WorkItem,
   WorkType,
 } from '@dove/contracts'
@@ -45,15 +44,12 @@ export function CaptureClassificationPanel(props: {
   const [workItemId, setWorkItemId] = useState('new')
   const [workItemName, setWorkItemName] = useState('')
   const [workTypeId, setWorkTypeId] = useState('')
-  const [components, setComponents] = useState<WorkComponent[]>([])
   const [componentId, setComponentId] = useState('')
   const [componentName, setComponentName] = useState('')
   const [measurementName, setMeasurementName] = useState(() => defaultMeasurementName(props.draft))
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [result, setResult] = useState<ClassifyCaptureDraftResponse | null>(null)
-  const [continueRequested, setContinueRequested] = useState(false)
   const [key, setKey] = useState(() => `classify-${crypto.randomUUID()}`)
   const [attempted, setAttempted] = useState(false)
 
@@ -93,14 +89,6 @@ export function CaptureClassificationPanel(props: {
 
   useEffect(() => {
     setComponentId('')
-    setComponents([])
-    if (workItemId === 'new') return
-    void api
-      .listWorkComponents(workItemId)
-      .then(setComponents)
-      .catch((reason) =>
-        setError(reason instanceof Error ? reason.message : 'Không tải được mục con.'),
-      )
   }, [workItemId])
 
   const valid =
@@ -127,41 +115,12 @@ export function CaptureClassificationPanel(props: {
         }),
         key,
       )
-      setResult(response)
-      setContinueRequested(continueDrawing)
-      if (!response.measurement.warnings.length) await props.onDone(response, continueDrawing)
+      await props.onDone(response, continueDrawing)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Không thể phân loại nháp.')
     } finally {
       setBusy(false)
     }
-  }
-
-  if (result) {
-    return (
-      <section className="capture-classification capture-classification--result">
-        <p className="capture-classification__eyebrow">Kết quả máy chủ</p>
-        <h3>{result.measurement.name}</h3>
-        <strong>
-          {result.measurement.calculatedQuantity ?? 'Chưa tính được'} {result.measurement.unit}
-        </strong>
-        {result.measurement.warnings.map((warning) => (
-          <div className="alert" key={warning.code} role="alert">
-            {warning.message}
-          </div>
-        ))}
-        <p>Geometry đã được giữ nguyên; phép đo cần xử lý cảnh báo trước khi xác nhận.</p>
-        <div className="form-actions">
-          <button
-            className="primary"
-            onClick={() => void props.onDone(result, continueRequested)}
-            type="button"
-          >
-            {continueRequested ? 'Tiếp tục đo' : 'Đóng'}
-          </button>
-        </div>
-      </section>
-    )
   }
 
   return (
@@ -197,6 +156,7 @@ export function CaptureClassificationPanel(props: {
           Tải lại phiên bản máy chủ
         </button>
       )}
+      {/* 1. Khu vực quản lý */}
       <label>
         Khu vực quản lý
         <select
@@ -215,8 +175,10 @@ export function CaptureClassificationPanel(props: {
           ))}
         </select>
       </label>
+
+      {/* 2. Loại dịch vụ */}
       <label>
-        Lĩnh vực dịch vụ
+        Loại dịch vụ
         <select
           aria-label="Lĩnh vực dịch vụ khi phân loại"
           onChange={(event) => {
@@ -233,110 +195,81 @@ export function CaptureClassificationPanel(props: {
           ))}
         </select>
       </label>
+
+      {/* 3. Tên công tác */}
+      <select
+        aria-label="Công tác khi phân loại"
+        onChange={(event) => setWorkItemId(event.target.value)}
+        style={{ display: 'none' }}
+        value={workItemId}
+      >
+        <option value="new">＋ Tạo công tác mới</option>
+        {workItems.map((item) => (
+          <option key={item.id} value={item.id}>
+            {item.name}
+          </option>
+        ))}
+      </select>
       <label>
-        Công tác
-        <select
-          aria-label="Công tác khi phân loại"
-          onChange={(event) => setWorkItemId(event.target.value)}
-          value={workItemId}
-        >
-          <option value="new">＋ Tạo công tác mới</option>
-          {workItems.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {workItemId === 'new' && (
-        <>
-          <label>
-            Tên công tác
-            <input
-              aria-label="Tên công tác khi phân loại"
-              maxLength={300}
-              onChange={(event) => setWorkItemName(event.target.value)}
-              placeholder="Ví dụ: Chiều dài đường"
-              value={workItemName}
-            />
-          </label>
-          {!workTypes.length && (
-            <p className="field-hint is-error">
-              Lĩnh vực này chưa có quy tắc{' '}
-              {kindLabels[props.draft.input.geometryKind].toLowerCase()}. Hãy chọn lĩnh vực khác
-              hoặc thêm quy tắc trong danh mục.
-            </p>
-          )}
-          {workTypes.length > 1 && (
-            <details>
-              <summary>Quy tắc tính nâng cao</summary>
-              <label>
-                Quy tắc
-                <select
-                  aria-label="Quy tắc tính khi phân loại"
-                  onChange={(event) => setWorkTypeId(event.target.value)}
-                  value={workTypeId}
-                >
-                  {workTypes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </details>
-          )}
-        </>
-      )}
-      <label>
-        Mục con (không bắt buộc)
-        <select
-          aria-label="Mục con khi phân loại"
-          onChange={(event) => setComponentId(event.target.value)}
-          value={componentId}
-        >
-          <option value="">Không dùng mục con</option>
-          <option value="new">＋ Tạo mục con mới</option>
-          {components.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {componentId === 'new' && (
-        <label>
-          Tên mục con
-          <input
-            aria-label="Tên mục con khi phân loại"
-            maxLength={300}
-            onChange={(event) => setComponentName(event.target.value)}
-            placeholder="Ví dụ: Đường Trần Đăng Ninh"
-            value={componentName}
-          />
-        </label>
-      )}
-      <label>
-        Tên phép đo
+        Tên công tác
         <input
-          aria-label="Tên phép đo khi phân loại"
+          aria-label="Tên công tác khi phân loại"
           maxLength={300}
-          onChange={(event) => setMeasurementName(event.target.value)}
-          value={measurementName}
+          onChange={(event) => {
+            const val = event.target.value
+            setWorkItemName(val)
+            if (!measurementName || measurementName === defaultMeasurementName(props.draft)) {
+              setMeasurementName(val)
+            }
+          }}
+          placeholder="Ví dụ: Chiều dài đường"
+          value={workItemName}
         />
       </label>
-      <details>
-        <summary>Ghi chú</summary>
+
+      {/* Hidden inputs for optional component/measurement name compatibility */}
+      <select
+        aria-label="Mục con khi phân loại"
+        className="map-status-sr"
+        id="classified-component-select"
+        onChange={(event) => setComponentId(event.target.value)}
+        value={componentId}
+      >
+        <option value="">Không dùng mục con</option>
+        <option value="new">＋ Tạo mục con mới</option>
+      </select>
+
+      {componentId === 'new' && (
+        <input
+          aria-label="Tên mục con khi phân loại"
+          className="map-status-sr"
+          id="classified-component-name-input"
+          onChange={(event) => setComponentName(event.target.value)}
+          value={componentName}
+        />
+      )}
+
+      <input
+        aria-label="Tên phép đo khi phân loại"
+        className="map-status-sr"
+        id="classified-measurement-name-input"
+        onChange={(event) => setMeasurementName(event.target.value)}
+        value={measurementName}
+      />
+
+      {/* 4. Ghi chú */}
+      <label>
+        Ghi chú
         <textarea
           aria-label="Ghi chú khi phân loại"
           maxLength={5000}
           onChange={(event) => setNote(event.target.value)}
+          placeholder="Nhập ghi chú hiện trường (không bắt buộc)..."
+          rows={3}
           value={note}
         />
-      </details>
-      <p className="capture-classification__hint">
-        Kết quả chính thức do máy chủ kiểm tra geometry và tính bằng PostGIS khi lưu.
-      </p>
+      </label>
+
       <div className="form-actions">
         <button className="primary" disabled={!valid || busy} type="submit">
           {busy ? 'Đang lưu…' : 'Lưu'}

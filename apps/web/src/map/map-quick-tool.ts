@@ -7,6 +7,7 @@ const modeLabels: Record<MapMode, string> = {
   area: 'Vẽ vùng',
   edit: 'Hiệu chỉnh',
   line: 'Vẽ tuyến',
+  measure: 'Đo nháp',
   point: 'Vẽ điểm',
   view: 'Xem',
 }

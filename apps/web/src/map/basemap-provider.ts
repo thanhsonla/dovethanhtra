@@ -275,14 +275,14 @@ function directGoogleHybridDescriptor(): BasemapDescriptor {
   return {
     attribution: '<a href="https://maps.google.com/">Google Maps</a>',
     id: 'google-hybrid-direct',
-    label: 'Google vệ tinh + địa danh · khóa hướng Bắc',
+    label: 'Google vệ tinh · khóa hướng Bắc',
     lockRotation: true,
     style: {
       version: 8,
       sources: {
         'google-hybrid-direct': {
           type: 'raster',
-          tiles: ['https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}'],
+          tiles: ['https://mt1.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}'],
           tileSize: 256,
           maxzoom: 22,
         },
@@ -298,12 +298,39 @@ function directGoogleHybridDescriptor(): BasemapDescriptor {
   }
 }
 
+function googleHybridWithStoresDescriptor(): BasemapDescriptor {
+  return {
+    attribution: '<a href="https://maps.google.com/">Google Maps</a>',
+    id: 'google-hybrid-stores',
+    label: 'Google vệ tinh + Địa danh & Cửa hàng',
+    lockRotation: false,
+    style: {
+      version: 8,
+      sources: {
+        'google-hybrid-stores': {
+          type: 'raster',
+          tiles: ['https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}'],
+          tileSize: 256,
+          maxzoom: 22,
+        },
+      },
+      layers: [
+        {
+          id: 'google-hybrid-stores',
+          source: 'google-hybrid-stores',
+          type: 'raster',
+        },
+      ],
+    },
+  }
+}
+
 function googleSatelliteDescriptor(fetcher: Fetcher): BasemapDescriptor {
   const attribution = '<a href="https://maps.google.com/">Google Maps</a>'
   return {
     attribution,
     id: 'google-satellite-labels',
-    label: 'Google vệ tinh + địa danh · khóa hướng Bắc',
+    label: 'Google vệ tinh · khóa hướng Bắc',
     lockRotation: true,
     style: {
       version: 8,
@@ -348,6 +375,7 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
   private readonly uprightGoogle: BasemapDescriptor | null
   private readonly google: BasemapDescriptor | null
   private readonly directGoogle = directGoogleHybridDescriptor()
+  private readonly googleStores = googleHybridWithStoresDescriptor()
   private readonly esri = esriImageryWithLabelsDescriptor()
   readonly defaultId: string
 
@@ -360,15 +388,16 @@ export class ConfiguredBasemapProvider implements BasemapProvider {
     this.satellite = mapboxSatelliteDescriptor(environment)
     this.uprightGoogle = uprightGoogleHybridDescriptor(environment, fetcher)
     this.google = capabilities.googleMapTiles ? googleSatelliteDescriptor(fetcher) : null
-    this.defaultId = this.uprightGoogle?.id ?? this.google?.id ?? this.directGoogle.id
+    this.defaultId = this.googleStores.id
   }
 
   descriptors() {
     return [
+      this.esri,
+      this.googleStores,
       ...(this.uprightGoogle ? [this.uprightGoogle] : []),
       ...(this.google ? [this.google] : []),
       this.directGoogle,
-      this.esri,
       ...(this.satellite ? [this.satellite] : []),
       ...(this.remote ? [this.remote] : []),
       ...this.local.descriptors(),

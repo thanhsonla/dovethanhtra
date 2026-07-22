@@ -6,6 +6,7 @@ export function MapDrawer(props: {
   label: string
   onClose: () => void
   side?: 'left' | 'right'
+  variant?: 'compact'
 }) {
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -19,7 +20,7 @@ export function MapDrawer(props: {
     <aside
       aria-label={props.label}
       aria-modal="false"
-      className={`map-drawer map-drawer--${props.side ?? 'left'}`}
+      className={`map-drawer map-drawer--${props.side ?? 'left'}${props.variant ? ` map-drawer--${props.variant}` : ''}`}
       id={props.id}
       role="dialog"
     >

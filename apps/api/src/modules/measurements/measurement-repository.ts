@@ -44,7 +44,7 @@ export interface PersistMeasurementInput {
   normalizedGeometry: GeoJsonGeometry | null
   note: string | null
   rawGeometry: GeoJsonGeometry
-  status: 'draft' | 'needs_attention'
+  status: 'draft' | 'needs_attention' | 'confirmed'
   supersedesId?: string
   unit: string
   validationStatus: 'valid' | 'invalid' | 'needs_attention'
@@ -157,6 +157,7 @@ export class MeasurementRepository {
           WHEN ${kind} = 'point' THEN ST_NumGeometries(candidate.geom)::numeric
           ELSE NULL END AS "baseValue",
         CASE WHEN NOT ST_IsValid(candidate.geom) THEN 0
+          WHEN ST_CoveredBy(ST_Force2D(candidate.geom), context.boundary) THEN 0
           WHEN ${kind} = 'line' THEN ST_Length(
             ST_CollectionExtract(ST_Difference(ST_Force2D(candidate.geom), context.boundary), 2)::geography
           )
@@ -203,7 +204,7 @@ export class MeasurementRepository {
         code, name, version, supersedes_id, method, geometry_kind,
         raw_geometry, normalized_geometry, gps_accuracy_m, base_value, calculated_quantity, unit,
         calculation_rule_code, calculation_version, calculation_inputs, calculation_output,
-        validation_status, warnings, status, note, created_by
+        validation_status, warnings, status, note, created_by, confirmed_at, confirmed_by
       ) VALUES (
         ${input.workItemId}::uuid, ${input.workComponentId ?? null}::uuid,
         ${input.captureDraftId ?? null}::uuid, ${input.code}, ${input.name}, ${input.version},
@@ -217,7 +218,10 @@ export class MeasurementRepository {
         ${JSON.stringify(input.calculationInputs)}::jsonb,
         ${JSON.stringify(input.calculationOutput)}::jsonb,
         ${input.validationStatus}, ${JSON.stringify(input.warnings)}::jsonb,
-        ${input.status}::measurement_status, ${input.note}, ${input.createdBy}::uuid
+        ${input.status}::measurement_status, ${input.note}, ${input.createdBy}::uuid,
+        CASE WHEN ${input.status}::measurement_status='confirmed' THEN now() ELSE NULL END,
+        CASE WHEN ${input.status}::measurement_status='confirmed'
+          THEN ${input.createdBy}::uuid ELSE NULL END
       ) RETURNING id
     `.execute(executor)
     const id = result.rows[0]?.id
@@ -304,7 +308,7 @@ export class MeasurementRepository {
     const result = await sql`
       UPDATE measurement SET status = 'confirmed', confirmed_at = now(),
         confirmed_by = ${actorId}::uuid
-      WHERE id = ${id}::uuid AND status IN ('draft', 'needs_attention')
+      WHERE id = ${id}::uuid AND status IN ('draft', 'pending_validation', 'needs_attention')
         AND validation_status <> 'invalid' AND deleted_at IS NULL
     `.execute(executor)
     return Number(result.numAffectedRows ?? 0) === 1
@@ -313,7 +317,7 @@ export class MeasurementRepository {
   async markSuperseded(executor: QueryExecutor, id: string): Promise<boolean> {
     const result = await sql`
       UPDATE measurement SET status = 'superseded'
-      WHERE id = ${id}::uuid AND status = 'confirmed' AND deleted_at IS NULL
+      WHERE id = ${id}::uuid AND status <> 'superseded' AND deleted_at IS NULL
     `.execute(executor)
     return Number(result.numAffectedRows ?? 0) === 1
   }

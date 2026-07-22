@@ -183,8 +183,8 @@ Quản lý nhóm dịch vụ, công tác, đơn vị tính, công thức và đ�
 ## 7. Tiêu chí nghiệm thu cấp sản phẩm
 
 1. Tạo hồ sơ Mộc Châu, hiển thị bốn lĩnh vực mặc định và đọc được nhóm lịch sử.
-2. Vẽ một tuyến khi chưa chọn công tác, lưu nháp, phân loại vào một mục con và xác
-   nhận mà không tạo bản ghi trùng khi gửi lại.
+2. Vẽ một tuyến khi chưa chọn công tác, nhập tên/khu vực và bấm **Lưu** trên phiếu
+   gọn; hệ thống tự lưu nháp và phân loại nội bộ mà không tạo bản ghi trùng khi gửi lại.
 3. Trong một mục con, lưu ba tuyến độc lập; tổng mục con và công tác đúng bằng tổng
    phép đo đã xác nhận.
 4. Đo polygon chuẩn 10.000 m² và tuyến chuẩn 1.000 m đạt dung sai kiểm thử.

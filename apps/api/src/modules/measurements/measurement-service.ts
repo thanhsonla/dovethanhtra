@@ -301,11 +301,11 @@ export class MeasurementService {
     return this.database.transaction().execute(async (transaction) => {
       const before = await this.repository.get(transaction, measurementId, ownerId)
       if (!before) throw new AppError(404, 'MEASUREMENT_NOT_FOUND', 'Không tìm thấy phép đo.')
-      if (before.status !== 'confirmed') {
+      if (before.status === 'superseded' || before.status === 'deleted') {
         throw new AppError(
           409,
-          'MEASUREMENT_NOT_CONFIRMED',
-          'Chỉ phép đo đã xác nhận mới tạo phiên bản hiệu chỉnh.',
+          'MEASUREMENT_NOT_ACTIVE',
+          'Không thể hiệu chỉnh phép đo đã xóa hoặc đã bị thay thế.',
         )
       }
       const prepared = await this.preparation.prepare(

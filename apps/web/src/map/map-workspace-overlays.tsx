@@ -1,4 +1,11 @@
-import type { GeoJsonGeometry, MapFeature } from '@dove/contracts'
+import type {
+  GeoJsonGeometry,
+  ManagementZone,
+  MapFeature,
+  ServiceGroup,
+  WorkItem,
+  WorkType,
+} from '@dove/contracts'
 
 import type { StoredCaptureDraft } from '../field/offline-store.js'
 import { MapCaptureStatus } from './map-capture-status.js'
@@ -12,9 +19,17 @@ export function MapWorkspaceOverlays(props: {
   draftGeometry: GeoJsonGeometry | null
   mode: MapMode
   onClearSelection(): void
+  onEditFeature?: (() => void) | undefined
   onOpenCapture(): void
-  onOpenFeature(): void
+  onRemoveFeature?: ((measurementId: string) => void) | undefined
+  onReplaceFeature?: ((previousId: string, feature: MapFeature) => void) | undefined
+  onRefreshFeatures?: (() => Promise<void> | void) | undefined
+  onWorkChanged?: ((item: WorkItem) => void) | undefined
   selectedFeature: MapFeature | null
+  groups: ServiceGroup[]
+  workItem?: WorkItem | null | undefined
+  workTypes: WorkType[]
+  zones: ManagementZone[]
 }) {
   return (
     <>
@@ -26,9 +41,18 @@ export function MapWorkspaceOverlays(props: {
       )}
       {props.selectedFeature && props.mode === 'view' && (
         <MapFeatureCard
+          key={props.selectedFeature.measurement.id}
           feature={props.selectedFeature}
+          groups={props.groups}
           onClose={() => props.onClearSelection()}
-          onOpen={() => props.onOpenFeature()}
+          onEdit={props.onEditFeature}
+          onRemoveFeature={props.onRemoveFeature}
+          onReplaceFeature={props.onReplaceFeature}
+          onRefresh={props.onRefreshFeatures}
+          onWorkChanged={props.onWorkChanged}
+          workItem={props.workItem}
+          workTypes={props.workTypes}
+          zones={props.zones}
         />
       )}
       {props.capture && props.mode === 'view' && (

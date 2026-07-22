@@ -125,7 +125,7 @@ export class MeasurementPreparation {
       normalizedGeometry: analysis.normalizedGeometry,
       note: input.note ?? null,
       rawGeometry: input.geometry,
-      status: warnings.length > 0 ? 'needs_attention' : 'draft',
+      status: hasError ? 'needs_attention' : identity.supersedesId ? 'confirmed' : 'draft',
       ...(identity.supersedesId ? { supersedesId: identity.supersedesId } : {}),
       unit: context.unit,
       validationStatus,

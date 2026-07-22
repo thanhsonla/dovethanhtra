@@ -58,6 +58,8 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 | MEAS-010  | Gửi lại classify cùng key     | Trả kết quả cũ, không nhân đôi         |
 | MEAS-011  | Phiếu phân loại sau khi đo    | Lọc đúng cấp, tạo công tác/mục con, cảnh báo hiển thị |
 | MEAS-012  | Lưu và tiếp tục đo            | Mở lại đúng công cụ sau khi máy chủ lưu |
+| MEAS-013  | Phiếu lưu nhanh sau khi đo    | Chỉ tên, 12 khu vực, số liệu sát đơn vị và một nút Lưu |
+| MEAS-014  | Ngăn Thông tin đối tượng      | Chỉ tên, thời gian, số liệu, chọn ảnh và chụp ảnh |
 | ROUTE-001 | Tính route hợp lệ             | Lưu distance, geometry, provider, time |
 | ROUTE-002 | Tính lại route                | Tạo version, không ghi đè              |
 | ROUTE-003 | Không tìm được route          | Lỗi xử lý được, không tạo bản ghi rỗng |

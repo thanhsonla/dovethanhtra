@@ -67,6 +67,17 @@ export class WorkStructureRepository {
   ) {
     const result = await sql<{ id: string }>`UPDATE case_work_item w SET
       name=CASE WHEN ${Object.hasOwn(input, 'name')} THEN ${input.name ?? ''} ELSE w.name END,
+      work_type_id=CASE WHEN ${Object.hasOwn(input, 'workTypeId')}
+        THEN selected_type.id ELSE w.work_type_id END,
+      service_group_id=CASE WHEN ${Object.hasOwn(input, 'workTypeId')}
+        THEN selected_type.service_group_id ELSE w.service_group_id END,
+      unit=CASE WHEN ${Object.hasOwn(input, 'workTypeId')}
+        THEN selected_type.base_unit ELSE w.unit END,
+      formula_snapshot=CASE WHEN ${Object.hasOwn(input, 'workTypeId')} THEN jsonb_build_object(
+        'workTypeCode', selected_type.code,
+        'calculationVersion', selected_type.calculation_version,
+        'calculationSpec', selected_type.calculation_spec
+      ) ELSE w.formula_snapshot END,
       management_zone_id=CASE WHEN ${Object.hasOwn(input, 'managementZoneId')}
         THEN ${input.managementZoneId ?? null}::uuid ELSE w.management_zone_id END,
       period_start=CASE WHEN ${Object.hasOwn(input, 'periodStart')}
@@ -78,13 +89,36 @@ export class WorkStructureRepository {
       status=CASE WHEN ${Object.hasOwn(input, 'status')}
         THEN ${input.status ?? 'draft'}::work_item_status ELSE w.status END,
       version=w.version+1
-      FROM inspection_case c WHERE w.id=${id}::uuid AND w.inspection_case_id=c.id
+      FROM inspection_case c
+      LEFT JOIN work_type selected_type ON selected_type.id=${input.workTypeId ?? null}::uuid
+        AND selected_type.active
+      WHERE w.id=${id}::uuid AND w.inspection_case_id=c.id
         AND c.owner_id=${ownerId}::uuid AND c.deleted_at IS NULL AND c.status<>'locked'
         AND w.deleted_at IS NULL AND w.version=${version}
+        AND (NOT ${Object.hasOwn(input, 'workTypeId')} OR (
+          selected_type.id IS NOT NULL AND selected_type.measurement_kind=w.measurement_kind
+        ))
         AND (${input.managementZoneId ?? null}::uuid IS NULL OR NOT ${Object.hasOwn(input, 'managementZoneId')}
           OR EXISTS (SELECT 1 FROM management_zone z WHERE z.id=${input.managementZoneId ?? null}::uuid
             AND z.active AND z.deleted_at IS NULL)) RETURNING w.id`.execute(executor)
     return result.rows[0]?.id ?? null
+  }
+
+  async isCompatibleWorkType(
+    executor: QueryExecutor,
+    id: string,
+    ownerId: string,
+    workTypeId: string,
+  ) {
+    const result = await sql<{ compatible: boolean }>`SELECT EXISTS(
+      SELECT 1 FROM case_work_item w
+      JOIN inspection_case c ON c.id=w.inspection_case_id
+      JOIN work_type t ON t.id=${workTypeId}::uuid
+      WHERE w.id=${id}::uuid AND c.owner_id=${ownerId}::uuid
+        AND c.deleted_at IS NULL AND c.status<>'locked' AND w.deleted_at IS NULL
+        AND t.active AND t.measurement_kind=w.measurement_kind
+    ) AS compatible`.execute(executor)
+    return result.rows[0]?.compatible ?? false
   }
 
   async itemHasChildren(executor: QueryExecutor, id: string) {

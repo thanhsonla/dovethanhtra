@@ -109,6 +109,7 @@
 | 19/07/2026 | ADR-022 | Cho phép Google hybrid trực tiếp theo La Kinh                    | Chủ dự án chấp thuận ngoại lệ mt1 qua adapter                    |
 | 20/07/2026 | ADR-023 | Map-first và đo trước, phân loại sau                            | Giảm bước nhập nhưng giữ tổng chính thức và provenance           |
 | 20/07/2026 | ADR-024 | 12 khu vực là nhãn tên, không có geometry                  | Không tạo ranh giới huyện cũ; bản đồ chỉ dùng 75 xã/phường       |
+| 22/07/2026 | ADR-025 | Ẩn dashboard, dùng một không gian hồ sơ nội bộ và vào thẳng bản đồ | Giảm thao tác quản lý; backend vẫn giữ liên kết và audit          |
 
 ## Trạng thái chuyển đổi map-first
 
@@ -150,6 +151,7 @@
   đã bổ sung endpoint lịch sử phép đo, tải GeoJSON đơn/tập lọc có hash và audit;
   export áp dụng filter thực tế. Phiên bản confirmed được chỉnh sửa qua supersede
   có lý do, còn nháp giữ luồng chỉnh sửa trực tiếp.
+- Task E2E: Sửa lỗi E2E trên Chromium và WebKit iPad thành công 100% (pass milestone-one.spec.ts). Đã khắc phục lỗi hình học PostGIS cục bộ bằng cách thêm lớp bảo vệ ST_CoveredBy trong truy vấn SQL tính outsideValue, đồng thời cập nhật kịch bản E2E để đồng bộ với UI Drawer/Filter Panel mới và tối ưu hóa việc chuyển đổi viewport bản đồ.
 - Dữ liệu Mốc 1–6, nhóm dịch vụ lịch sử và 75 xã/phường phải tiếp tục tương thích
   trong toàn bộ quá trình chuyển đổi.
 - Không gian bản đồ tải lớp ranh giới riêng từ 75 xã/phường Sơn La đang hiệu lực
@@ -341,8 +343,7 @@
 - Thanh Điểm/Tuyến/Vùng nay luôn mở bước chọn công tác có sẵn để bổ sung thêm
   đoạn/vùng/bộ phận vào cùng một công tác. Cây lớp hiển thị tổng đã xác nhận của
   công tác và số liệu riêng từng phép đo để người dùng thấy rõ phần nào được cộng.
-- Draft vẽ bản đồ hiển thị từng điểm chọn bằng vòng tròn, điểm mới nhất bằng chữ
-  thập đỏ và đổi nút hoàn tác thành **Lùi điểm/Khôi phục điểm** trong lúc đang vẽ.
+- Draft vẽ bản đồ hoàn toàn ẩn các điểm chọn (đỉnh nháp) để tránh gây rối và mất thẩm mỹ, loại bỏ hoàn toàn marker chữ thập đỏ và vòng tròn viền đỏ lớn chói mắt. Chỉ hiển thị nét vẽ nháp và đổi nút hoàn tác thành **Lùi điểm/Khôi phục điểm** trong lúc đang vẽ.
   Form lưu phép đo hiển thị nhãn tiếng Việt và mô tả cho các biến công thức phổ biến
   như `side_factor`, `frequency` và `service_days`.
 - Theo yêu cầu ngày 20/07/2026, hai style **Kỹ thuật sáng/tối · kiểm thử** đã được
@@ -364,3 +365,87 @@
   `ST_PointOnSurface` của từng địa giới để đặt tên viết hoa, đứng, đậm bên trong
   hình xã; cỡ chữ và chiều rộng nhãn tự điều chỉnh theo mức zoom, độc lập với hướng
   xoay của nền bản đồ.
+- Nền bản đồ mặc định được cấu hình sang **Vệ tinh + địa danh (`esri-imagery-labels`)**, hoạt động ổn định 100% không phụ thuộc API key ngoài, loại bỏ hoàn toàn thông báo chuyển nền tự động.
+- Ngăn chi tiết được tinh gọn hoàn toàn theo yêu cầu người dùng: loại bỏ mục Khối lượng, Trạng thái, Quy tắc công thức, Cảnh báo hồng và các mục GPS track; chỉ tập trung hiển thị Nội dung công việc, Thời gian lập, Giá trị (m, m²), Ảnh hiện trường và nút Xóa / Tải GeoJSON.
+- Kích chọn đối tượng đã lưu trên bản đồ sẽ hiển thị thẻ thông tin `.map-feature-card` gồm tên phép đo, loại hình học (Tuyến/Vùng/Điểm), chiều dài/diện tích và nút **"Sửa phép đo"**.
+- Chế độ sửa (`mode === 'edit'`) hỗ trợ hiển thị các nút ghim trung điểm `(+)` `.map-midpoint-handle` giữa các đỉnh. Nhấp hoặc kéo nút `(+)` sẽ **tách đôi đoạn thẳng** và chèn thêm đỉnh mới vào giữa thời gian thực.
+- Thanh công cụ bản đồ được thống nhất thành 1 thanh ngang nổi duy nhất phía trên màn hình (`.map-toolbar-container`), tích hợp toàn bộ các nút công cụ đo (Điểm, Chiều dài, Diện tích), thao tác đo (Lùi, Tiến, Xóa, Kết thúc) và mở bảng điều khiển (Dữ liệu, Bộ lọc, Nâng cao).
+- Biểu tượng logo công cụ được cập nhật chuẩn xác: Chiều dài dùng biểu tượng **Thước kẻ thẳng chia vạch (Ruler)**, Diện tích dùng **Thước Ê-ke góc vuông (Set-square / Triangle Ruler)**, Điểm dùng **Ghim tâm (Location pin marker)**.
+- Bổ sung tính năng kéo/di chuyển đỉnh (Node/Vertex Dragging): Các đỉnh của tuyến và vùng hiển thị các ghim điều khiển `.map-node-handle` và `.map-node-handle--draft`, cho phép người dùng bấm giữ và kéo trực tiếp các đỉnh để điều chỉnh tọa độ và tính toán lại chiều dài/diện tích thời gian thực khi vẽ nháp hoặc khi sửa phép đo.
+- Rà soát giao diện quản lý số liệu ngày 22/07/2026: bản đồ mở ở trạng thái sạch,
+  không tự bung drawer. Nút **Quản lý số liệu** mở danh sách gọn theo Điểm/Chiều
+  dài/Diện tích; phần quản lý công tác được thu gọn mặc định. Thẻ đối tượng trên
+  bản đồ có thao tác **Sửa hình dạng**, **Thông tin** và **Xóa** có xác nhận. Chế độ
+  sửa yêu cầu lý do và lưu thành phiên bản mới; nút thùng rác trên toolbar không
+  còn xóa trực tiếp một phép đo đã lưu.
+- Thanh **Quản lý số liệu** được tách khỏi toolbar đo và đặt thành rail đứng sát
+  cạnh trái bản đồ. Rail luôn gọn, mở drawer dữ liệu sang phải và bám vào mép drawer
+  để người dùng bấm thu gọn/ẩn lại mà không phải di chuyển con trỏ về toolbar trên.
+- Chốt lại kích thước ngăn **Quản lý số liệu** theo phản hồi trực quan: đây là
+  sidebar toàn chiều cao, không phải bottom sheet; rộng khoảng 1/7 giao diện máy
+  tính và 1/3 giao diện điện thoại. Các drawer chi tiết/nâng cao khác không đổi.
+- Nút mở **Quản lý số liệu** được thu về một ô vuông biểu tượng ba gạch, không có
+  chữ/mũi tên và nằm giữa cạnh trái; khi drawer mở, nút bám giữa cạnh phải của
+  drawer. Thanh công cụ phía trên giảm chiều cao, khoảng đệm và tự co nút theo
+  viewport để mọi công cụ luôn hiện đủ trong một hàng, không cuộn ngang.
+- Biểu tượng mở **Quản lý số liệu** tiếp tục được tinh gọn theo phản hồi trực quan:
+  vùng điều khiển 32 px, biểu tượng ba gạch 17 px và nền/viền/bóng hoàn toàn trong
+  suốt ở cả trạng thái thường lẫn trạng thái mở.
+- Cụm tab Điểm/Chiều dài/Diện tích trong sidebar hẹp được chia thành ba cột
+  `minmax(0, 1fr)`, hiển thị biểu tượng trên và số lượng dưới. Header và khoảng đệm
+  riêng của drawer trái cũng được nén để cả ba biểu tượng luôn nằm trọn trong ngăn,
+  không sinh cuộn ngang.
+- Chức năng **Bộ lọc** trên bản đồ được chuyển thành **Tìm kiếm** với biểu tượng
+  kính lúp. Giao diện chính chỉ còn ô tìm theo tên và một danh mục gộp Khu vực/
+  Lĩnh vực/Công tác; API tìm chuỗi không phân biệt hoa thường trên tên phép đo,
+  công tác, mục con, lĩnh vực và khu vực. Tìm kiếm chỉ chạy khi người dùng bấm nút
+  **Tìm kiếm**; phần **Tùy chọn nâng cao** và các tiêu chí cũ đã được bỏ khỏi UI.
+- Theo xác nhận ngày 22/07/2026, dashboard và quản lý hồ sơ không còn nằm trong
+  luồng sử dụng thông thường. Sau đăng nhập ứng dụng mở thẳng bản đồ; khi chưa có
+  hồ sơ hoạt động, hệ thống tự tạo một không gian nội bộ trống để giữ liên kết dữ
+  liệu, version và audit ở backend. Hồ sơ mẫu local “Vân Hồ” đã được xóa mềm qua
+  API; không xóa cứng dữ liệu hay lịch sử chứng cứ.
+- Thông báo lỗi bản đồ được chuyển thành toast gọn ở góc dưới, có nút đóng và
+  không còn phủ lên thanh công cụ đo/tìm kiếm ở cạnh trên.
+- Quy trình nhập liệu mặc định ngày 22/07/2026 dùng nền **Google vệ tinh + Địa danh
+  & Cửa hàng**. Sau khi kết thúc Điểm/Chiều dài/Diện tích, phiếu lưu nhỏ chỉ hỏi tên
+  công tác, một trong 12 khu vực quản lý cũ và hiển thị số liệu sát đơn vị `m`/`m²`;
+  một nút **Lưu** tự thực hiện lưu nháp và phân loại ở lớp nội bộ để vẫn giữ audit.
+- Ngăn mở từ nút **Thông tin** được đổi thành drawer nổi gọn, font nhỏ và chỉ còn
+  tên, thời gian lập, số liệu cùng ảnh hiện trường. Người dùng có thể chọn ảnh có
+  sẵn hoặc gọi camera sau; GPS, GeoJSON, xóa và các accordion nâng cao không còn
+  xuất hiện trong ngăn này.
+- Tương tác thẻ đối tượng ngày 22/07/2026 dùng cập nhật lạc quan: đổi màu nét, sửa
+  tên/khu vực/dịch vụ và xóa mềm phản ánh ngay trên bản đồ cùng ngăn **Dữ liệu**,
+  sau đó đồng bộ máy chủ và tự hoàn nguyên khi lỗi. Đổi dịch vụ chỉ cho phép loại
+  công tác có cùng kiểu hình học, đồng thời cập nhật snapshot công thức và audit.
+- Nút ba gạch **Quản lý số liệu** được chuyển từ rail cạnh trái vào cụm điều khiển
+  trên thanh công cụ bản đồ; drawer dữ liệu vẫn giữ chiều rộng gọn 1/7 desktop và
+  khoảng 1/3 mobile.
+- Nguồn dữ liệu ngày 22/07/2026 được tách theo mục đích: lớp bản đồ tiếp tục truy
+  vấn theo `bbox` để giữ hiệu năng, còn drawer **Quản lý số liệu** tải toàn bộ phép
+  đo đang hoạt động của hồ sơ bằng phân trang độc lập. Tạo/sửa/đổi màu/xóa mềm cập
+  nhật lạc quan đồng thời cả hai nguồn, nên danh sách không phụ thuộc vùng bản đồ.
+- Thanh công cụ bản đồ hỗ trợ phím tắt: `P` vẽ điểm, `D` vẽ chiều dài, `A` vẽ diện
+  tích, `Delete`/`Backspace` xóa đỉnh đang chọn, `Cmd/Ctrl+Z` lùi thao tác và
+  `Cmd/Ctrl+S` lưu/kết thúc khi hình học đã đủ điểm. Phím tắt không chạy khi con
+  trỏ đang ở ô nhập, danh sách chọn hoặc vùng soạn thảo.
+- Header bản đồ được nén còn 48–52 px và bỏ hoàn toàn tiêu đề hồ sơ “Dữ liệu hiện
+  trường”. Nhãn lớp hành chính rút thành **RG & tên P/X**; bộ chọn bản đồ nền chỉ
+  còn biểu tượng lớp bản đồ 40 px, nhưng vẫn giữ menu chọn đầy đủ và nhãn trợ năng.
+- Phiếu lưu nhanh có nút **Hủy** riêng. Hủy, đóng bằng nút × hoặc phím Escape đều
+  gọi chung luồng xóa hình học chưa lưu, đặt bản đồ về chế độ xem và không để lại
+  nét nháp không có ID khiến người dùng nhìn thấy nhưng không thể thao tác.
+- Lệnh khởi động local tách ba dịch vụ dài hạn (`postgis`, `minio`, `clamav`) khỏi
+  job một lần `minio-init`. Compose chỉ chờ healthcheck của dịch vụ dài hạn, sau đó
+  chạy job tạo bucket, tránh hiểu trạng thái `Exited (0)` hợp lệ là lỗi khiến API và
+  web không khởi động, tab PWA cũ vẫn hiện nhưng đăng nhập/bản đồ không phản hồi.
+- Nét đang vẽ dùng hai lớp tương phản: viền trắng 7 px dưới nét cam đặc 4 px. Tuyến
+  và viền vùng nháp vì vậy vẫn nhìn rõ trên ảnh vệ tinh, đường địa danh và ranh giới
+  hành chính màu đỏ, trong khi không tăng số lượng marker điều khiển trên màn hình.
+- Thẻ đối tượng ngày 22/07/2026 bỏ nút **Thông tin**, hiển thị **Ngày lập** trực
+  tiếp và không còn ghi khu vực phân loại thành **Địa chỉ**. Mười hai khu vực quản
+  lý không có geometry theo ADR-024 nên không đủ cơ sở xác minh địa chỉ tại tọa độ;
+  trường này chỉ còn nhãn đúng nghĩa **Khu vực** trong biểu mẫu chỉnh sửa. Chọn một
+  dòng trong **Quản lý số liệu** chỉ chọn đối tượng và mở thẻ gọn, không tự bung
+  drawer **Thông tin** cũ.

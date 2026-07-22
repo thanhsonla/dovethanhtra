@@ -11,6 +11,7 @@ export interface MapFeatureQuery {
   geometryKind?: MeasurementGeometryKind
   limit: number
   managementZoneId?: string
+  search?: string
   serviceGroupId?: string
   status?: MeasurementStatus
   workItemId?: string
@@ -23,9 +24,14 @@ export class MapFeatureService {
     if (!(await this.repository.caseExists(caseId, ownerId))) {
       throw new AppError(404, 'CASE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
     }
-    const { cursor: rawCursor, ...baseFilters } = query
+    const { cursor: rawCursor, search: rawSearch, ...baseFilters } = query
     const cursor = decodeCursor(rawCursor)
-    const filters = { ...baseFilters, ...(cursor ? { cursor } : {}) }
+    const search = rawSearch?.trim()
+    const filters = {
+      ...baseFilters,
+      ...(cursor ? { cursor } : {}),
+      ...(search ? { search } : {}),
+    }
     const [page, confirmedTotals] = await Promise.all([
       this.repository.list(caseId, ownerId, filters),
       this.repository.confirmedTotals(caseId, ownerId, filters),

@@ -1,12 +1,14 @@
-import type { AdminAreaBoundary, GeoJsonGeometry, Measurement } from '@dove/contracts'
+import type { AdminAreaBoundary, GeoJsonGeometry, MapFeature, Measurement } from '@dove/contracts'
 import maplibregl, {
   type AttributionControl,
   type GeoJSONSource,
   type Map as MapLibreMap,
   type Marker,
 } from 'maplibre-gl'
+import area from '@turf/area'
+import length from '@turf/length'
 import type { GeoJSON } from 'geojson'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { BasemapDescriptor, BasemapProvider } from './basemap-provider.js'
 import {
@@ -23,10 +25,16 @@ import {
   ensureCrosshairImage,
   syncDraftData,
 } from './draft-drawing-layer.js'
-import { createMeasurementEditMarkers } from './measurement-edit-markers.js'
+import {
+  createDraftVertexMarkers,
+  createMeasurementEditMarkers,
+} from './measurement-edit-markers.js'
 import { geometryExtent } from './map-selection.js'
+import { MapLocateControl } from './map-locate-control.js'
+import { serviceGroupColor } from './map-service-colors.js'
+import { findSnapTarget, type SnapTarget } from './map-snapping.js'
 
-export type MapMode = 'view' | 'point' | 'line' | 'area' | 'edit'
+export type MapMode = 'view' | 'point' | 'line' | 'area' | 'measure' | 'edit'
 export type Position = [number, number]
 
 const asMapGeoJson = (value: unknown) => value as GeoJSON
@@ -41,35 +49,60 @@ interface MeasurementMapProps {
   draftSelectedIndex: number | null
   editMeasurement: Measurement | null
   hiddenWorkItemIds: Set<string>
+  mapFeatures?: MapFeature[]
   measurements: Measurement[]
   mode: MapMode
-  onAddPosition(position: Position): void
-  onBasemapFallback(): void
-  onEditGeometry(geometry: GeoJsonGeometry): void
-  onFinishDrawing(): void
-  onSelectDraftVertex(index: number): void
-  onSelect(id: string): void
-  onViewportChange(bbox: string): void
+  onAddPosition: (position: Position) => void
+  onBasemapFallback: () => void
+  onEditGeometry: (geometry: GeoJsonGeometry) => void
+  onFinishDrawing: () => void
+  onSelectDraftVertex: (index: number) => void
+  onSelect: (id: string) => void
+  onUpdateDraftPosition?: (index: number, position: Position) => void
+  onViewportChange: (bbox: string) => void
   selectedId: string | null
+  showCommunes: boolean
 }
 
 function featureCollection(props: MeasurementMapProps) {
+  const mapFeatureMap = new Map((props.mapFeatures ?? []).map((f) => [f.measurement.id, f]))
+
   return {
     type: 'FeatureCollection' as const,
     features: props.measurements
       .filter(
         (item) => item.status !== 'superseded' && !props.hiddenWorkItemIds.has(item.workItemId),
       )
-      .map((item) => ({
-        type: 'Feature' as const,
-        id: item.id,
-        properties: {
+      .map((item) => {
+        const featureMeta = mapFeatureMap.get(item.id)
+        const customColor = item.note?.startsWith('{')
+          ? (((JSON.parse(item.note) as Record<string, unknown>).color as string | undefined) ??
+            null)
+          : null
+        const color = customColor ?? serviceGroupColor(featureMeta?.serviceGroupName)
+        const isSelected = item.id === props.selectedId
+        const isDimmed = Boolean(props.selectedId && item.id !== props.selectedId)
+
+        const qtyStr =
+          item.calculatedQuantity != null
+            ? `${item.calculatedQuantity.toFixed(1)} ${item.unit || ''}`.trim()
+            : ''
+        const label = qtyStr ? `${item.name} (${qtyStr})` : item.name
+
+        return {
+          type: 'Feature' as const,
           id: item.id,
-          selected: item.id === props.selectedId,
-          status: item.status,
-        },
-        geometry: item.normalizedGeometry ?? item.rawGeometry,
-      })),
+          properties: {
+            color,
+            dimmed: isDimmed,
+            id: item.id,
+            label,
+            selected: isSelected,
+            status: item.status,
+          },
+          geometry: item.normalizedGeometry ?? item.rawGeometry,
+        }
+      }),
   }
 }
 
@@ -77,6 +110,21 @@ function boundaryCollection(boundary: GeoJsonGeometry) {
   return {
     type: 'FeatureCollection' as const,
     features: [{ type: 'Feature' as const, properties: {}, geometry: boundary }],
+  }
+}
+
+function snapIndicatorCollection(snapTarget: SnapTarget | null) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: snapTarget
+      ? [
+          {
+            type: 'Feature' as const,
+            properties: { snapType: snapTarget.snapType },
+            geometry: { type: 'Point' as const, coordinates: snapTarget.coordinates },
+          },
+        ]
+      : [],
   }
 }
 
@@ -91,28 +139,40 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     type: 'geojson',
     data: asMapGeoJson(featureCollection(props)),
   })
+  map.addSource('snap-target-source', {
+    type: 'geojson',
+    data: asMapGeoJson(snapIndicatorCollection(null)),
+  })
+
   addCommuneBoundaryLayer(map, props.communeBoundaries)
   addDraftSources(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
-  map.addLayer({
-    id: 'case-boundary-fill',
-    source: 'case-boundary',
-    type: 'fill',
-    paint: { 'fill-color': '#4f8f72', 'fill-opacity': 0.08 },
-  })
-  map.addLayer({
-    id: 'case-boundary-line',
-    source: 'case-boundary',
-    type: 'line',
-    paint: { 'line-color': '#287052', 'line-dasharray': [3, 2], 'line-width': 2 },
-  })
+
   map.addLayer({
     id: 'measurement-areas',
     source: 'measurements',
     type: 'fill',
     filter: ['==', '$type', 'Polygon'],
     paint: {
-      'fill-color': ['case', ['boolean', ['get', 'selected'], false], '#ef7d32', '#25865c'],
-      'fill-opacity': 0.35,
+      'fill-color': [
+        'case',
+        ['boolean', ['get', 'selected'], false],
+        '#ef7d32',
+        ['has', 'color'],
+        ['get', 'color'],
+        '#25865c',
+      ],
+      'fill-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.12, 0.45],
+    },
+  })
+  map.addLayer({
+    id: 'measurement-lines-hit',
+    source: 'measurements',
+    type: 'line',
+    filter: ['==', '$type', 'LineString'],
+    paint: {
+      'line-color': '#000000',
+      'line-opacity': 0,
+      'line-width': 24,
     },
   })
   map.addLayer({
@@ -121,8 +181,16 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     type: 'line',
     filter: ['==', '$type', 'LineString'],
     paint: {
-      'line-color': ['case', ['boolean', ['get', 'selected'], false], '#ef7d32', '#1675a1'],
-      'line-width': ['case', ['boolean', ['get', 'selected'], false], 6, 4],
+      'line-color': [
+        'case',
+        ['boolean', ['get', 'selected'], false],
+        '#ef7d32',
+        ['has', 'color'],
+        ['get', 'color'],
+        '#1675a1',
+      ],
+      'line-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.2, 1.0],
+      'line-width': ['case', ['boolean', ['get', 'selected'], false], 4, 3],
     },
   })
   map.addLayer({
@@ -131,12 +199,72 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     type: 'circle',
     filter: ['==', '$type', 'Point'],
     paint: {
-      'circle-color': ['case', ['boolean', ['get', 'selected'], false], '#ef7d32', '#7c3aed'],
+      'circle-color': [
+        'case',
+        ['boolean', ['get', 'selected'], false],
+        '#ef7d32',
+        ['has', 'color'],
+        ['get', 'color'],
+        '#7c3aed',
+      ],
+      'circle-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.2, 1.0],
       'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 9, 7],
       'circle-stroke-color': '#ffffff',
       'circle-stroke-width': 2,
     },
   })
+
+  // On-Map Feature Labels
+  map.addLayer({
+    id: 'measurement-line-labels',
+    source: 'measurements',
+    type: 'symbol',
+    filter: ['==', '$type', 'LineString'],
+    layout: {
+      'symbol-placement': 'line',
+      'text-field': ['get', 'label'],
+      'text-keep-upright': true,
+      'text-size': 11,
+    },
+    paint: {
+      'text-color': '#083c29',
+      'text-halo-color': '#ffffff',
+      'text-halo-width': 2,
+      'text-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.2, 1.0],
+    },
+  })
+  map.addLayer({
+    id: 'measurement-point-labels',
+    source: 'measurements',
+    type: 'symbol',
+    filter: ['==', '$type', 'Point'],
+    layout: {
+      'text-anchor': 'top',
+      'text-field': ['get', 'label'],
+      'text-offset': [0, 1.2],
+      'text-size': 11,
+    },
+    paint: {
+      'text-color': '#083c29',
+      'text-halo-color': '#ffffff',
+      'text-halo-width': 2,
+      'text-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.2, 1.0],
+    },
+  })
+
+  // Snap indicator layer
+  map.addLayer({
+    id: 'snap-indicator-layer',
+    source: 'snap-target-source',
+    type: 'circle',
+    paint: {
+      'circle-color': '#06b6d4',
+      'circle-radius': 7,
+      'circle-stroke-color': '#fbbf24',
+      'circle-stroke-width': 3,
+    },
+  })
+
   addDraftLayers(map)
 }
 
@@ -149,6 +277,13 @@ function syncData(map: MapLibreMap, props: MeasurementMapProps) {
   ;(map.getSource('measurements') as GeoJSONSource).setData(asMapGeoJson(featureCollection(props)))
   syncCommuneBoundaryData(map, props.communeBoundaries)
   syncDraftData(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
+  if (map.getLayer('commune-boundary-lines')) {
+    map.setLayoutProperty(
+      'commune-boundary-lines',
+      'visibility',
+      props.showCommunes ? 'visible' : 'none',
+    )
+  }
 }
 
 function applyRotationPolicy(map: MapLibreMap, descriptor: BasemapDescriptor) {
@@ -173,6 +308,15 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const fallbackRequested = useRef(false)
   const lastZoomedId = useRef<string | null>(null)
   const activeBasemapId = useRef(props.basemapId)
+  const activeSnapTargetRef = useRef<SnapTarget | null>(null)
+
+  const [tooltipState, setTooltipState] = useState<{
+    text: string
+    visible: boolean
+    x: number
+    y: number
+  }>({ text: '', visible: false, x: 0, y: 0 })
+
   const latest = useRef(props)
   latest.current = props
 
@@ -253,10 +397,100 @@ export function MeasurementMap(props: MeasurementMapProps) {
           const active = latest.current.basemapProvider.get(latest.current.basemapId)
           if (active.lockRotation && Math.abs(map.getBearing()) > 0.01) map.setBearing(0)
         })
-        map.on('zoom', () => resizeCommuneLabels(map, communeLabelMarkers.current))
+        map.on('zoom', () =>
+          resizeCommuneLabels(map, communeLabelMarkers.current, latest.current.showCommunes),
+        )
+        const interactiveLayers = [
+          'measurement-areas',
+          'measurement-lines',
+          'measurement-lines-hit',
+          'measurement-points',
+        ]
+        interactiveLayers.forEach((layerId) => {
+          map.on('mouseenter', layerId, () => {
+            if (latest.current.mode === 'view') {
+              map.getCanvas().style.cursor = 'pointer'
+            }
+          })
+          map.on('mouseleave', layerId, () => {
+            if (latest.current.mode === 'view') {
+              map.getCanvas().style.cursor = ''
+            }
+          })
+        })
+
+        map.on('mousemove', (event) => {
+          const current = latest.current
+          if (['point', 'line', 'area', 'measure'].includes(current.mode)) {
+            const existingGeometries = current.measurements.map(
+              (m) => m.normalizedGeometry ?? m.rawGeometry,
+            )
+            const snapTarget = findSnapTarget(
+              map,
+              event.point,
+              current.draftPositions,
+              existingGeometries,
+            )
+            activeSnapTargetRef.current = snapTarget
+
+            const snapSource = map.getSource<GeoJSONSource>('snap-target-source')
+            if (snapSource) {
+              snapSource.setData(asMapGeoJson(snapIndicatorCollection(snapTarget)))
+            }
+
+            const activePos = snapTarget
+              ? snapTarget.coordinates
+              : ([event.lngLat.lng, event.lngLat.lat] as Position)
+            let text = ''
+
+            if (current.mode === 'point') {
+              text = 'Nhấp để chọn điểm'
+            } else if (
+              (current.mode === 'line' || current.mode === 'measure') &&
+              current.draftPositions.length > 0
+            ) {
+              const linePositions = [...current.draftPositions, activePos]
+              const feature = {
+                type: 'Feature' as const,
+                properties: {},
+                geometry: { type: 'LineString' as const, coordinates: linePositions },
+              }
+              const distM = length(feature) * 1000
+              text =
+                current.mode === 'measure'
+                  ? `Đo nháp: ${distM.toFixed(1)} m`
+                  : `Chiều dài: ${distM.toFixed(1)} m`
+            } else if (current.mode === 'area' && current.draftPositions.length >= 2) {
+              const polyPositions = [
+                ...current.draftPositions,
+                activePos,
+                current.draftPositions[0]!,
+              ]
+              const feature = {
+                type: 'Feature' as const,
+                properties: {},
+                geometry: { type: 'Polygon' as const, coordinates: [polyPositions] },
+              }
+              const areaM2 = area(feature)
+              text = `Diện tích: ${areaM2.toFixed(1)} m²`
+            } else if (current.mode === 'measure') {
+              text = 'Nhấp để bắt đầu đo nháp'
+            }
+
+            if (text) {
+              setTooltipState({ text, visible: true, x: event.point.x, y: event.point.y })
+            } else {
+              setTooltipState((prev) => (prev.visible ? { ...prev, visible: false } : prev))
+            }
+          } else {
+            activeSnapTargetRef.current = null
+            setTooltipState((prev) => (prev.visible ? { ...prev, visible: false } : prev))
+          }
+        })
+
         map.on('click', (event) => {
           const current = latest.current
-          if (['point', 'line', 'area'].includes(current.mode)) {
+          if (['point', 'line', 'area', 'measure'].includes(current.mode)) {
             const vertex = map.queryRenderedFeatures(event.point, {
               layers: ['draft-vertex-hit', 'draft-vertices'],
             })[0]
@@ -265,17 +499,21 @@ export function MeasurementMap(props: MeasurementMapProps) {
               current.onSelectDraftVertex(index)
               return
             }
-            current.onAddPosition([event.lngLat.lng, event.lngLat.lat])
+            const clickPos = activeSnapTargetRef.current?.coordinates ?? [
+              event.lngLat.lng,
+              event.lngLat.lat,
+            ]
+            current.onAddPosition(clickPos)
             return
           }
           const hit = map.queryRenderedFeatures(event.point, {
-            layers: ['measurement-areas', 'measurement-lines', 'measurement-points'],
+            layers: interactiveLayers,
           })[0]
           const id: unknown = hit?.properties?.id
           if (typeof id === 'string') current.onSelect(id)
         })
         map.on('dblclick', (event) => {
-          if (['line', 'area'].includes(latest.current.mode)) {
+          if (['line', 'area', 'measure'].includes(latest.current.mode)) {
             event.preventDefault()
             latest.current.onFinishDrawing()
           }
@@ -293,6 +531,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
           map,
           latest.current.communeBoundaries,
           communeLabelMarkers.current,
+          latest.current.showCommunes,
         )
       })
       .catch(() => {
@@ -324,8 +563,10 @@ export function MeasurementMap(props: MeasurementMapProps) {
     props.draftPositions,
     props.draftSelectedIndex,
     props.hiddenWorkItemIds,
+    props.mapFeatures,
     props.measurements,
     props.selectedId,
+    props.showCommunes,
   ])
 
   useEffect(() => {
@@ -335,8 +576,9 @@ export function MeasurementMap(props: MeasurementMapProps) {
       map,
       props.communeBoundaries,
       communeLabelMarkers.current,
+      props.showCommunes,
     )
-  }, [props.communeBoundaries])
+  }, [props.communeBoundaries, props.showCommunes])
 
   useEffect(() => {
     const map = mapRef.current
@@ -393,12 +635,48 @@ export function MeasurementMap(props: MeasurementMapProps) {
     markers.current.forEach((marker) => marker.remove())
     markers.current = []
     const map = mapRef.current
-    const geometry = props.editMeasurement?.rawGeometry
-    if (!map || props.mode !== 'edit' || !geometry) return
-    markers.current = createMeasurementEditMarkers(map, geometry, (updatedGeometry) =>
-      props.onEditGeometry(updatedGeometry),
-    )
-  }, [props.editMeasurement, props.mode])
+    if (!map) return
 
-  return <div className="measurement-map" ref={container} aria-label="Bản đồ phép đo" />
+    if (props.mode === 'edit') {
+      const geometry =
+        props.editMeasurement?.normalizedGeometry ?? props.editMeasurement?.rawGeometry
+      if (!geometry) return
+      markers.current = createMeasurementEditMarkers(map, geometry, (updatedGeometry) =>
+        props.onEditGeometry(updatedGeometry),
+      )
+      return
+    }
+
+    if (
+      ['point', 'line', 'area', 'measure'].includes(props.mode) &&
+      props.draftPositions.length > 0 &&
+      props.onUpdateDraftPosition
+    ) {
+      markers.current = createDraftVertexMarkers(
+        map,
+        props.draftPositions,
+        props.onUpdateDraftPosition,
+      )
+    }
+  }, [
+    props.draftPositions,
+    props.editMeasurement,
+    props.mode,
+    props.onEditGeometry,
+    props.onUpdateDraftPosition,
+  ])
+
+  return (
+    <div className="measurement-map" ref={container} aria-label="Bản đồ phép đo">
+      <MapLocateControl map={mapRef.current} />
+      {tooltipState.visible && (
+        <div
+          className="map-cursor-tooltip"
+          style={{ left: `${tooltipState.x}px`, top: `${tooltipState.y}px` }}
+        >
+          {tooltipState.text}
+        </div>
+      )}
+    </div>
+  )
 }

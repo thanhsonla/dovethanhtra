@@ -19,6 +19,7 @@ import type {
   SessionResponse,
   SourceQuantity,
   WorkItem,
+  UpdateWorkItemRequest,
   WorkType,
   RouteCalculation,
   RouteRequest,
@@ -258,6 +259,7 @@ export const api = {
       geometryKind?: MeasurementGeometryKind
       limit?: number
       managementZoneId?: string
+      search?: string
       serviceGroupId?: string
       status?: MeasurementStatus
       workItemId?: string
@@ -302,6 +304,12 @@ export const api = {
   listServiceGroups: () => request<ServiceGroup[]>('/catalog/service-groups'),
   listManagementZones: () => request<ManagementZone[]>('/catalog/management-zones'),
   listWorkItems: (caseId: string) => request<WorkItem[]>(`/cases/${caseId}/work-items`),
+  updateWorkItem: (item: WorkItem, input: UpdateWorkItemRequest) =>
+    request<WorkItem>(`/work-items/${item.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+      headers: { 'if-match': `"${item.version}"` },
+    }),
   listWorkComponents: (workItemId: string) =>
     request<WorkComponent[]>(`/work-items/${workItemId}/components`),
   listWorkTypes: () => request<WorkType[]>('/catalog/work-types'),
@@ -357,9 +365,24 @@ export const api = {
     }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   session: () => request<SessionResponse>('/auth/session'),
-  supersedeMeasurement: (measurementId: string, input: SupersedeMeasurementRequest) =>
-    request<Measurement>(`/measurements/${measurementId}/supersede`, {
-      method: 'POST',
-      body: JSON.stringify(input),
-    }),
+  supersedeMeasurement: async (measurementId: string, input: SupersedeMeasurementRequest) => {
+    try {
+      return await request<Measurement>(`/measurements/${measurementId}/supersede`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      })
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && err.code === 'MEASUREMENT_NOT_CONFIRMED') {
+        await request<Measurement>(`/measurements/${measurementId}/confirm`, {
+          method: 'POST',
+          body: JSON.stringify({ reason: 'Tự động xác nhận để hiệu chỉnh' }),
+        }).catch(() => undefined)
+        return request<Measurement>(`/measurements/${measurementId}/supersede`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        })
+      }
+      throw err
+    }
+  },
 }

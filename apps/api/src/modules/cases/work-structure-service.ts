@@ -31,6 +31,16 @@ export class WorkStructureService {
       return await this.database.transaction().execute(async (transaction) => {
         const before = await this.repository.getItem(transaction, id, ownerId)
         if (!before) throw new AppError(404, 'WORK_ITEM_NOT_FOUND', 'Không tìm thấy công tác.')
+        if (
+          input.workTypeId &&
+          !(await this.repository.isCompatibleWorkType(transaction, id, ownerId, input.workTypeId))
+        ) {
+          throw new AppError(
+            422,
+            'WORK_TYPE_INCOMPATIBLE',
+            'Dịch vụ được chọn không hỗ trợ loại hình học của phép đo.',
+          )
+        }
         const updatedId = await this.repository.updateItem(transaction, id, ownerId, version, input)
         if (!updatedId)
           throw new AppError(409, 'VERSION_CONFLICT', 'Công tác đã thay đổi hoặc hồ sơ đã khóa.')

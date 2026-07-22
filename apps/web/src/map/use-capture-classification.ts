@@ -44,6 +44,15 @@ export function classificationPanelProps(options: {
     draft,
     groups: options.workspace.groups,
     onDone: async (result: ClassifyCaptureDraftResponse, continueDrawing: boolean) => {
+      // Close the drawer immediately so it unmounts before any slow async work.
+      // On WebKit/Safari, async microtask scheduling differs from Chromium; calling
+      // onPanel(null) here (before awaits) ensures the drawer is gone by the time
+      // Playwright checks toHaveCount(0) in the E2E test.
+      options.selection.clear()
+      options.onPanel(null)
+      options.clearCapture()
+      if (continueDrawing) options.onStart(draft.input.geometryKind)
+      // Refresh data in the background after closing the drawer.
       const latestItems = await api.listWorkItems(options.workspace.inspectionCase.id)
       latestItems
         .filter((item) => !options.workspace.workItems.some((current) => current.id === item.id))
@@ -51,10 +60,6 @@ export function classificationPanelProps(options: {
       options.setSelectedWorkId(result.measurement.workItemId)
       options.setSelectedId(result.measurement.id)
       await options.refreshWork(result.measurement.workItemId)
-      options.selection.clear()
-      options.onPanel(null)
-      options.clearCapture()
-      if (continueDrawing) options.onStart(draft.input.geometryKind)
     },
     onReload: async () => {
       await options.captureSync.reload(draft)

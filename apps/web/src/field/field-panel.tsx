@@ -20,6 +20,7 @@ export function FieldPanel(props: {
   onChanged(measurement: Measurement): Promise<void>
   onError(value: string): void
   gpsKind: 'line' | 'point' | null
+  photosOnly?: boolean
   workItem: WorkItem | null
 }) {
   const [segments, setSegments] = useState<GpsPoint[][]>([[]])
@@ -265,9 +266,76 @@ export function FieldPanel(props: {
     }
   }
 
+  if (props.photosOnly) {
+    return (
+      <section className="field-panel field-panel--photos-only">
+        <strong className="field-panel__title">Ảnh hiện trường</strong>
+        <div className="photo-actions">
+          <label className="photo-action">
+            <span>Chọn ảnh</span>
+            <input
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Tải ảnh hiện trường"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) void uploadPhoto(file)
+              }}
+              type="file"
+            />
+          </label>
+          <label className="photo-action">
+            <span>Chụp ảnh</span>
+            <input
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Chụp ảnh hiện trường"
+              capture="environment"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) void uploadPhoto(file)
+              }}
+              type="file"
+            />
+          </label>
+        </div>
+        {photoState && <small className="photo-state">{photoState}</small>}
+        {attachments.length > 0 && (
+          <div className="evidence-list evidence-list--compact">
+            {attachments.map((attachment) => (
+              <article key={attachment.id}>
+                {attachment.thumbnailAvailable && (
+                  <img
+                    alt={`Tệp ${attachment.originalName}`}
+                    loading="lazy"
+                    src={`/api/v1/attachments/${attachment.id}/thumbnail`}
+                  />
+                )}
+                <span>{attachment.originalName}</span>
+                <button
+                  aria-label={`Xóa ảnh ${attachment.originalName}`}
+                  onClick={() =>
+                    void api
+                      .removeAttachment(attachment.id)
+                      .then(refreshAttachments)
+                      .catch((reason) =>
+                        props.onError(
+                          reason instanceof Error ? reason.message : 'Không xóa được ảnh.',
+                        ),
+                      )
+                  }
+                  type="button"
+                >
+                  ×
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    )
+  }
+
   return (
     <section className="field-panel">
-      <p className="section-kicker">Hiện trường · Mốc 4</p>
       {props.gpsKind === 'point' && props.workItem && (
         <div className="gps-controls">
           <strong>Vị trí GPS hiện tại</strong>
@@ -302,7 +370,7 @@ export function FieldPanel(props: {
       )}
       {(props.measurement || props.workItem) && (
         <label className="photo-field">
-          Ảnh hiện trường
+          <strong>Ảnh hiện trường</strong>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -317,20 +385,17 @@ export function FieldPanel(props: {
       )}
       {attachments.length > 0 && (
         <div className="evidence-list">
-          <strong>Ảnh hoàn tất</strong>
+          <strong>Ảnh hiện trường đã đính kèm</strong>
           {attachments.map((attachment) => (
             <article key={attachment.id}>
               {attachment.thumbnailAvailable && (
                 <img
-                  alt={`Thumbnail ${attachment.originalName}`}
+                  alt={`Tệp ${attachment.originalName}`}
                   loading="lazy"
                   src={`/api/v1/attachments/${attachment.id}/thumbnail`}
                 />
               )}
               <span>{attachment.originalName}</span>
-              <small>
-                {attachment.scanStatus} · {attachment.sizeBytes ?? 0} byte
-              </small>
               <button
                 className="button button--quiet"
                 onClick={() =>
@@ -344,7 +409,7 @@ export function FieldPanel(props: {
                     )
                 }
               >
-                Xóa mềm
+                Xóa ảnh
               </button>
             </article>
           ))}

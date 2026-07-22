@@ -3,29 +3,14 @@ import type {
   MapFeature,
   MapFeatureConfirmedTotal,
   ServiceGroup,
-  WorkComponent,
   WorkItem,
 } from '@dove/contracts'
+import { useEffect, useState, type FormEvent } from 'react'
 
 import type { MapFeatureFilters } from './use-map-features.js'
 import { measurementBaseValue, measurementQuantity } from './measurement-summary.js'
 
-const statuses = [
-  ['', 'Mọi trạng thái'],
-  ['draft', 'Nháp'],
-  ['pending_validation', 'Chờ kiểm tra'],
-  ['needs_attention', 'Cần chú ý'],
-  ['confirmed', 'Đã xác nhận'],
-] as const
-const kinds = [
-  ['', 'Mọi công cụ'],
-  ['point', 'Điểm'],
-  ['line', 'Chiều dài'],
-  ['area', 'Diện tích'],
-] as const
-
 export function MapFeatureFilterPanel(props: {
-  components: WorkComponent[]
   confirmedTotals: MapFeatureConfirmedTotal[]
   filters: MapFeatureFilters
   groups: ServiceGroup[]
@@ -39,129 +24,105 @@ export function MapFeatureFilterPanel(props: {
   workItems: WorkItem[]
   zones: ManagementZone[]
 }) {
-  const set = (key: keyof MapFeatureFilters, value: string) => {
-    const next = { ...props.filters, [key]: value }
-    if (key === 'managementZoneId') Object.assign(next, { componentId: '', workItemId: '' })
-    if (key === 'serviceGroupId') Object.assign(next, { componentId: '', workItemId: '' })
-    if (key === 'workItemId') next.componentId = ''
-    props.onChange(next)
+  const categoryValue = props.filters.workItemId
+    ? `work:${props.filters.workItemId}`
+    : props.filters.serviceGroupId
+      ? `group:${props.filters.serviceGroupId}`
+      : props.filters.managementZoneId
+        ? `zone:${props.filters.managementZoneId}`
+        : ''
+  const [draftName, setDraftName] = useState(props.filters.search)
+  const [draftCategory, setDraftCategory] = useState(categoryValue)
+  const hasPrimarySearch = Boolean(props.filters.search.trim() || categoryValue)
+
+  useEffect(() => setDraftName(props.filters.search), [props.filters.search])
+  useEffect(() => setDraftCategory(categoryValue), [categoryValue])
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const [kind, id = ''] = draftCategory.split(':')
+    props.onChange({
+      ...props.filters,
+      componentId: '',
+      geometryKind: '',
+      managementZoneId: kind === 'zone' ? id : '',
+      search: draftName.trim(),
+      serviceGroupId: kind === 'group' ? id : '',
+      status: '',
+      workItemId: kind === 'work' ? id : '',
+    })
   }
-  const works = props.workItems.filter(
-    (item) =>
-      (!props.filters.managementZoneId ||
-        item.managementZoneId === props.filters.managementZoneId) &&
-      (!props.filters.serviceGroupId || item.serviceGroupId === props.filters.serviceGroupId),
-  )
 
   return (
     <section className="map-feature-filter">
-      <div className="map-filter-grid">
+      <form className="map-search-primary" onSubmit={submit}>
         <label>
-          Khu vực
-          <select
-            id="map-filter-zone"
-            value={props.filters.managementZoneId}
-            onChange={(event) => set('managementZoneId', event.target.value)}
-          >
-            <option value="">Tất cả khu vực</option>
-            {props.zones.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+          Tìm theo tên
+          <input
+            id="map-search-name"
+            maxLength={120}
+            onChange={(event) => setDraftName(event.target.value)}
+            placeholder="Tên đối tượng, công tác, mục con…"
+            type="search"
+            value={draftName}
+          />
         </label>
         <label>
-          Lĩnh vực
+          Danh mục
           <select
-            id="map-filter-group"
-            value={props.filters.serviceGroupId}
-            onChange={(event) => set('serviceGroupId', event.target.value)}
+            id="map-search-category"
+            onChange={(event) => setDraftCategory(event.target.value)}
+            value={draftCategory}
           >
-            <option value="">Tất cả lĩnh vực</option>
-            {props.groups.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
+            <option value="">Tất cả danh mục</option>
+            <optgroup label="Khu vực">
+              {props.zones.map((item) => (
+                <option key={item.id} value={`zone:${item.id}`}>
+                  {item.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Lĩnh vực">
+              {props.groups.map((item) => (
+                <option key={item.id} value={`group:${item.id}`}>
+                  {item.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Công tác">
+              {props.workItems.map((item) => (
+                <option key={item.id} value={`work:${item.id}`}>
+                  {item.name}
+                </option>
+              ))}
+            </optgroup>
           </select>
         </label>
-        <label>
-          Công tác
-          <select
-            id="map-filter-work"
-            value={props.filters.workItemId}
-            onChange={(event) => set('workItemId', event.target.value)}
+        <div className="map-search-actions">
+          <button className="map-search-submit" disabled={props.loading} type="submit">
+            Tìm kiếm
+          </button>
+          <button
+            className="map-filter-reset"
+            type="button"
+            onClick={() => {
+              setDraftName('')
+              setDraftCategory('')
+              props.onChange({
+                componentId: '',
+                geometryKind: '',
+                managementZoneId: '',
+                search: '',
+                serviceGroupId: '',
+                status: '',
+                workItemId: '',
+              })
+            }}
           >
-            <option value="">Tất cả công tác</option>
-            {works.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Mục con
-          <select
-            id="map-filter-component"
-            disabled={!props.filters.workItemId}
-            value={props.filters.componentId}
-            onChange={(event) => set('componentId', event.target.value)}
-          >
-            <option value="">Tất cả mục con</option>
-            {props.components.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Công cụ
-          <select
-            id="map-filter-kind"
-            value={props.filters.geometryKind}
-            onChange={(event) => set('geometryKind', event.target.value)}
-          >
-            {kinds.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Trạng thái
-          <select
-            id="map-filter-status"
-            value={props.filters.status}
-            onChange={(event) => set('status', event.target.value)}
-          >
-            {statuses.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <button
-        className="map-filter-reset"
-        type="button"
-        onClick={() =>
-          props.onChange({
-            componentId: '',
-            geometryKind: '',
-            managementZoneId: '',
-            serviceGroupId: '',
-            status: '',
-            workItemId: '',
-          })
-        }
-      >
-        Xóa bộ lọc
-      </button>
+            Xóa
+          </button>
+        </div>
+      </form>
       <div className="map-filter-totals" aria-label="Tổng đã xác nhận">
         <span>Tổng máy chủ · chỉ dữ liệu đã xác nhận</span>
         <strong>
@@ -173,7 +134,11 @@ export function MapFeatureFilterPanel(props: {
         </strong>
       </div>
       <p className="map-filter-count">
-        {props.loading ? 'Đang tải…' : `${props.items.length} đối tượng trong vùng nhìn`}
+        {props.loading
+          ? 'Đang tìm…'
+          : hasPrimarySearch
+            ? `${props.items.length} kết quả tìm kiếm`
+            : `${props.items.length} đối tượng trong vùng nhìn`}
       </p>
       <ul className="map-feature-list">
         {props.items.map((item) => (

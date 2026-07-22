@@ -62,7 +62,7 @@ export class GoogleMapTilesProvider implements GoogleMapTiles {
     const response = await this.response(url, {
       body: JSON.stringify({
         language: 'vi-VN',
-        layerTypes: ['layerRoadmap'],
+        layerTypes: [],
         mapType: 'satellite',
         overlay: false,
         region: 'VN',

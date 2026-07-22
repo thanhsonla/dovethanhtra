@@ -45,13 +45,51 @@ export function syncCommuneBoundaryData(map: MapLibreMap, boundaries: AdminAreaB
   )
 }
 
-function updateLabelScale(map: MapLibreMap, labels: CommuneLabelMarker[]) {
+function updateLabelScale(
+  map: MapLibreMap,
+  labels: CommuneLabelMarker[],
+  showCommunes: boolean = true,
+) {
+  if (!showCommunes) {
+    for (const { element } of labels) {
+      element.style.display = 'none'
+    }
+    return
+  }
+
   const zoom = map.getZoom()
-  const fontSize = Math.max(9, Math.min(17, 9 + (zoom - 8) * 0.8))
+  const fontSize = Math.max(8, Math.min(15, 8 + (zoom - 8) * 0.6))
   const maxWidth = Math.max(78, Math.min(150, 78 + (zoom - 8) * 12))
+
+  const allowed = [
+    'tô hiệu',
+    'mai sơn',
+    'thuận châu',
+    'yên châu',
+    'phù yên',
+    'bắc yên',
+    'vân hồ',
+    'mộc châu',
+    'sốp cộp',
+    'mường la',
+    'quỳnh nhai',
+  ]
+
   for (const { element } of labels) {
     element.style.setProperty('--commune-label-font-size', `${fontSize.toFixed(1)}px`)
     element.style.setProperty('--commune-label-max-width', `${maxWidth.toFixed(0)}px`)
+
+    if (zoom < 10.5) {
+      const text = (element.textContent || '').toLowerCase()
+      const matches = allowed.some((name) => text.includes(name))
+      if (matches) {
+        element.style.display = 'block'
+      } else {
+        element.style.display = 'none'
+      }
+    } else {
+      element.style.display = 'block'
+    }
   }
 }
 
@@ -59,6 +97,7 @@ export function replaceCommuneLabels(
   map: MapLibreMap,
   boundaries: AdminAreaBoundary[],
   current: CommuneLabelMarker[],
+  showCommunes: boolean = true,
 ) {
   for (const { marker } of current) marker.remove()
   const labels = boundaries.map((item) => {
@@ -79,12 +118,16 @@ export function replaceCommuneLabels(
     element.removeAttribute('role')
     return { element, marker }
   })
-  updateLabelScale(map, labels)
+  updateLabelScale(map, labels, showCommunes)
   return labels
 }
 
-export function resizeCommuneLabels(map: MapLibreMap, labels: CommuneLabelMarker[]) {
-  updateLabelScale(map, labels)
+export function resizeCommuneLabels(
+  map: MapLibreMap,
+  labels: CommuneLabelMarker[],
+  showCommunes: boolean = true,
+) {
+  updateLabelScale(map, labels, showCommunes)
 }
 
 export function removeCommuneLabels(labels: CommuneLabelMarker[]) {

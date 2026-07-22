@@ -51,6 +51,7 @@ export const mapFeatureRoutes: FastifyPluginAsync<Options> = async (app, options
       geometryKind?: MeasurementGeometryKind
       limit?: number
       managementZoneId?: string
+      search?: string
       serviceGroupId?: string
       status?: MeasurementStatus
       workItemId?: string
@@ -68,6 +69,7 @@ export const mapFeatureRoutes: FastifyPluginAsync<Options> = async (app, options
           geometryKind: Type.Optional(MeasurementGeometryKindSchema),
           limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 500 })),
           managementZoneId: Type.Optional(Type.String({ format: 'uuid' })),
+          search: Type.Optional(Type.String({ maxLength: 120 })),
           serviceGroupId: Type.Optional(Type.String({ format: 'uuid' })),
           status: Type.Optional(MeasurementStatusSchema),
           workItemId: Type.Optional(Type.String({ format: 'uuid' })),

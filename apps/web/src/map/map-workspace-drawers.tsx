@@ -1,30 +1,23 @@
-import { lazy, Suspense, type ComponentProps } from 'react'
+import type { ComponentProps } from 'react'
 
-import type { CaptureDraftPanel as CaptureDraftPanelType } from './capture-draft-panel.js'
-import type { CaptureClassificationPanel as CaptureClassificationPanelType } from './capture-classification-panel.js'
+import { CaptureClassificationPanel } from './capture-classification-panel.js'
+import { CaptureDraftPanel } from './capture-draft-panel.js'
 import { MapDetailsPanel } from './map-details-panel.js'
 import { MapDrawer } from './map-drawer.js'
+import { MapFeatureFilterPanel } from './map-feature-filter-panel.js'
+import { MapFeatureSidebar } from './map-feature-sidebar.js'
 import { MapQuickWorkflow } from './map-quick-workflow.js'
-import type { MapFeatureFilterPanel as MapFeatureFilterPanelType } from './map-feature-filter-panel.js'
 
 type PanelName = 'capture' | 'classification' | 'data' | 'details' | 'filters'
-const CaptureDraftPanel = lazy(async () => ({
-  default: (await import('./capture-draft-panel.js')).CaptureDraftPanel,
-}))
-const CaptureClassificationPanel = lazy(async () => ({
-  default: (await import('./capture-classification-panel.js')).CaptureClassificationPanel,
-}))
-const MapFeatureFilterPanel = lazy(async () => ({
-  default: (await import('./map-feature-filter-panel.js')).MapFeatureFilterPanel,
-}))
 
 export function MapWorkspaceDrawers(props: {
   activePanel: PanelName | null
-  capture: ComponentProps<typeof CaptureDraftPanelType> | null
-  classification: ComponentProps<typeof CaptureClassificationPanelType> | null
+  capture: ComponentProps<typeof CaptureDraftPanel> | null
+  classification: ComponentProps<typeof CaptureClassificationPanel> | null
   data: ComponentProps<typeof MapQuickWorkflow>
   details: ComponentProps<typeof MapDetailsPanel>
-  filters: ComponentProps<typeof MapFeatureFilterPanelType>
+  filters: ComponentProps<typeof MapFeatureFilterPanel>
+  sidebar: ComponentProps<typeof MapFeatureSidebar> | null
   onClose: () => void
 }) {
   if (!props.activePanel) return null
@@ -34,12 +27,11 @@ export function MapWorkspaceDrawers(props: {
       <MapDrawer
         id="map-capture-drawer"
         label="Lưu kết quả đo"
-        onClose={props.onClose}
+        onClose={props.capture.onCancel}
         side="right"
+        {...(props.capture.onQuickSave ? { variant: 'compact' as const } : {})}
       >
-        <Suspense fallback={<p role="status">Đang mở kết quả…</p>}>
-          <CaptureDraftPanel {...props.capture} />
-        </Suspense>
+        <CaptureDraftPanel {...props.capture} />
       </MapDrawer>
     )
   }
@@ -52,37 +44,48 @@ export function MapWorkspaceDrawers(props: {
         onClose={props.onClose}
         side="right"
       >
-        <Suspense fallback={<p role="status">Đang mở phiếu phân loại…</p>}>
-          <CaptureClassificationPanel {...props.classification} />
-        </Suspense>
+        <CaptureClassificationPanel {...props.classification} />
       </MapDrawer>
     )
   }
 
   if (props.activePanel === 'data') {
     return (
-      <MapDrawer id="map-data-drawer" label="Dữ liệu hồ sơ" onClose={props.onClose}>
-        <MapQuickWorkflow {...props.data} />
+      <MapDrawer id="map-data-drawer" label="Quản lý số liệu" onClose={props.onClose} side="left">
+        {props.sidebar && <MapFeatureSidebar {...props.sidebar} />}
+        <details className="map-quick-workflow-accordion">
+          <summary
+            style={{ cursor: 'pointer', fontSize: '0.78rem', color: '#527063', fontWeight: 600 }}
+          >
+            Quản lý công tác và tiến độ hồ sơ
+          </summary>
+          <MapQuickWorkflow {...props.data} />
+        </details>
       </MapDrawer>
     )
   }
 
   if (props.activePanel === 'filters') {
     return (
-      <MapDrawer id="map-filter-drawer" label="Bộ lọc và lớp dữ liệu" onClose={props.onClose}>
-        <Suspense fallback={<p role="status">Đang mở bộ lọc…</p>}>
-          <MapFeatureFilterPanel {...props.filters} />
-        </Suspense>
+      <MapDrawer id="map-filter-drawer" label="Tìm kiếm dữ liệu" onClose={props.onClose}>
+        <MapFeatureFilterPanel {...props.filters} />
       </MapDrawer>
     )
   }
 
+  const compactInfo =
+    import.meta.env.VITE_LEGACY_CASE_DASHBOARD !== 'true' &&
+    props.details.measurement &&
+    !props.details.draftReady &&
+    !props.details.editMode
+
   return (
     <MapDrawer
       id="map-details-drawer"
-      label="Chi tiết và nâng cao"
+      label={compactInfo ? 'Thông tin' : 'Chi tiết và nâng cao'}
       onClose={props.onClose}
       side="right"
+      {...(compactInfo ? { variant: 'compact' as const } : {})}
     >
       <MapDetailsPanel {...props.details} />
     </MapDrawer>

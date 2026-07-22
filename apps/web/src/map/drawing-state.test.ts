@@ -33,6 +33,49 @@ describe('drawing state machine', () => {
     expect(state.history.present).toHaveLength(3)
   })
 
+  it('updates vertex position at specified index and allows undo', () => {
+    let state = createDrawingState([
+      [104.6, 20.8],
+      [104.7, 20.9],
+    ])
+    state = drawingReducer(state, {
+      type: 'update-position',
+      index: 1,
+      position: [104.75, 20.95],
+    })
+    expect(state.history.present).toEqual([
+      [104.6, 20.8],
+      [104.75, 20.95],
+    ])
+    state = drawingReducer(state, { type: 'undo' })
+    expect(state.history.present).toEqual([
+      [104.6, 20.8],
+      [104.7, 20.9],
+    ])
+  })
+
+  it('inserts vertex position at specified index and allows undo', () => {
+    let state = createDrawingState([
+      [104.6, 20.8],
+      [104.8, 21.0],
+    ])
+    state = drawingReducer(state, {
+      type: 'insert-position',
+      index: 1,
+      position: [104.7, 20.9],
+    })
+    expect(state.history.present).toEqual([
+      [104.6, 20.8],
+      [104.7, 20.9],
+      [104.8, 21.0],
+    ])
+    state = drawingReducer(state, { type: 'undo' })
+    expect(state.history.present).toEqual([
+      [104.6, 20.8],
+      [104.8, 21.0],
+    ])
+  })
+
   it('ignores invalid selections and resets all history', () => {
     let state = drawingReducer(createDrawingState([[104.6, 20.8]]), {
       type: 'select',

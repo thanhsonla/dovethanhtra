@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { GoogleMapTilesProvider } from './google-map-tiles-provider.js'
 
 describe('Google Map Tiles adapter', () => {
-  it('creates one Vietnamese hybrid session and proxies tiles without exposing the key', async () => {
+  it('creates one Vietnamese satellite session and proxies tiles without exposing the key', async () => {
     const fetcher = vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url =
         input instanceof URL ? input : new URL(typeof input === 'string' ? input : input.url)
@@ -11,7 +11,7 @@ describe('Google Map Tiles adapter', () => {
         expect(typeof init?.body).toBe('string')
         expect(JSON.parse(init?.body as string)).toEqual({
           language: 'vi-VN',
-          layerTypes: ['layerRoadmap'],
+          layerTypes: [],
           mapType: 'satellite',
           overlay: false,
           region: 'VN',

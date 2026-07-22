@@ -5,7 +5,7 @@ test.setTimeout(60_000)
 test('creates a case from selected work-item structure without copying results', async ({
   page,
 }, testInfo) => {
-  await page.goto('/')
+  await page.goto('/#dashboard')
   await page.getByLabel('Email').fill('owner@example.local')
   await page.getByLabel('Mật khẩu').fill('local-demo-password')
   await page
@@ -16,13 +16,14 @@ test('creates a case from selected work-item structure without copying results',
   const sourceCode = `COPY-E2E-SRC-${suffix}`
   const sourceName = `Hồ sơ mẫu sao chép ${suffix}`
   await page
-    .getByRole('button', { name: 'Tạo hồ sơ' })
+    .getByRole('button', { name: 'Tạo hồ sơ', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
   const sourceForm = page.locator('.create-form')
   await sourceForm.getByLabel('Mã hồ sơ').fill(sourceCode)
   await sourceForm.getByLabel('Tên hồ sơ').fill(sourceName)
   await sourceForm.getByLabel('Từ ngày').fill('2026-07-01')
   await sourceForm.getByLabel('Đến ngày').fill('2026-07-31')
+  await expect(sourceForm.getByLabel('Địa bàn')).toBeEnabled({ timeout: 15_000 })
   await sourceForm.getByLabel('Địa bàn').selectOption({ index: 1 })
   await Promise.all([
     page.waitForResponse(
@@ -40,7 +41,7 @@ test('creates a case from selected work-item structure without copying results',
   await expect(page.locator('.work-list').getByText(sourceWorkName, { exact: true })).toBeVisible()
 
   await page
-    .getByRole('button', { name: 'Tạo hồ sơ' })
+    .getByRole('button', { name: 'Tạo hồ sơ', exact: true })
     .evaluate((element: HTMLButtonElement) => element.click())
   const targetForm = page.locator('.create-form')
   await expect(targetForm).toBeVisible()
@@ -49,6 +50,7 @@ test('creates a case from selected work-item structure without copying results',
   await targetForm.getByLabel('Tên hồ sơ').fill(targetName)
   await targetForm.getByLabel('Từ ngày').fill('2026-08-01')
   await targetForm.getByLabel('Đến ngày').fill('2026-08-31')
+  await expect(targetForm.getByLabel('Địa bàn')).toBeEnabled({ timeout: 15_000 })
   await targetForm.getByLabel('Địa bàn').selectOption({ index: 1 })
   await targetForm
     .getByLabel('Sao chép cấu trúc từ hồ sơ (không bắt buộc)')

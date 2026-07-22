@@ -132,6 +132,7 @@ export const CreateWorkItemRequestSchema = Type.Object(
 export const UpdateWorkItemRequestSchema = Type.Partial(
   Type.Object({
     name: Type.String({ minLength: 1, maxLength: 300 }),
+    workTypeId: UuidSchema,
     managementZoneId: Type.Union([UuidSchema, Type.Null()]),
     periodStart: Type.Union([DateSchema, Type.Null()]),
     periodEnd: Type.Union([DateSchema, Type.Null()]),

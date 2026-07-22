@@ -1,11 +1,10 @@
 import type {
-  AuditEvent,
   GeoJsonGeometry,
   Measurement,
   DrawableMeasurementGeometryKind,
   WorkItem,
 } from '@dove/contracts'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 
 import { api } from '../api.js'
 import { calculationInputMeta, requiredInputs, temporaryValue } from './map-geometry.js'
@@ -27,6 +26,7 @@ export interface MeasurementInspectorProps {
   defaultName: string
   draftGeometry: GeoJsonGeometry | null
   draftReady: boolean
+  editMode: boolean
   initialCalculationInputs: Record<string, number>
   measurement: Measurement | null
   onCancel(): void
@@ -40,17 +40,6 @@ export interface MeasurementInspectorProps {
 
 export function MeasurementInspector(props: MeasurementInspectorProps) {
   const [busy, setBusy] = useState(false)
-  const [history, setHistory] = useState<AuditEvent[]>([])
-  useEffect(() => {
-    if (!props.measurement) {
-      setHistory([])
-      return
-    }
-    void api
-      .listMeasurementHistory(props.measurement.id)
-      .then(setHistory)
-      .catch(() => setHistory([]))
-  }, [props.measurement?.id])
   const deliverSaved = async (measurement: Measurement, action: 'continue' | 'done') => {
     try {
       await props.onSaved(measurement, action)
@@ -132,6 +121,36 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
     } catch (reason) {
       props.onError(reason instanceof Error ? reason.message : 'Không thể tạo phiên bản mới.')
     }
+  }
+
+  if (props.editMode && props.measurement && props.draftGeometry) {
+    return (
+      <form className="measurement-edit-save" onSubmit={(event) => void supersede(event)}>
+        <div className="measurement-quick-summary">
+          <span>Đang sửa hình dạng</span>
+          <strong>{temporaryValue(props.draftGeometry)}</strong>
+          <small>Kéo các đỉnh hoặc bấm dấu + trên bản đồ để thêm đỉnh.</small>
+        </div>
+        <label>
+          Lý do chỉnh sửa
+          <input
+            autoFocus
+            minLength={3}
+            name="reason"
+            placeholder="Ví dụ: Điều chỉnh theo kiểm tra thực địa"
+            required
+          />
+        </label>
+        <div className="measurement-save-actions">
+          <button className="button button--secondary" type="submit">
+            Lưu phiên bản mới
+          </button>
+          <button className="button button--quiet" onClick={() => props.onCancel()} type="button">
+            Hủy sửa
+          </button>
+        </div>
+      </form>
+    )
   }
 
   if (props.draftReady && props.draftGeometry) {
@@ -231,14 +250,6 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
     )
   }
   const measurement = props.measurement
-  const hasErrors = measurement.warnings.some((warning) => warning.severity === 'error')
-  const confirm = async () => {
-    try {
-      await props.onChanged(await api.confirmMeasurement(measurement.id))
-    } catch (reason) {
-      props.onError(reason instanceof Error ? reason.message : 'Không thể xác nhận.')
-    }
-  }
   const remove = async () => {
     try {
       await api.deleteMeasurement(measurement.id)
@@ -260,87 +271,47 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
       props.onError(reason instanceof Error ? reason.message : 'Không thể tải GeoJSON.')
     }
   }
+  const unit =
+    measurement.geometryKind === 'area'
+      ? 'm²'
+      : measurement.geometryKind === 'line' || measurement.geometryKind === 'route'
+        ? 'm'
+        : 'điểm'
+
+  const formattedTime = new Date(measurement.createdAt).toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  const valueText = measurement.baseValue
+    ? `${measurement.baseValue.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`
+    : `0.00 ${unit}`
+
   return (
     <div className="measurement-detail">
-      <p className="section-kicker">Kết quả máy chủ</p>
-      <h2>{measurement.name}</h2>
-      <dl>
-        <div>
-          <dt>Giá trị cơ sở</dt>
-          <dd>{measurement.baseValue?.toFixed(2) ?? 'Chưa tính'}</dd>
-        </div>
-        <div>
-          <dt>Khối lượng</dt>
-          <dd>
-            {measurement.calculatedQuantity?.toFixed(2) ?? 'Thiếu đầu vào'} {measurement.unit}
-          </dd>
-        </div>
-        <div>
-          <dt>Trạng thái</dt>
-          <dd>{statusLabels[measurement.status] ?? measurement.status}</dd>
-        </div>
-        <div>
-          <dt>Quy tắc</dt>
-          <dd>
-            {measurement.calculationRuleCode} v{measurement.calculationVersion}
-          </dd>
-        </div>
-      </dl>
-      {measurement.warnings.length > 0 && (
-        <ul className="warning-list">
-          {measurement.warnings.map((warning) => (
-            <li className={`warning--${warning.severity}`} key={warning.code}>
-              <strong>{warning.code}</strong>
-              <span>{warning.message}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="measurement-detail__header">
+        <span className="measurement-detail__kicker">Nội dung công việc</span>
+        <h2>{measurement.name}</h2>
+        <p className="measurement-detail__time">
+          Thời gian lập: {formattedTime} · v{measurement.version} ·{' '}
+          {statusLabels[measurement.status] ?? measurement.status}
+        </p>
+      </div>
+      <div className="measurement-detail__metric">
+        <span className="measurement-detail__metric-label">Giá trị ({unit})</span>
+        <strong className="measurement-detail__metric-value">{valueText}</strong>
+      </div>
       <div className="button-row">
         <button className="button button--quiet" onClick={() => void downloadGeoJson()}>
           Tải GeoJSON
         </button>
-        {['draft', 'needs_attention'].includes(measurement.status) && (
-          <button className="button" disabled={hasErrors} onClick={() => void confirm()}>
-            Xác nhận
-          </button>
-        )}
-        {measurement.status === 'confirmed' && (
-          <button className="button" onClick={() => props.onEdit()}>
-            Hiệu chỉnh
-          </button>
-        )}
         <button className="button button--danger" onClick={() => void remove()}>
-          Xóa mềm
+          Xóa
         </button>
       </div>
-      <details className="measurement-history">
-        <summary>Lịch sử phiên bản và thao tác</summary>
-        {history.length === 0 ? (
-          <p>Chưa có lịch sử.</p>
-        ) : (
-          <ol>
-            {history.map((event) => (
-              <li key={event.id}>
-                <strong>{event.action}</strong> ·{' '}
-                {new Date(event.occurredAt).toLocaleString('vi-VN')}
-                {event.reason ? ` · ${event.reason}` : ''}
-              </li>
-            ))}
-          </ol>
-        )}
-      </details>
-      {measurement.status === 'confirmed' && props.draftGeometry && (
-        <form className="supersede-form" onSubmit={(event) => void supersede(event)}>
-          <label>
-            Lý do hiệu chỉnh
-            <input name="reason" minLength={3} required />
-          </label>
-          <button className="button" type="submit">
-            Lưu phiên bản mới
-          </button>
-        </form>
-      )}
     </div>
   )
 }

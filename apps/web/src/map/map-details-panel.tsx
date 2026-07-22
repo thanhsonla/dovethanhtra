@@ -10,6 +10,7 @@ import type {
 
 import { FieldPanel } from '../field/field-panel.js'
 import { DataToolsPanel } from './data-tools-panel.js'
+import { MeasurementCompactInfo } from './measurement-compact-info.js'
 import { MeasurementInspector } from './measurement-inspector.js'
 import { RoutePlanner } from './route-planner.js'
 
@@ -17,6 +18,7 @@ export function MapDetailsPanel(props: {
   defaultName: string
   draftGeometry: GeoJsonGeometry | null
   draftReady: boolean
+  editMode: boolean
   facilities: TreatmentFacility[]
   initialCalculationInputs: Record<string, number>
   measurement: Measurement | null
@@ -35,6 +37,27 @@ export function MapDetailsPanel(props: {
     props.selectedKind === 'point' || props.selectedKind === 'line' || props.selectedKind === 'area'
       ? props.selectedKind
       : null
+  const compactInfo =
+    import.meta.env.VITE_LEGACY_CASE_DASHBOARD !== 'true' &&
+    props.measurement &&
+    !props.draftReady &&
+    !props.editMode
+
+  if (compactInfo && props.measurement) {
+    return (
+      <section className="measurement-panel measurement-panel--compact-info">
+        <MeasurementCompactInfo measurement={props.measurement} />
+        <FieldPanel
+          gpsKind={null}
+          measurement={props.measurement}
+          onChanged={(measurement) => props.onChanged(measurement)}
+          onError={(message) => props.onError(message)}
+          photosOnly
+          workItem={props.selectedWork}
+        />
+      </section>
+    )
+  }
 
   return (
     <section className="measurement-panel">
@@ -52,6 +75,7 @@ export function MapDetailsPanel(props: {
           defaultName={props.defaultName}
           draftGeometry={props.draftGeometry}
           draftReady={props.draftReady}
+          editMode={props.editMode}
           initialCalculationInputs={props.initialCalculationInputs}
           measurement={props.measurement}
           selectedKind={drawableKind}

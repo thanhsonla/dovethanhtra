@@ -34,7 +34,7 @@ Thao tác: tạo mới, mở, sao chép cấu trúc, lưu trữ, xuất nhanh.
 ### 3.2. Không gian kiểm tra map-first
 
 - Bản đồ chiếm toàn bộ vùng nội dung sau header gọn. Không có panel trái/phải cố
-  định; cây dữ liệu, bộ lọc và thuộc tính mở bằng drawer nổi và đóng được hoàn toàn.
+  định; cây dữ liệu, tìm kiếm và thuộc tính mở bằng drawer nổi và đóng được hoàn toàn.
 - Thanh biểu tượng dọc bên trái gồm điểm, chiều dài, diện tích, lùi, tiến, xóa phần
   đang chọn và kết thúc. Chọn đối tượng mở thẻ tóm tắt vừa nội dung, nền bán trong
   suốt; không đặt thẻ rộng cố định che bản đồ.
@@ -54,7 +54,18 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
 - Thanh công cụ ngang phía trên gồm điểm, chiều dài, diện tích, lùi, tiến, xóa và
   kết thúc; nút ít dùng nằm trong menu thêm.
 - Danh sách và thuộc tính mở bằng bottom sheet.
-- Nút tối thiểu khoảng 44 x 44 px; trạng thái GPS và ngoại tuyến luôn nhìn thấy.
+- Riêng **Quản lý số liệu** mở thành sidebar hẹp toàn chiều cao ở cạnh trái để vẫn
+  nhìn và thao tác trên bản đồ: khoảng 1/3 chiều rộng màn hình điện thoại. Trên máy
+  tính sidebar này khoảng 1/7 chiều rộng. Nút rail cạnh trái cho phép mở hoặc thu
+  gọn hoàn toàn; nút chỉ hiển thị biểu tượng ba gạch trong một ô vuông nhỏ đặt giữa
+  cạnh màn hình, không hiển thị chữ. Các ngăn thuộc tính/nâng cao khác vẫn dùng
+  drawer/bottom sheet.
+- Thanh công cụ ngang phía trên dùng nút biểu tượng gọn, giảm phần đệm trên/dưới và
+  tự co theo chiều rộng thiết bị để tất cả công cụ luôn hiện trong một hàng, không
+  yêu cầu cuộn ngang.
+- Nút thao tác chính tối thiểu khoảng 44 x 44 px. Riêng dải công cụ đo dày đặc phía
+  trên dùng ô 32–36 px kèm nhãn trợ năng/tooltip để luôn hiện đủ trên một hàng;
+  trạng thái GPS và ngoại tuyến luôn nhìn thấy.
 - Trước khi lưu, hiển thị tóm tắt: loại phép đo, kết quả, sai số, số ảnh và cảnh báo.
 
 ## 5. Quy trình nghiệp vụ chính
@@ -81,12 +92,20 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
 1. Mở bản đồ và chọn Điểm, Chiều dài hoặc Diện tích mà không cần chọn công tác.
 2. Vẽ; từng đỉnh có marker, điểm hiện hành có chữ thập đỏ. Dùng lùi/tiến, chọn và
    xóa một đỉnh hoặc phần đang chọn, rồi kết thúc.
-3. Ứng dụng hiển thị kết quả tạm trong thẻ gọn; chọn **Lưu nháp** để không mất hình.
-4. Chọn hoặc tạo lần lượt khu vực, lĩnh vực, công tác và mục con nếu cần. Công tác/
-   mục con cho phép đặt tên tại bước này.
+3. Ứng dụng hiển thị phiếu nhỏ chỉ gồm tên công tác, khu vực trong 12 huyện/thành
+   phố cũ, số liệu sát đơn vị (`m`, `m²`) và một nút **Lưu**.
+4. Khi bấm **Lưu**, giao diện tự lưu geometry và phân loại nội bộ theo cấu hình loại
+   công tác tương thích với công cụ đo; người dùng không phải qua hai bước “Lưu
+   nháp” và “Lưu & phân loại”.
 5. Máy chủ phân loại, kiểm tra geometry và tính kết quả trong một transaction.
 6. Xử lý cảnh báo và xác nhận. Hệ số, ảnh và thuộc tính chi tiết được bổ sung trong
    phần **Nâng cao** khi công tác yêu cầu.
+
+Thẻ đối tượng hiển thị trực tiếp tên, ngày lập, số liệu, loại dịch vụ, màu nét và
+các thao tác sửa/xóa. Không hiển thị khu vực phân loại dưới nhãn **Địa chỉ**, vì 12
+khu vực quản lý không có geometry để xác minh địa chỉ theo tọa độ. Nút **Thông tin**
+được bỏ khỏi thẻ để giảm một bước và tiết kiệm không gian bản đồ; chọn đối tượng từ
+**Quản lý số liệu** chỉ mở thẻ này, không tự mở thêm drawer thông tin.
 
 ### FLOW-03A — Quản lý cấu trúc dữ liệu
 
@@ -96,12 +115,13 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
    khác hoặc ngừng thao tác; không cascade xóa.
 4. Mở danh sách đã xóa để phục hồi; mọi thao tác có audit.
 
-### FLOW-03B — Lọc, mở, tải và chỉnh sửa
+### FLOW-03B — Tìm kiếm, mở, tải và chỉnh sửa
 
-1. Mở bộ lọc và chọn một hoặc nhiều tiêu chí khu vực, lĩnh vực, công tác, mục con,
-   loại geometry hoặc trạng thái; bỏ trống cấp con để xem toàn bộ kết quả phù hợp.
+1. Mở tìm kiếm, nhập tên đối tượng/công tác/mục con hoặc chọn một danh mục Khu vực,
+   Lĩnh vực, Công tác. Khi cần mới mở tùy chọn nâng cao cho mục con, loại geometry
+   hoặc trạng thái.
 2. Chọn feature trên bản đồ; hệ thống highlight, zoom và mở thẻ thông tin gọn.
-3. Chọn **Mở thông tin**, **Tải GeoJSON** hoặc **Chỉnh sửa**.
+3. Xem ngày lập/số liệu ngay trên thẻ hoặc chọn **Chỉnh sửa**.
 4. Nháp được sửa trực tiếp. Phép đo đã xác nhận tạo phiên bản thay thế, yêu cầu lý
    do và giữ bản cũ trong lịch sử.
 

@@ -34,6 +34,14 @@ function waypoints(value: FormDataEntryValue | null): RoutePosition[] {
     })
 }
 
+const statusLabels: Record<string, string> = {
+  confirmed: 'Đã xác nhận',
+  draft: 'Nháp',
+  needs_attention: 'Cần chú ý',
+  pending_validation: 'Chờ kiểm tra',
+  superseded: 'Đã thay thế',
+}
+
 export function RoutePlanner(props: {
   facilities: TreatmentFacility[]
   measurement: Measurement | null
@@ -124,10 +132,20 @@ export function RoutePlanner(props: {
     }
   }
 
+  const currentMeasurement = savedRoute?.measurement ?? props.measurement
+
   return (
     <div className="route-planner">
       <p className="section-kicker">Mốc 3 · Route vận chuyển</p>
       <h2>{props.workItem.name}</h2>
+      {currentMeasurement && (
+        <p className="route-status-summary" style={{ margin: '0.5rem 0 1rem' }}>
+          <strong>
+            v{currentMeasurement.version} ·{' '}
+            {statusLabels[currentMeasurement.status] ?? currentMeasurement.status}
+          </strong>
+        </p>
+      )}
       <form id="route-plan-form" onSubmit={(event) => void calculate(event)}>
         <label>
           Tên route

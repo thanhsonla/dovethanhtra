@@ -84,10 +84,20 @@ export function addDraftLayers(map: MapLibreMap) {
     paint: { 'fill-color': '#e5a324', 'fill-opacity': 0.3 },
   })
   map.addLayer({
+    id: 'draft-line-casing',
+    source: 'measurement-draft',
+    type: 'line',
+    paint: {
+      'line-color': '#ffffff',
+      'line-opacity': 0.94,
+      'line-width': 7,
+    },
+  })
+  map.addLayer({
     id: 'draft-line',
     source: 'measurement-draft',
     type: 'line',
-    paint: { 'line-color': '#e07b22', 'line-dasharray': [2, 1], 'line-width': 4 },
+    paint: { 'line-color': '#ff5a1f', 'line-opacity': 1, 'line-width': 4 },
   })
   map.addLayer({
     id: 'draft-point',
@@ -100,6 +110,9 @@ export function addDraftLayers(map: MapLibreMap) {
     id: 'draft-vertex-hit',
     source: 'measurement-draft-vertices',
     type: 'circle',
+    layout: {
+      visibility: 'none',
+    },
     paint: {
       'circle-color': '#ffffff',
       'circle-opacity': 0.01,
@@ -110,23 +123,14 @@ export function addDraftLayers(map: MapLibreMap) {
     id: 'draft-vertices',
     source: 'measurement-draft-vertices',
     type: 'circle',
-    paint: {
-      'circle-color': ['case', ['boolean', ['get', 'selected'], false], '#d71920', '#ffffff'],
-      'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 11, 9],
-      'circle-stroke-color': '#d71920',
-      'circle-stroke-width': 3,
-    },
-  })
-  map.addLayer({
-    id: 'draft-crosshair',
-    source: 'measurement-draft-vertices',
-    type: 'symbol',
-    filter: ['==', ['get', 'latest'], true],
     layout: {
-      'icon-allow-overlap': true,
-      'icon-image': 'crosshair-red',
-      'icon-ignore-placement': true,
-      'icon-size': 1,
+      visibility: 'none',
+    },
+    paint: {
+      'circle-color': ['case', ['boolean', ['get', 'selected'], false], '#ef7d32', '#ffffff'],
+      'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 8, 6],
+      'circle-stroke-color': '#e07b22',
+      'circle-stroke-width': 2,
     },
   })
 }
