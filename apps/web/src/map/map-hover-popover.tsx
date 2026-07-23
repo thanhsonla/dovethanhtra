@@ -1,31 +1,25 @@
 import type { MapFeature } from '@dove/contracts'
+import { formatQuantity } from './measurement-summary.js'
 
 function getQuantityDetails(kind: string, rawQty: number, rawUnit: string) {
   if (kind === 'point') {
     return {
       label: 'SỐ ĐIỂM',
-      value: `${rawQty || 1} điểm`,
+      value: formatQuantity(rawQty || 1, 'điểm'),
     }
   }
 
   if (kind === 'area' || kind === 'polygon') {
-    if (rawQty >= 10000) {
-      const haValue = rawQty / 10000
-      return {
-        label: 'DIỆN TÍCH',
-        value: `${haValue < 10 ? haValue.toFixed(2) : haValue.toFixed(1)} ha`,
-      }
-    }
     return {
       label: 'DIỆN TÍCH',
-      value: `${rawQty < 10 ? rawQty.toFixed(2) : rawQty.toFixed(1)} ${rawUnit || 'm²'}`.trim(),
+      value: formatQuantity(rawQty, rawUnit || 'm²'),
     }
   }
 
   // Line String / Route (Length)
   return {
     label: 'CHIỀU DÀI',
-    value: `${rawQty < 10 ? rawQty.toFixed(2) : rawQty.toFixed(1)} ${rawUnit || 'm.lần'}`.trim(),
+    value: formatQuantity(rawQty, rawUnit || 'm.lần'),
   }
 }
 

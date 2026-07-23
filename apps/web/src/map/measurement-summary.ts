@@ -16,10 +16,18 @@ const partNames: Record<MeasurementGeometryKind, string> = {
 
 export function formatQuantity(value: number | null | undefined, unit: string): string {
   if (value === null || value === undefined) return 'Chưa tính'
+  const targetUnit = unit || ''
+  if ((targetUnit === 'm²' || targetUnit === 'ha') && value >= 10000) {
+    const ha = value / 10000
+    return `${ha.toLocaleString('vi-VN', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    })} ha`
+  }
   return `${value.toLocaleString('vi-VN', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
-  })} ${unit}`
+  })} ${targetUnit}`.trim()
 }
 
 export function measurementBaseValue(measurement: Measurement): string {

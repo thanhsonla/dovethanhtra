@@ -1,4 +1,4 @@
-import type { Measurement } from '@dove/contracts'
+import type { MapFeature, Measurement } from '@dove/contracts'
 import { useState } from 'react'
 
 import { measurementPartName } from './measurement-entry-defaults.js'
@@ -11,6 +11,11 @@ type MeasurementGroup = {
   primary: Measurement
   children: Measurement[]
   measurements: Measurement[]
+}
+
+type ZoneGroup = {
+  zoneName: string
+  groups: MeasurementGroup[]
 }
 
 function groupsFor(measurements: Measurement[]): MeasurementGroup[] {
@@ -54,6 +59,7 @@ function componentName(measurement: Measurement, sequence: number): string {
 export function MapFeatureSidebar(props: {
   loading?: boolean
   measurements: Measurement[]
+  features?: MapFeature[]
   selectedId: string | null
   onSelect(measurement: Measurement): void
   onClose?(): void
@@ -64,10 +70,36 @@ export function MapFeatureSidebar(props: {
     (item) => !item.deletedAt && item.status !== 'superseded',
   )
   const groups = groupsFor(activeMeasurements)
-
   const filtered = groups.filter((group) => isInTab(group, activeTab))
-
   const countFor = (kind: SidebarTab) => groups.filter((group) => isInTab(group, kind)).length
+
+  // Build Map for fast feature lookup (managementZoneName)
+  const featureMap = new Map<string, MapFeature>()
+  if (props.features) {
+    for (const f of props.features) {
+      featureMap.set(f.measurement.id, f)
+    }
+  }
+
+  function getZoneName(m: Measurement): string {
+    const feat = featureMap.get(m.id)
+    if (feat?.managementZoneName?.trim()) return feat.managementZoneName.trim()
+    return 'Chưa phân khu vực'
+  }
+
+  // Group filtered groups by Zone
+  const zoneMap = new Map<string, MeasurementGroup[]>()
+  for (const group of filtered) {
+    const zoneName = getZoneName(group.primary)
+    const list = zoneMap.get(zoneName) ?? []
+    list.push(group)
+    zoneMap.set(zoneName, list)
+  }
+
+  // Sort zones alphabetically (A-Z)
+  const sortedZones: ZoneGroup[] = [...zoneMap.entries()]
+    .map(([zoneName, itemGroups]) => ({ zoneName, groups: itemGroups }))
+    .sort((a, b) => a.zoneName.localeCompare(b.zoneName, 'vi'))
 
   return (
     <div className="map-feature-sidebar">
@@ -150,52 +182,72 @@ export function MapFeatureSidebar(props: {
             {activeTab === 'line' ? 'chiều dài' : activeTab === 'area' ? 'diện tích' : 'điểm'}.
           </div>
         ) : (
-          <ul className="map-feature-sidebar__list">
-            {filtered.map((group) => {
-              const isSelected = group.measurements.some((item) => item.id === props.selectedId)
-              const selectedChild = group.children.some((item) => item.id === props.selectedId)
+          <div className="map-feature-sidebar__zones">
+            {sortedZones.map((zone) => (
+              <details key={zone.zoneName} open className="map-sidebar-zone-group">
+                <summary className="map-sidebar-zone-summary">
+                  <span>📍</span>
+                  <strong>{zone.zoneName}</strong>
+                  <span className="map-sidebar-zone-count">({zone.groups.length} đối tượng)</span>
+                </summary>
+                <div className="map-sidebar-zone-content">
+                  <ul className="map-feature-sidebar__list">
+                    {zone.groups.map((group) => {
+                      const isSelected = group.measurements.some(
+                        (item) => item.id === props.selectedId,
+                      )
+                      const selectedChild = group.children.some(
+                        (item) => item.id === props.selectedId,
+                      )
 
-              return (
-                <li key={group.id} className="map-feature-sidebar__group">
-                  <button
-                    type="button"
-                    className={`map-feature-sidebar__item ${isSelected ? 'is-selected' : ''}`}
-                    onClick={() => props.onSelect(group.primary)}
-                  >
-                    <div className="map-feature-sidebar__item-header">
-                      <strong className="map-feature-sidebar__item-name">
-                        {group.primary.name}
-                      </strong>
-                      <span className="map-feature-sidebar__item-val">
-                        {measurementBaseTotal(group.measurements)}
-                      </span>
-                    </div>
-                  </button>
-                  {group.children.length > 0 ? (
-                    <details className="map-feature-sidebar__components" open={selectedChild}>
-                      <summary>{group.children.length} phần đo bổ sung</summary>
-                      <ul className="map-feature-sidebar__component-list">
-                        {group.children.map((item, index) => (
-                          <li key={item.id}>
-                            <button
-                              type="button"
-                              className={`map-feature-sidebar__component ${
-                                props.selectedId === item.id ? 'is-selected' : ''
-                              }`}
-                              onClick={() => props.onSelect(item)}
+                      return (
+                        <li key={group.id} className="map-feature-sidebar__group">
+                          <button
+                            type="button"
+                            className={`map-feature-sidebar__item ${isSelected ? 'is-selected' : ''}`}
+                            onClick={() => props.onSelect(group.primary)}
+                          >
+                            <div className="map-feature-sidebar__item-header">
+                              <strong className="map-feature-sidebar__item-name">
+                                {group.primary.name}:
+                              </strong>
+                              <span className="map-feature-sidebar__item-val">
+                                {measurementBaseTotal(group.measurements)}
+                              </span>
+                            </div>
+                          </button>
+                          {group.children.length > 0 ? (
+                            <details
+                              className="map-feature-sidebar__components"
+                              open={selectedChild}
                             >
-                              <span>{componentName(item, index + 2)}</span>
-                              <span>{measurementBaseValue(item)}</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  ) : null}
-                </li>
-              )
-            })}
-          </ul>
+                              <summary>{group.children.length} phần đo bổ sung</summary>
+                              <ul className="map-feature-sidebar__component-list">
+                                {group.children.map((item, index) => (
+                                  <li key={item.id}>
+                                    <button
+                                      type="button"
+                                      className={`map-feature-sidebar__component ${
+                                        props.selectedId === item.id ? 'is-selected' : ''
+                                      }`}
+                                      onClick={() => props.onSelect(item)}
+                                    >
+                                      <span>{componentName(item, index + 2)}: </span>
+                                      <strong>{measurementBaseValue(item)}</strong>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </details>
+                          ) : null}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              </details>
+            ))}
+          </div>
         )}
       </div>
     </div>

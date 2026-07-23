@@ -520,6 +520,7 @@ export function MapWorkspace(props: {
             zones,
           }}
           sidebar={{
+            features: mapFeatures.inventoryItems.length > 0 ? mapFeatures.inventoryItems : mapFeatures.items,
             loading: mapFeatures.inventoryLoading,
             measurements: allMeasurements,
             selectedId,
