@@ -68,6 +68,8 @@ interface MeasurementMapProps {
 
 function featureCollection(props: MeasurementMapProps) {
   const mapFeatureMap = new Map((props.mapFeatures ?? []).map((f) => [f.measurement.id, f]))
+  const selectedItem = props.measurements.find((m) => m.id === props.selectedId)
+  const selectedWorkItemId = selectedItem?.workItemId
 
   return {
     type: 'FeatureCollection' as const,
@@ -83,7 +85,8 @@ function featureCollection(props: MeasurementMapProps) {
           : null
         const color = customColor ?? serviceGroupColor(featureMeta?.serviceGroupName)
         const isSelected = item.id === props.selectedId
-        const isDimmed = Boolean(props.selectedId && item.id !== props.selectedId)
+        const isGroupMember = Boolean(selectedWorkItemId && item.workItemId === selectedWorkItemId)
+        const isDimmed = Boolean(props.selectedId && !isGroupMember)
 
         const qtyStr =
           item.calculatedQuantity != null
@@ -99,6 +102,7 @@ function featureCollection(props: MeasurementMapProps) {
             color,
             dimmed: isDimmed,
             geometryKind: item.geometryKind,
+            groupMember: isGroupMember,
             id: item.id,
             label,
             name: item.name,
@@ -164,6 +168,8 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
         'case',
         ['boolean', ['get', 'selected'], false],
         '#ef7d32',
+        ['boolean', ['get', 'groupMember'], false],
+        '#f97316',
         ['has', 'color'],
         ['get', 'color'],
         '#25865c',
@@ -192,12 +198,21 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
         'case',
         ['boolean', ['get', 'selected'], false],
         '#ef7d32',
+        ['boolean', ['get', 'groupMember'], false],
+        '#f97316',
         ['has', 'color'],
         ['get', 'color'],
         '#1675a1',
       ],
       'line-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.2, 1.0],
-      'line-width': ['case', ['boolean', ['get', 'selected'], false], 4, 3],
+      'line-width': [
+        'case',
+        ['boolean', ['get', 'selected'], false],
+        5,
+        ['boolean', ['get', 'groupMember'], false],
+        4,
+        3,
+      ],
     },
   })
   map.addLayer({
@@ -210,12 +225,21 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
         'case',
         ['boolean', ['get', 'selected'], false],
         '#ef7d32',
+        ['boolean', ['get', 'groupMember'], false],
+        '#f97316',
         ['has', 'color'],
         ['get', 'color'],
         '#7c3aed',
       ],
       'circle-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.2, 1.0],
-      'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 9, 7],
+      'circle-radius': [
+        'case',
+        ['boolean', ['get', 'selected'], false],
+        10,
+        ['boolean', ['get', 'groupMember'], false],
+        8,
+        7,
+      ],
       'circle-stroke-color': '#ffffff',
       'circle-stroke-width': 2,
     },
