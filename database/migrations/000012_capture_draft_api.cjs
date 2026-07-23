@@ -7,7 +7,7 @@ exports.up = (pgm) => {
 
     UPDATE capture_draft SET
       classification_idempotency_key = 'legacy:' || id::text,
-      classification_payload_hash = encode(digest('legacy:' || id::text, 'sha256'), 'hex')
+      classification_payload_hash = encode(sha256(('legacy:' || id::text)::bytea), 'hex')
     WHERE status = 'classified';
 
     ALTER TABLE capture_draft

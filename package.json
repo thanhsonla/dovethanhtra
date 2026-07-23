@@ -23,6 +23,7 @@
     "db:admin-area:import": "pnpm --filter @dove/api db:admin-area:import",
     "db:admin-area:normalize-coverage": "pnpm --filter @dove/api db:admin-area:normalize-coverage",
     "db:seed": "pnpm --filter @dove/api db:seed",
+    "db:deploy:supabase": "pnpm --filter @dove/api db:deploy:supabase",
     "db:test:prepare": "dotenv -e .env.example -- pnpm --filter @dove/api db:test:create && dotenv -e .env.example -- node scripts/with-test-database.mjs pnpm db:migrate && dotenv -e .env.example -- node scripts/with-test-database.mjs pnpm db:seed",
     "data:son-la:prepare": "node scripts/prepare-son-la-admin-areas.mjs",
     "data:son-la:prepare-area-targets": "node scripts/prepare-son-la-area-targets.mjs",

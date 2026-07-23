@@ -11,6 +11,7 @@
     "db:admin-area:import": "tsx src/scripts/import-admin-areas.ts",
     "db:admin-area:normalize-coverage": "tsx src/scripts/normalize-admin-area-coverage.ts",
     "db:seed": "tsx src/scripts/seed.ts",
+    "db:deploy:supabase": "tsx src/scripts/deploy-supabase-db.ts",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "test": "vitest run",
