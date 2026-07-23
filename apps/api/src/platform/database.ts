@@ -22,7 +22,10 @@ export function createDatabase(databaseUrl: string): DatabaseHandle {
 
   const poolConfig: PoolConfig = {
     connectionString: cleanUrl,
-    max: 5,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+    keepAlive: true,
     ...(needsSslBypass ? { ssl: { rejectUnauthorized: false } } : {}),
   }
 
