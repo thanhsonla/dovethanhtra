@@ -1,16 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @dove/contracts build && pnpm --filter @dove/api build && pnpm --filter @dove/web build",
+  "buildCommand": "pnpm --filter @dove/contracts build && pnpm --filter @dove/web build",
   "outputDirectory": "apps/web/dist",
   "framework": "vite",
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "/api/v1"
+      "destination": "https://dovethanhtra-api-2g6e.onrender.com/api/v1/:path*"
     },
     {
       "source": "/api/v1",
-      "destination": "/api/v1"
+      "destination": "https://dovethanhtra-api-2g6e.onrender.com/api/v1"
     },
     {
       "source": "/(.*)",
