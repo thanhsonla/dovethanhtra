@@ -111,6 +111,8 @@
 | 22/07/2026 | ADR-025 | Ẩn dashboard, dùng một không gian hồ sơ nội bộ và vào thẳng bản đồ | Giảm thao tác quản lý; backend vẫn giữ liên kết và audit          |
 | 22/07/2026 | ADR-026 | Mục tiêu cloud: Vercel web, Render API/ClamAV, Supabase PostGIS và R2 | Giữ API/scanner phù hợp runtime lâu dài, same-origin proxy và tách dữ liệu/ảnh |
 | 23/07/2026 | Render   | Triển khai Backend API lên Render.com theo Cách 1                | Kết nối Supabase PostGIS DB trực tiếp từ Render web service |
+| 23/07/2026 | ADR-023 | Triển khai Thẻ Popover xem nhanh hình học khi di chuột trên bản đồ     | Tối ưu UX xem nhanh tên tuyến/đường, khối lượng đo và ảnh thực địa |
+| 23/07/2026 | DataSync | Đồng bộ 100% dữ liệu đo thực địa local lên Supabase Production   | Chuyển toàn bộ 2 inspection cases, 70 work items, 106 measurements, 74 capture drafts |
 
 Kế hoạch thực thi ADR-026 nằm tại `docs/14_CLOUD_DEPLOYMENT_PLAN.md`. Đây là kiến
 thức triển khai backend chính thức trên Render.com (Cách 1). chỉ được mở sau staging, restore drill, field test
