@@ -38,6 +38,18 @@ function initApp(): Promise<FastifyInstance> {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const app = await initApp()
-  app.server.emit('request', req, res)
+  try {
+    const app = await initApp()
+    app.server.emit('request', req, res)
+  } catch (err: unknown) {
+    const error = err as Error
+    res.statusCode = 500
+    res.setHeader('Content-Type', 'application/json')
+    res.end(
+      JSON.stringify({
+        error: error?.message || String(err),
+        stack: error?.stack,
+      }),
+    )
+  }
 }

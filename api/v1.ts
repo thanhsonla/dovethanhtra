@@ -1,1 +1,3 @@
-export { default } from '../apps/api/src/v1.js'
+import handler from '../apps/api/src/v1.ts'
+
+export default handler
