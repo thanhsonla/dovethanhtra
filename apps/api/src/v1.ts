@@ -7,9 +7,11 @@ import { LocalRoutingProvider } from './modules/routing/local-routing-provider.j
 import { createDatabase } from './platform/database.js'
 import { createObjectStorage } from './platform/object-storage.js'
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
 process.env.DATABASE_URL =
   process.env.DATABASE_URL ||
-  'postgresql://postgres.uqajicuudasoluzopius:C9s7%40uRy%3Fv3%24%40%24%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require'
+  'postgresql://postgres.uqajicuudasoluzopius:C9s7%40uRy%3Fv3%24%40%24%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres'
 
 let appPromise: Promise<FastifyInstance> | null = null
 

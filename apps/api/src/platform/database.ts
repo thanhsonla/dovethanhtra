@@ -18,8 +18,10 @@ export function createDatabase(databaseUrl: string): DatabaseHandle {
     databaseUrl.includes('sslmode=') ||
     databaseUrl.includes('pooler')
 
+  const cleanUrl = databaseUrl.split('?')[0]
+
   const poolConfig: PoolConfig = {
-    connectionString: databaseUrl,
+    connectionString: cleanUrl,
     max: 5,
     ...(needsSslBypass ? { ssl: { rejectUnauthorized: false } } : {}),
   }
