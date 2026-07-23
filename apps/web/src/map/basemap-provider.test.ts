@@ -137,7 +137,7 @@ describe('configured basemap provider', () => {
     expect(google.label).toBe('Google vệ tinh · khóa hướng Bắc')
     expect(google.lockRotation).toBe(true)
     expect(JSON.stringify(google.style)).toContain(
-      'https://mt1.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}',
+      'https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
     )
     expect(google.attribution).toContain('Google Maps')
     expect(provider.supportsOffline(google.id)).toBe(false)

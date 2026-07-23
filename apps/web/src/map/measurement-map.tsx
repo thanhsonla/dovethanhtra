@@ -595,14 +595,6 @@ export function MeasurementMap(props: MeasurementMapProps) {
             latest.current.onFinishDrawing()
           }
         })
-        map.on('error', () => {
-          const current = latest.current
-          const active = current.basemapProvider.get(current.basemapId)
-          if (!current.basemapProvider.supportsOffline(active.id) && !fallbackRequested.current) {
-            fallbackRequested.current = true
-            current.onBasemapFallback()
-          }
-        })
         mapRef.current = map
         communeLabelMarkers.current = replaceCommuneLabels(
           map,

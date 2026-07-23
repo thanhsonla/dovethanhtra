@@ -271,6 +271,13 @@ function esriImageryWithLabelsDescriptor(): BasemapDescriptor {
   }
 }
 
+const googleHybridTiles = [
+  'https://mt0.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+  'https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+  'https://mt2.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+  'https://mt3.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+]
+
 function directGoogleHybridDescriptor(): BasemapDescriptor {
   return {
     attribution: '<a href="https://maps.google.com/">Google Maps</a>',
@@ -282,7 +289,7 @@ function directGoogleHybridDescriptor(): BasemapDescriptor {
       sources: {
         'google-hybrid-direct': {
           type: 'raster',
-          tiles: ['https://mt1.google.com/vt/lyrs=s&hl=vi&x={x}&y={y}&z={z}'],
+          tiles: googleHybridTiles,
           tileSize: 256,
           maxzoom: 22,
         },
@@ -309,7 +316,7 @@ function googleHybridWithStoresDescriptor(): BasemapDescriptor {
       sources: {
         'google-hybrid-stores': {
           type: 'raster',
-          tiles: ['https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}'],
+          tiles: googleHybridTiles,
           tileSize: 256,
           maxzoom: 22,
         },
