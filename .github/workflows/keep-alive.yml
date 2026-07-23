@@ -1,0 +1,15 @@
+name: Render Backend Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive HTTP Request
+        run: |
+          curl -s -o /dev/null -w "HTTP Status: %{http_code} | Total Time: %{time_total}s\n" https://dovethanhtra-api-2g6e.onrender.com/api/v1/auth/me
