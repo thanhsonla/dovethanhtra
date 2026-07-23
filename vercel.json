@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @dove/web build",
+  "buildCommand": "pnpm --filter @dove/contracts build && pnpm --filter @dove/api build && pnpm --filter @dove/web build",
   "outputDirectory": "apps/web/dist",
   "framework": "vite",
   "rewrites": [
