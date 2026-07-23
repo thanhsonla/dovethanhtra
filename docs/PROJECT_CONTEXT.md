@@ -74,7 +74,6 @@
 
 ## Chưa chốt
 
-- Nhà cung cấp hosting chính thức.
 - Nguồn hồ sơ địa giới pháp lý thay thế hình học tham khảo của 75 xã, phường Sơn La.
 - Mẫu Excel đầu ra cuối cùng.
 - Ngưỡng sai số GPS theo từng công tác.
@@ -110,6 +109,11 @@
 | 20/07/2026 | ADR-023 | Map-first và đo trước, phân loại sau                            | Giảm bước nhập nhưng giữ tổng chính thức và provenance           |
 | 20/07/2026 | ADR-024 | 12 khu vực là nhãn tên, không có geometry                  | Không tạo ranh giới huyện cũ; bản đồ chỉ dùng 75 xã/phường       |
 | 22/07/2026 | ADR-025 | Ẩn dashboard, dùng một không gian hồ sơ nội bộ và vào thẳng bản đồ | Giảm thao tác quản lý; backend vẫn giữ liên kết và audit          |
+| 22/07/2026 | ADR-026 | Mục tiêu cloud: Vercel web, Render API/ClamAV, Supabase PostGIS và R2 | Giữ API/scanner phù hợp runtime lâu dài, same-origin proxy và tách dữ liệu/ảnh |
+
+Kế hoạch thực thi ADR-026 nằm tại `docs/14_CLOUD_DEPLOYMENT_PLAN.md`. Đây là kiến
+trúc mục tiêu đã chọn; production chỉ được mở sau staging, restore drill, field test
+và các cổng bảo mật trong runbook.
 
 ## Trạng thái chuyển đổi map-first
 
@@ -463,3 +467,8 @@
   **Điểm/Tuyến/Vùng 01, 02…**, không lặp lại tên đầy đủ của đối tượng. Thẻ chuyển
   sang góc phải, giảm typography/kích thước và hỗ trợ đóng bằng **Esc** hoặc nhấp ra
   ngoài bên cạnh nút ×.
+- Drawer **Quản lý số liệu** trên desktop dùng chiều rộng khoảng 22,86% viewport
+  (tăng xấp xỉ 60% so với 1/7 trước đây, có giới hạn 320–440 px); trên mobile vẫn
+  giữ 1/3 viewport. Danh sách chỉ hiển thị một đối tượng chính cho mỗi công tác,
+  số liệu tổng ở dòng chính và phần đo bổ sung thu gọn bên dưới để không tạo các
+  đối tượng độc lập trùng lặp. Thẻ danh sách được giảm cỡ chữ, chiều cao và đệm dọc.
