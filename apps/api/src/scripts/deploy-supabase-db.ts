@@ -11,10 +11,12 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
+const activeUrl: string = databaseUrl;
+
 console.log("🚀 Bắt đầu khởi tạo & triển khai cơ sở dữ liệu trên Supabase...\n");
 
 async function setupSupabaseDatabase() {
-  const connectionUrlWithoutParams = databaseUrl.split("?")[0];
+  const connectionUrlWithoutParams = activeUrl.split("?")[0];
   const client = new Client({
     connectionString: connectionUrlWithoutParams,
     ssl: { rejectUnauthorized: false },
@@ -28,8 +30,9 @@ async function setupSupabaseDatabase() {
     console.log("2️⃣ Đang bật các extension PostGIS và pgcrypto...");
     await client.query("CREATE EXTENSION IF NOT EXISTS postgis;");
     await client.query("CREATE EXTENSION IF NOT EXISTS pgcrypto;");
-    const res = await client.query("SELECT PostGIS_Full_Version();");
-    console.log(`   ✅ PostGIS đã sẵn sàng: ${res.rows[0].postgis_full_version.split(" ")[0]}`);
+    const res = await client.query<{ postgis_full_version: string }>("SELECT PostGIS_Full_Version();");
+    const version = res.rows[0]?.postgis_full_version.split(" ")[0] ?? "unknown";
+    console.log(`   ✅ PostGIS đã sẵn sàng: ${version}`);
 
     await client.end();
   } catch (err: unknown) {
@@ -79,4 +82,4 @@ async function setupSupabaseDatabase() {
   }
 }
 
-setupSupabaseDatabase();
+void setupSupabaseDatabase();

@@ -55,7 +55,7 @@ function port(environment: NodeJS.ProcessEnv, name: string, fallback: number): n
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     apiHost: environment.API_HOST ?? '0.0.0.0',
-    apiPort: port(environment, 'API_PORT', 3000),
+    apiPort: port(environment, 'API_PORT', Number(environment.PORT ?? 3000)),
     databaseUrl: required(environment, 'DATABASE_URL'),
     logLevel: environment.LOG_LEVEL ?? 'info',
     basemaps: {
@@ -67,12 +67,12 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
       sessionTtlHours: positiveInteger(environment, 'SESSION_TTL_HOURS', 12),
     },
     objectStorage: {
-      bucket: required(environment, 'MINIO_BUCKET'),
+      bucket: environment.MINIO_BUCKET ?? 'dove-evidence-production',
       endPoint: environment.MINIO_ENDPOINT ?? '127.0.0.1',
       port: port(environment, 'MINIO_PORT', 9000),
       useSSL: environment.MINIO_USE_SSL === 'true',
-      accessKey: required(environment, 'MINIO_ROOT_USER'),
-      secretKey: required(environment, 'MINIO_ROOT_PASSWORD'),
+      accessKey: environment.MINIO_ROOT_USER ?? 'dove_local',
+      secretKey: environment.MINIO_ROOT_PASSWORD ?? 'local-only-change-me',
     },
     routing: {
       provider: environment.ROUTING_PROVIDER === 'mapbox' ? 'mapbox' : 'local',

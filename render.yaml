@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: dovethanhtra-api
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: pnpm --filter @dove/contracts build && pnpm --filter @dove/api build
+    startCommand: pnpm --filter @dove/api start
+    envVars:
+      - key: NODE_VERSION
+        value: 24.18.0
+      - key: DATABASE_URL
+        value: postgresql://postgres.uqajicuudasoluzopius:C9s7%40uRy%3Fv3%24%40%24%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: LOG_LEVEL
+        value: info
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: CORS_ORIGIN
+        value: https://dovethanhtra.vercel.app
+      - key: BOOTSTRAP_OWNER_EMAIL
+        value: admin@thanh
+      - key: BOOTSTRAP_OWNER_PASSWORD
+        value: "12345678"
+      - key: BOOTSTRAP_OWNER_NAME
+        value: Quản trị viên Admin
