@@ -8,7 +8,7 @@ function getQuantityDetails(kind: string, rawQty: number, rawUnit: string) {
     }
   }
 
-  if (kind === 'polygon') {
+  if (kind === 'area' || kind === 'polygon') {
     if (rawQty >= 10000) {
       const haValue = rawQty / 10000
       return {
@@ -22,7 +22,7 @@ function getQuantityDetails(kind: string, rawQty: number, rawUnit: string) {
     }
   }
 
-  // Line String (Length)
+  // Line String / Route (Length)
   return {
     label: 'CHIỀU DÀI',
     value: `${rawQty < 10 ? rawQty.toFixed(2) : rawQty.toFixed(1)} ${rawUnit || 'm.lần'}`.trim(),
@@ -39,7 +39,7 @@ export function MapHoverPopover(props: {
 
   // Raw quantity calculation
   const rawQty = measurement.calculatedQuantity ?? measurement.baseValue ?? 0
-  const kind = measurement.geometryKind || 'line'
+  const kind = (measurement.geometryKind as string) || 'line'
   const rawUnit = measurement.unit || ''
 
   const { label: quantityLabel, value: quantityValue } = getQuantityDetails(kind, rawQty, rawUnit)
@@ -51,7 +51,7 @@ export function MapHoverPopover(props: {
       : workItemName || measurement.name || 'Phép đo'
 
   // Icon corresponding to geometry kind
-  const icon = kind === 'polygon' ? '📐' : kind === 'point' ? '📍' : '🛣️'
+  const icon = kind === 'area' || kind === 'polygon' ? '📐' : kind === 'point' ? '📍' : '🛣️'
 
   // Positioning popover cleanly so it stays within viewport
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200
