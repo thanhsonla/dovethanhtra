@@ -63,6 +63,8 @@ export class ApiClientError extends Error {
   }
 }
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api/v1'
+
 function csrfToken(): string {
   const item = document.cookie.split('; ').find((value) => value.startsWith('dove_csrf='))
   return item ? decodeURIComponent(item.slice('dove_csrf='.length)) : ''
@@ -70,9 +72,9 @@ function csrfToken(): string {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = init.method ?? 'GET'
-  const response = await fetch(`/api/v1${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     ...init,
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: {
       ...(init.body ? { 'content-type': 'application/json' } : {}),
       ...(method !== 'GET' && method !== 'HEAD' ? { 'x-csrf-token': csrfToken() } : {}),
@@ -99,7 +101,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 async function downloadFile(path: string) {
-  const response = await fetch(`/api/v1${path}`, { credentials: 'same-origin' })
+  const response = await fetch(`${API_BASE}${path}`, { credentials: 'include' })
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { message?: string } | null
     throw new ApiClientError(payload?.message ?? 'Không thể tải artifact.', response.status)
@@ -113,9 +115,9 @@ async function downloadFile(path: string) {
 }
 
 async function downloadPostFile(path: string, body: unknown) {
-  const response = await fetch(`/api/v1${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
     body: JSON.stringify(body),
   })
