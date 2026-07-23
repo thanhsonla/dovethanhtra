@@ -475,3 +475,5 @@ và các cổng bảo mật trong runbook.
   giữ 1/3 viewport. Danh sách chỉ hiển thị một đối tượng chính cho mỗi công tác,
   số liệu tổng ở dòng chính và phần đo bổ sung thu gọn bên dưới để không tạo các
   đối tượng độc lập trùng lặp. Thẻ danh sách được giảm cỡ chữ, chiều cao và đệm dọc.
+- Thẻ Popover rà chuột (`MapHoverPopover`) được nén gọn 2 dòng: dòng 1 là tên đối tượng, dòng 2 hiển thị đơn vị + số liệu (`Chiều dài: ... m`, `Diện tích: ... ha/m²`, `Số điểm: ... điểm`). Đơn vị chiều dài chuẩn hóa hiển thị `m` (bỏ chữ `lần`). Khung background trong suốt kính mờ glassmorphism (58% opacity + backdrop blur).
+- Khi kích chọn một thành phần đo (trên bản đồ hoặc danh sách), toàn bộ các thành phần trong cùng nhóm đối tượng (`workItemId`) đồng thời được hiển thị nổi bật trên bản đồ (tăng nét & viền màu cam), giúp quan sát trọn vẹn hình học công tác; thành phần cụ thể được kích vào vẫn duy trì điểm nhấn riêng và xem chi tiết độc lập.
