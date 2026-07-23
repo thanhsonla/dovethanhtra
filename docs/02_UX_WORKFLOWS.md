@@ -114,6 +114,8 @@ khu vực quản lý không có geometry để xác minh địa chỉ theo tọa
 được bỏ khỏi thẻ để giảm một bước và tiết kiệm không gian bản đồ; chọn đối tượng từ
 **Quản lý số liệu** chỉ mở thẻ này, không tự mở thêm drawer thông tin và luôn đưa
 bản đồ tới toàn bộ geometry của đối tượng, kể cả khi đối tượng đang ngoài viewport.
+Trong **Quản lý số liệu**, mỗi công tác chỉ có một dòng đối tượng chính; các phép đo
+bổ sung được thu gọn bên dưới dòng chính và chỉ bung khi người dùng cần xem/chọn.
 
 ### FLOW-03A — Quản lý cấu trúc dữ liệu
 

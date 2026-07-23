@@ -130,6 +130,9 @@ qua nút “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu.
 - Thành phần đầu tiên phải mang nhãn **Điểm/Tuyến/Vùng 01** thay vì lặp lại tên đầy
   đủ của đối tượng. Thẻ nằm bên phải, đóng được bằng nút ×, phím **Esc** và thao tác
   pointer bên ngoài; thao tác bên trong thẻ không được làm thẻ tự đóng.
+- **Quản lý số liệu** phải nhóm các phép đo cùng công tác: tab đếm đối tượng chính,
+  dòng chính hiển thị tổng số liệu và phép đo bổ sung chỉ xuất hiện trong phần thu
+  gọn bên dưới; chọn một phần bổ sung vẫn định vị đúng geometry riêng của phần đó.
 - Khi có token Mapbox công khai hợp lệ, nền mặc định là **Google vệ tinh · nhãn dễ
   đọc**; khi không có token phải lùi an toàn về Google vệ tinh có địa danh/cửa hàng.
 

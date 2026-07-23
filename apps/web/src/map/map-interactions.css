@@ -1,5 +1,5 @@
 .map-layout {
-  --map-data-drawer-width: 14.2857vw;
+  --map-data-drawer-width: clamp(320px, 22.8571vw, 440px);
 }
 
 .map-toolbar-container {
@@ -1380,7 +1380,7 @@
 
 .map-feature-sidebar__list {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1390,8 +1390,8 @@
   display: grid;
   width: 100%;
   gap: 2px;
-  min-height: 36px;
-  padding: 6px 8px;
+  min-height: 30px;
+  padding: 4px 7px;
   border: 1px solid #d4e3dc;
   border-radius: 7px;
   background: #ffffff;
@@ -1418,13 +1418,13 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .map-feature-sidebar__item-name {
   color: #164032;
   overflow: hidden;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 700;
@@ -1432,7 +1432,7 @@
 
 .map-feature-sidebar__item-val {
   color: #176c4c;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1443,6 +1443,67 @@
   justify-content: space-between;
   color: #60736a;
   font-size: 0.72rem;
+}
+
+.map-feature-sidebar__components {
+  margin: 1px 0 2px 8px;
+  border-left: 1px solid #d4e3dc;
+}
+
+.map-feature-sidebar__components summary {
+  padding: 2px 5px;
+  color: #60736a;
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.map-feature-sidebar__components summary::marker {
+  color: #25865c;
+}
+
+.map-feature-sidebar__component-list {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0 0 1px 5px;
+  list-style: none;
+}
+
+.map-feature-sidebar__component {
+  display: flex;
+  width: 100%;
+  min-height: 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 3px 5px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #49665a;
+  cursor: pointer;
+  font-size: 0.64rem;
+  text-align: left;
+}
+
+.map-feature-sidebar__component:hover,
+.map-feature-sidebar__component.is-selected {
+  background: #edf6f1;
+  color: #176c4c;
+}
+
+.map-feature-sidebar__component span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-feature-sidebar__component span:last-child {
+  flex: none;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .map-feature-sidebar__fly-hint {

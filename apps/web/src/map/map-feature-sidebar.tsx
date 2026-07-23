@@ -1,7 +1,55 @@
 import type { Measurement } from '@dove/contracts'
 import { useState } from 'react'
 
+import { measurementPartName } from './measurement-entry-defaults.js'
+import { measurementBaseTotal, measurementBaseValue } from './measurement-summary.js'
+
 export type SidebarTab = 'line' | 'area' | 'point'
+
+type MeasurementGroup = {
+  id: string
+  primary: Measurement
+  children: Measurement[]
+  measurements: Measurement[]
+}
+
+function groupsFor(measurements: Measurement[]): MeasurementGroup[] {
+  const byWorkItem = new Map<string, Measurement[]>()
+
+  for (const measurement of measurements) {
+    const groupId = measurement.workItemId ?? measurement.id
+    const items = byWorkItem.get(groupId) ?? []
+    items.push(measurement)
+    byWorkItem.set(groupId, items)
+  }
+
+  return [...byWorkItem.entries()].flatMap<MeasurementGroup>(([id, items]) => {
+    const sorted = items.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt))
+    const [primary, ...children] = sorted
+    if (!primary) return []
+
+    return {
+      id,
+      primary,
+      children,
+      measurements: sorted,
+    }
+  })
+}
+
+function isInTab(group: MeasurementGroup, tab: SidebarTab): boolean {
+  if (tab === 'line') {
+    return group.primary.geometryKind === 'line' || group.primary.geometryKind === 'route'
+  }
+  return group.primary.geometryKind === tab
+}
+
+function componentName(measurement: Measurement, sequence: number): string {
+  if (measurement.geometryKind === 'route') {
+    return `Tuyến ${String(sequence).padStart(2, '0')}`
+  }
+  return measurementPartName(measurement.geometryKind, sequence)
+}
 
 export function MapFeatureSidebar(props: {
   loading?: boolean
@@ -12,21 +60,14 @@ export function MapFeatureSidebar(props: {
 }) {
   const [activeTab, setActiveTab] = useState<SidebarTab>('line')
 
-  const activeMeasurements = props.measurements.filter((item) => !item.deletedAt)
+  const activeMeasurements = props.measurements.filter(
+    (item) => !item.deletedAt && item.status !== 'superseded',
+  )
+  const groups = groupsFor(activeMeasurements)
 
-  const filtered = activeMeasurements.filter((item) => {
-    if (activeTab === 'line') return item.geometryKind === 'line' || item.geometryKind === 'route'
-    if (activeTab === 'area') return item.geometryKind === 'area'
-    if (activeTab === 'point') return item.geometryKind === 'point'
-    return true
-  })
+  const filtered = groups.filter((group) => isInTab(group, activeTab))
 
-  const countFor = (kind: SidebarTab) =>
-    activeMeasurements.filter((item) =>
-      kind === 'line'
-        ? item.geometryKind === 'line' || item.geometryKind === 'route'
-        : item.geometryKind === kind,
-    ).length
+  const countFor = (kind: SidebarTab) => groups.filter((group) => isInTab(group, kind)).length
 
   return (
     <div className="map-feature-sidebar">
@@ -110,28 +151,47 @@ export function MapFeatureSidebar(props: {
           </div>
         ) : (
           <ul className="map-feature-sidebar__list">
-            {filtered.map((item) => {
-              const unit =
-                item.geometryKind === 'area' ? 'm²' : item.geometryKind === 'point' ? 'điểm' : 'm'
-              const formattedVal = item.baseValue
-                ? `${item.baseValue.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`
-                : item.unit
-                  ? `0.00 ${item.unit}`
-                  : `0.00 ${unit}`
-              const isSelected = props.selectedId === item.id
+            {filtered.map((group) => {
+              const isSelected = group.measurements.some((item) => item.id === props.selectedId)
+              const selectedChild = group.children.some((item) => item.id === props.selectedId)
 
               return (
-                <li key={item.id}>
+                <li key={group.id} className="map-feature-sidebar__group">
                   <button
                     type="button"
                     className={`map-feature-sidebar__item ${isSelected ? 'is-selected' : ''}`}
-                    onClick={() => props.onSelect(item)}
+                    onClick={() => props.onSelect(group.primary)}
                   >
                     <div className="map-feature-sidebar__item-header">
-                      <strong className="map-feature-sidebar__item-name">{item.name}</strong>
-                      <span className="map-feature-sidebar__item-val">{formattedVal}</span>
+                      <strong className="map-feature-sidebar__item-name">
+                        {group.primary.name}
+                      </strong>
+                      <span className="map-feature-sidebar__item-val">
+                        {measurementBaseTotal(group.measurements)}
+                      </span>
                     </div>
                   </button>
+                  {group.children.length > 0 ? (
+                    <details className="map-feature-sidebar__components" open={selectedChild}>
+                      <summary>{group.children.length} phần đo bổ sung</summary>
+                      <ul className="map-feature-sidebar__component-list">
+                        {group.children.map((item, index) => (
+                          <li key={item.id}>
+                            <button
+                              type="button"
+                              className={`map-feature-sidebar__component ${
+                                props.selectedId === item.id ? 'is-selected' : ''
+                              }`}
+                              onClick={() => props.onSelect(item)}
+                            >
+                              <span>{componentName(item, index + 2)}</span>
+                              <span>{measurementBaseValue(item)}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ) : null}
                 </li>
               )
             })}

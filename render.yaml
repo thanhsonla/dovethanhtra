@@ -16,12 +16,12 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: COOKIE_SECURE
-        value: "true"
+        value: 'true'
       - key: CORS_ORIGIN
         value: https://dovethanhtra.vercel.app
       - key: BOOTSTRAP_OWNER_EMAIL
         value: admin@thanh
       - key: BOOTSTRAP_OWNER_PASSWORD
-        value: "12345678"
+        value: '12345678'
       - key: BOOTSTRAP_OWNER_NAME
         value: Quản trị viên Admin
