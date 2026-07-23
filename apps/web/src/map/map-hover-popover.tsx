@@ -1,17 +1,23 @@
 import type { MapFeature } from '@dove/contracts'
 import { formatQuantity } from './measurement-summary.js'
 
+function cleanUnit(unit: string): string {
+  if (!unit || unit === 'm.lần') return 'm'
+  return unit.replace(/m\.lần/g, 'm')
+}
+
 function getQuantityLine(kind: string, rawQty: number, rawUnit: string): string {
+  const targetUnit = cleanUnit(rawUnit)
   if (kind === 'point') {
-    return `Số điểm: ${formatQuantity(rawQty || 1, 'điểm')}`
+    return `Số điểm: ${formatQuantity(rawQty || 1, targetUnit || 'điểm')}`
   }
 
   if (kind === 'area' || kind === 'polygon') {
-    return `Diện tích: ${formatQuantity(rawQty, rawUnit || 'm²')}`
+    return `Diện tích: ${formatQuantity(rawQty, targetUnit || 'm²')}`
   }
 
   // Line String / Route (Length)
-  return `Chiều dài: ${formatQuantity(rawQty, rawUnit || 'm.lần')}`
+  return `Chiều dài: ${formatQuantity(rawQty, targetUnit || 'm')}`
 }
 
 export function MapHoverPopover(props: {
