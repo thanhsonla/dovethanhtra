@@ -13,7 +13,7 @@ export const UserRoleSchema = Type.Union([
 export const CurrentUserSchema = Type.Object(
   {
     id: UuidSchema,
-    email: Type.String({ format: 'email' }),
+    email: Type.String({ minLength: 3, maxLength: 320 }),
     displayName: Type.String(),
     role: UserRoleSchema,
   },
@@ -22,7 +22,7 @@ export const CurrentUserSchema = Type.Object(
 
 export const LoginRequestSchema = Type.Object(
   {
-    email: Type.String({ format: 'email', maxLength: 320 }),
+    email: Type.String({ minLength: 3, maxLength: 320 }),
     password: Type.String({ minLength: 8, maxLength: 200 }),
   },
   { additionalProperties: false, $id: 'LoginRequest' },
