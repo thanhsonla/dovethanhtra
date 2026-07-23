@@ -1638,13 +1638,25 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Map Hover Popover */
+/* Map Hover Popover - Compact 2-Line Semi-Transparent Glassmorphism */
 .map-hover-popover {
   position: absolute;
   z-index: 100;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 260px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  background: rgba(10, 20, 16, 0.58);
+  color: #ffffff;
+  box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition: left 0.05s ease-out, top 0.05s ease-out;
-  animation: popover-fade-in 0.15s ease-out;
+  animation: popover-fade-in 0.12s ease-out;
 }
 
 @keyframes popover-fade-in {
@@ -1658,55 +1670,35 @@
   }
 }
 
-.map-hover-popover__content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 230px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
-  background: rgba(15, 30, 24, 0.88);
-  color: #ffffff;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.map-hover-popover__header {
+.map-hover-popover__line1 {
   display: flex;
   align-items: center;
-  gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  padding-bottom: 6px;
+  gap: 5px;
+  overflow: hidden;
 }
 
 .map-hover-popover__icon {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  flex: none;
 }
 
 .map-hover-popover__title {
   flex: 1;
   overflow: hidden;
-  font-weight: 600;
-  font-size: 0.82rem;
-  line-height: 1.25;
-  color: #f3f4f6;
+  font-weight: 700;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: #ffffff;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.map-hover-popover__body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.map-hover-popover__volume-container {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.map-hover-popover__line2 {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #34d399;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .map-hover-popover__volume-label {

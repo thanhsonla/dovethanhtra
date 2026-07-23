@@ -1,26 +1,17 @@
 import type { MapFeature } from '@dove/contracts'
 import { formatQuantity } from './measurement-summary.js'
 
-function getQuantityDetails(kind: string, rawQty: number, rawUnit: string) {
+function getQuantityLine(kind: string, rawQty: number, rawUnit: string): string {
   if (kind === 'point') {
-    return {
-      label: 'SỐ ĐIỂM',
-      value: formatQuantity(rawQty || 1, 'điểm'),
-    }
+    return `Số điểm: ${formatQuantity(rawQty || 1, 'điểm')}`
   }
 
   if (kind === 'area' || kind === 'polygon') {
-    return {
-      label: 'DIỆN TÍCH',
-      value: formatQuantity(rawQty, rawUnit || 'm²'),
-    }
+    return `Diện tích: ${formatQuantity(rawQty, rawUnit || 'm²')}`
   }
 
   // Line String / Route (Length)
-  return {
-    label: 'CHIỀU DÀI',
-    value: formatQuantity(rawQty, rawUnit || 'm.lần'),
-  }
+  return `Chiều dài: ${formatQuantity(rawQty, rawUnit || 'm.lần')}`
 }
 
 export function MapHoverPopover(props: {
@@ -36,7 +27,7 @@ export function MapHoverPopover(props: {
   const kind = (measurement.geometryKind as string) || 'line'
   const rawUnit = measurement.unit || ''
 
-  const { label: quantityLabel, value: quantityValue } = getQuantityDetails(kind, rawQty, rawUnit)
+  const quantityLine = getQuantityLine(kind, rawQty, rawUnit)
 
   // Route / Street / Work Name
   const displayName =
@@ -50,17 +41,17 @@ export function MapHoverPopover(props: {
   // Positioning popover cleanly so it stays within viewport
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800
-  const popoverWidth = 220
-  const popoverHeight = 85
+  const popoverWidth = 200
+  const popoverHeight = 52
 
-  let posX = x + 15
-  let posY = y + 15
+  let posX = x + 12
+  let posY = y + 12
 
-  if (posX + popoverWidth > viewportWidth - 20) {
-    posX = Math.max(10, x - popoverWidth - 15)
+  if (posX + popoverWidth > viewportWidth - 15) {
+    posX = Math.max(10, x - popoverWidth - 12)
   }
-  if (posY + popoverHeight > viewportHeight - 20) {
-    posY = Math.max(10, y - popoverHeight - 15)
+  if (posY + popoverHeight > viewportHeight - 15) {
+    posY = Math.max(10, y - popoverHeight - 12)
   }
 
   return (
@@ -69,22 +60,16 @@ export function MapHoverPopover(props: {
       style={{ left: `${posX}px`, top: `${posY}px` }}
       aria-label={`Chi tiết ${displayName}`}
     >
-      <div className="map-hover-popover__content">
-        <div className="map-hover-popover__header">
-          <span className="map-hover-popover__icon" aria-hidden="true">
-            {icon}
-          </span>
-          <span className="map-hover-popover__title" title={displayName}>
-            {displayName}
-          </span>
-        </div>
-
-        <div className="map-hover-popover__body">
-          <div className="map-hover-popover__volume-container">
-            <span className="map-hover-popover__volume-label">{quantityLabel}</span>
-            <div className="map-hover-popover__volume-value">{quantityValue}</div>
-          </div>
-        </div>
+      <div className="map-hover-popover__line1">
+        <span className="map-hover-popover__icon" aria-hidden="true">
+          {icon}
+        </span>
+        <span className="map-hover-popover__title" title={displayName}>
+          {displayName}
+        </span>
+      </div>
+      <div className="map-hover-popover__line2">
+        {quantityLine}
       </div>
     </div>
   )
