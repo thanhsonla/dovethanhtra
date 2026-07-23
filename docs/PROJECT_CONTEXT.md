@@ -110,9 +110,10 @@
 | 20/07/2026 | ADR-024 | 12 khu vực là nhãn tên, không có geometry                  | Không tạo ranh giới huyện cũ; bản đồ chỉ dùng 75 xã/phường       |
 | 22/07/2026 | ADR-025 | Ẩn dashboard, dùng một không gian hồ sơ nội bộ và vào thẳng bản đồ | Giảm thao tác quản lý; backend vẫn giữ liên kết và audit          |
 | 22/07/2026 | ADR-026 | Mục tiêu cloud: Vercel web, Render API/ClamAV, Supabase PostGIS và R2 | Giữ API/scanner phù hợp runtime lâu dài, same-origin proxy và tách dữ liệu/ảnh |
+| 23/07/2026 | Render   | Triển khai Backend API lên Render.com theo Cách 1                | Kết nối Supabase PostGIS DB trực tiếp từ Render web service |
 
 Kế hoạch thực thi ADR-026 nằm tại `docs/14_CLOUD_DEPLOYMENT_PLAN.md`. Đây là kiến
-trúc mục tiêu đã chọn; production chỉ được mở sau staging, restore drill, field test
+thức triển khai backend chính thức trên Render.com (Cách 1). chỉ được mở sau staging, restore drill, field test
 và các cổng bảo mật trong runbook.
 
 ## Trạng thái chuyển đổi map-first
