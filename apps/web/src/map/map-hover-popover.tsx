@@ -1,5 +1,34 @@
 import type { MapFeature } from '@dove/contracts'
 
+function getQuantityDetails(kind: string, rawQty: number, rawUnit: string) {
+  if (kind === 'point') {
+    return {
+      label: 'SỐ ĐIỂM',
+      value: `${rawQty || 1} điểm`,
+    }
+  }
+
+  if (kind === 'polygon') {
+    if (rawQty >= 10000) {
+      const haValue = rawQty / 10000
+      return {
+        label: 'DIỆN TÍCH',
+        value: `${haValue < 10 ? haValue.toFixed(2) : haValue.toFixed(1)} ha`,
+      }
+    }
+    return {
+      label: 'DIỆN TÍCH',
+      value: `${rawQty < 10 ? rawQty.toFixed(2) : rawQty.toFixed(1)} ${rawUnit || 'm²'}`.trim(),
+    }
+  }
+
+  // Line String (Length)
+  return {
+    label: 'CHIỀU DÀI',
+    value: `${rawQty < 10 ? rawQty.toFixed(2) : rawQty.toFixed(1)} ${rawUnit || 'm.lần'}`.trim(),
+  }
+}
+
 export function MapHoverPopover(props: {
   feature: MapFeature
   x: number
@@ -8,34 +37,27 @@ export function MapHoverPopover(props: {
   const { feature, x, y } = props
   const { measurement, workItemName } = feature
 
-  // Formatting actual measurement volume
-  const qtyFormatted =
-    measurement.calculatedQuantity != null
-      ? measurement.calculatedQuantity < 10
-        ? measurement.calculatedQuantity.toFixed(2)
-        : measurement.calculatedQuantity.toFixed(1)
-      : '0'
-  const unitStr = measurement.unit || ''
-  const volumeDisplay = `${qtyFormatted} ${unitStr}`.trim()
+  // Raw quantity calculation
+  const rawQty = measurement.calculatedQuantity ?? measurement.baseValue ?? 0
+  const kind = measurement.geometryKind || 'line'
+  const rawUnit = measurement.unit || ''
 
-  // Full name of route/street/work
+  const { label: quantityLabel, value: quantityValue } = getQuantityDetails(kind, rawQty, rawUnit)
+
+  // Route / Street / Work Name
   const displayName =
     measurement.name && measurement.name !== workItemName
       ? `${workItemName} (${measurement.name})`
-      : workItemName
+      : workItemName || measurement.name || 'Phép đo'
 
-  // Representative photo image URL (if attached in note or default sample field thumbnail)
-  let photoUrl: string | null = null
-  if (measurement.note?.includes('http')) {
-    const match = measurement.note.match(/(https?:\/\/[^\s"]+)/)
-    if (match) photoUrl = match[1] ?? null
-  }
+  // Icon corresponding to geometry kind
+  const icon = kind === 'polygon' ? '📐' : kind === 'point' ? '📍' : '🛣️'
 
   // Positioning popover cleanly so it stays within viewport
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800
-  const popoverWidth = 240
-  const popoverHeight = photoUrl ? 170 : 110
+  const popoverWidth = 220
+  const popoverHeight = 85
 
   let posX = x + 15
   let posY = y + 15
@@ -56,7 +78,7 @@ export function MapHoverPopover(props: {
       <div className="map-hover-popover__content">
         <div className="map-hover-popover__header">
           <span className="map-hover-popover__icon" aria-hidden="true">
-            🛣️
+            {icon}
           </span>
           <span className="map-hover-popover__title" title={displayName}>
             {displayName}
@@ -65,26 +87,9 @@ export function MapHoverPopover(props: {
 
         <div className="map-hover-popover__body">
           <div className="map-hover-popover__volume-container">
-            <span className="map-hover-popover__volume-label">Khối lượng thực tế</span>
-            <div className="map-hover-popover__volume-value">
-              {volumeDisplay}
-            </div>
+            <span className="map-hover-popover__volume-label">{quantityLabel}</span>
+            <div className="map-hover-popover__volume-value">{quantityValue}</div>
           </div>
-
-          {photoUrl ? (
-            <div className="map-hover-popover__photo-preview">
-              <img src={photoUrl} alt="Ảnh chụp thực địa" />
-            </div>
-          ) : (
-            <div className="map-hover-popover__photo-badge" title="Ảnh chụp thực địa">
-              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-              <span>Thực địa</span>
-            </div>
-          )}
         </div>
       </div>
     </div>

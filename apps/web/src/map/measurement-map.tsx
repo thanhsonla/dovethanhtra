@@ -95,12 +95,17 @@ function featureCollection(props: MeasurementMapProps) {
           type: 'Feature' as const,
           id: item.id,
           properties: {
+            calculatedQuantity: item.calculatedQuantity ?? item.baseValue ?? 0,
             color,
             dimmed: isDimmed,
+            geometryKind: item.geometryKind,
             id: item.id,
             label,
+            name: item.name,
             selected: isSelected,
             status: item.status,
+            unit: item.unit || '',
+            workItemName: featureMeta?.workItemName ?? item.name,
           },
           geometry: item.normalizedGeometry ?? item.rawGeometry,
         }
@@ -501,16 +506,50 @@ export function MeasurementMap(props: MeasurementMapProps) {
               if (typeof hitId === 'string') {
                 const foundFeature = current.mapFeatures?.find((f) => f.measurement.id === hitId)
                 const measurementObj = current.measurements.find((m) => m.id === hitId)
+
+                const hitProps = hit?.properties ?? {}
+                const propQty =
+                  typeof hitProps.calculatedQuantity === 'number'
+                    ? hitProps.calculatedQuantity
+                    : Number(hitProps.calculatedQuantity || 0)
+                const propUnit = (hitProps.unit as string | undefined) || ''
+                const propWorkName = (hitProps.workItemName as string | undefined) || ''
+
                 if (foundFeature) {
-                  setHoveredFeature({ feature: foundFeature, x: event.point.x, y: event.point.y })
+                  const updatedQty =
+                    foundFeature.measurement.calculatedQuantity ||
+                    propQty ||
+                    foundFeature.measurement.baseValue ||
+                    0
+                  setHoveredFeature({
+                    feature: {
+                      ...foundFeature,
+                      measurement: {
+                        ...foundFeature.measurement,
+                        calculatedQuantity: updatedQty,
+                        unit: foundFeature.measurement.unit || propUnit,
+                      },
+                    },
+                    x: event.point.x,
+                    y: event.point.y,
+                  })
                 } else if (measurementObj) {
+                  const updatedQty =
+                    measurementObj.calculatedQuantity ||
+                    propQty ||
+                    measurementObj.baseValue ||
+                    0
                   const fallbackFeature: MapFeature = {
-                    measurement: measurementObj,
+                    measurement: {
+                      ...measurementObj,
+                      calculatedQuantity: updatedQty,
+                      unit: measurementObj.unit || propUnit,
+                    },
                     managementZoneId: null,
                     managementZoneName: null,
                     serviceGroupId: '',
                     serviceGroupName: '',
-                    workItemName: measurementObj.name,
+                    workItemName: propWorkName || measurementObj.name,
                     workComponentName: null,
                   }
                   setHoveredFeature({ feature: fallbackFeature, x: event.point.x, y: event.point.y })
