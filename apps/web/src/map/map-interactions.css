@@ -1595,3 +1595,115 @@
   font-size: 0.72rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
+/* Map Hover Popover */
+.map-hover-popover {
+  position: absolute;
+  z-index: 100;
+  pointer-events: none;
+  transition: left 0.05s ease-out, top 0.05s ease-out;
+  animation: popover-fade-in 0.15s ease-out;
+}
+
+@keyframes popover-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.map-hover-popover__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 230px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  background: rgba(15, 30, 24, 0.88);
+  color: #ffffff;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.map-hover-popover__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 6px;
+}
+
+.map-hover-popover__icon {
+  font-size: 0.9rem;
+}
+
+.map-hover-popover__title {
+  flex: 1;
+  overflow: hidden;
+  font-weight: 600;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  color: #f3f4f6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-hover-popover__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-hover-popover__volume-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.map-hover-popover__volume-label {
+  font-size: 0.68rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.map-hover-popover__volume-value {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #34d399;
+  font-feature-settings: 'tnum';
+}
+
+.map-hover-popover__photo-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.map-hover-popover__photo-preview {
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+}
+
+.map-hover-popover__photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+

@@ -31,6 +31,7 @@ import {
 } from './measurement-edit-markers.js'
 import { geometryExtent } from './map-selection.js'
 import { MapLocateControl } from './map-locate-control.js'
+import { MapHoverPopover } from './map-hover-popover.js'
 import { serviceGroupColor } from './map-service-colors.js'
 import { findSnapTarget, type SnapTarget } from './map-snapping.js'
 
@@ -311,6 +312,12 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const activeBasemapId = useRef(props.basemapId)
   const activeSnapTargetRef = useRef<SnapTarget | null>(null)
 
+  const [hoveredFeature, setHoveredFeature] = useState<{
+    feature: MapFeature
+    x: number
+    y: number
+  } | null>(null)
+
   const [tooltipState, setTooltipState] = useState<{
     text: string
     visible: boolean
@@ -483,9 +490,39 @@ export function MeasurementMap(props: MeasurementMapProps) {
             } else {
               setTooltipState((prev) => (prev.visible ? { ...prev, visible: false } : prev))
             }
+            setHoveredFeature(null)
           } else {
             activeSnapTargetRef.current = null
             setTooltipState((prev) => (prev.visible ? { ...prev, visible: false } : prev))
+
+            if (current.mode === 'view') {
+              const hit = map.queryRenderedFeatures(event.point, { layers: interactiveLayers })[0]
+              const hitId: unknown = hit?.properties?.id
+              if (typeof hitId === 'string') {
+                const foundFeature = current.mapFeatures?.find((f) => f.measurement.id === hitId)
+                const measurementObj = current.measurements.find((m) => m.id === hitId)
+                if (foundFeature) {
+                  setHoveredFeature({ feature: foundFeature, x: event.point.x, y: event.point.y })
+                } else if (measurementObj) {
+                  const fallbackFeature: MapFeature = {
+                    measurement: measurementObj,
+                    managementZoneId: null,
+                    managementZoneName: null,
+                    serviceGroupId: '',
+                    serviceGroupName: '',
+                    workItemName: measurementObj.name,
+                    workComponentName: null,
+                  }
+                  setHoveredFeature({ feature: fallbackFeature, x: event.point.x, y: event.point.y })
+                } else {
+                  setHoveredFeature(null)
+                }
+              } else {
+                setHoveredFeature(null)
+              }
+            } else {
+              setHoveredFeature(null)
+            }
           }
         })
 
@@ -679,6 +716,13 @@ export function MeasurementMap(props: MeasurementMapProps) {
         >
           {tooltipState.text}
         </div>
+      )}
+      {hoveredFeature && props.mode === 'view' && (
+        <MapHoverPopover
+          feature={hoveredFeature.feature}
+          x={hoveredFeature.x}
+          y={hoveredFeature.y}
+        />
       )}
     </div>
   )
