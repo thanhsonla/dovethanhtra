@@ -34,6 +34,7 @@ import { MapLocateControl } from './map-locate-control.js'
 import { MapHoverPopover } from './map-hover-popover.js'
 import { serviceGroupColor } from './map-service-colors.js'
 import { findSnapTarget, type SnapTarget } from './map-snapping.js'
+import { TouchMagnifierGlass } from './touch-magnifier-glass.js'
 
 export type MapMode = 'view' | 'point' | 'line' | 'area' | 'measure' | 'edit'
 export type Position = [number, number]
@@ -425,7 +426,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
           preserveDrawingBuffer: true,
           style,
           zoom: 11.5,
-        })
+        } as maplibregl.MapOptions & { preserveDrawingBuffer?: boolean })
         map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
         applyRotationPolicy(map, descriptor)
         replaceAttribution(map, descriptor.attribution)
