@@ -137,3 +137,76 @@ export function calculatePerpendicularSnapping(
 
   return null
 }
+
+export interface IntersectionSnapResult {
+  activePos: Position
+  cornerSymbolLines: [Position, Position, Position]
+  guideLines: Array<[Position, Position]>
+  refPointA: Position
+  refPointB: Position
+}
+
+export function findIntersectionSnapping(
+  map: MapLibreMap,
+  mousePoint: { x: number; y: number },
+  refPoints: Position[],
+  tolerancePx: number = 20,
+): IntersectionSnapResult | null {
+  if (refPoints.length < 2) return null
+
+  const pA = refPoints[refPoints.length - 2]!
+  const pB = refPoints[refPoints.length - 1]!
+
+  const screenA = map.project(pA)
+  const screenB = map.project(pB)
+
+  const c1Px = { x: screenA.x, y: screenB.y }
+  const c2Px = { x: screenB.x, y: screenA.y }
+
+  const dist1 = Math.hypot(mousePoint.x - c1Px.x, mousePoint.y - c1Px.y)
+  const dist2 = Math.hypot(mousePoint.x - c2Px.x, mousePoint.y - c2Px.y)
+
+  let chosenPx: { x: number; y: number } | null = null
+  let refStemA = screenA
+  let refStemB = screenB
+
+  if (dist1 <= tolerancePx && dist1 <= dist2) {
+    chosenPx = c1Px
+  } else if (dist2 <= tolerancePx) {
+    chosenPx = c2Px
+    refStemA = screenB
+    refStemB = screenA
+  }
+
+  if (!chosenPx) return null
+
+  const unprojected = map.unproject([chosenPx.x, chosenPx.y])
+  const activePos: Position = [unprojected.lng, unprojected.lat]
+
+  const size = 12
+  const dirAx = Math.sign(refStemA.x - chosenPx.x) || 1
+  const dirBy = Math.sign(refStemB.y - chosenPx.y) || 1
+
+  const cornerA: [number, number] = [chosenPx.x + dirAx * size, chosenPx.y]
+  const cornerB: [number, number] = [chosenPx.x + dirAx * size, chosenPx.y + dirBy * size]
+  const cornerC: [number, number] = [chosenPx.x, chosenPx.y + dirBy * size]
+
+  const llA = map.unproject(cornerA)
+  const llB = map.unproject(cornerB)
+  const llC = map.unproject(cornerC)
+
+  return {
+    activePos,
+    cornerSymbolLines: [
+      [llA.lng, llA.lat],
+      [llB.lng, llB.lat],
+      [llC.lng, llC.lat],
+    ],
+    guideLines: [
+      [pA, activePos],
+      [pB, activePos],
+    ],
+    refPointA: pA,
+    refPointB: pB,
+  }
+}

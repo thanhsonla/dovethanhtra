@@ -71,6 +71,10 @@ export function addDraftSources(
     type: 'geojson',
     data: asMapGeoJson({ type: 'FeatureCollection', features: [] }),
   })
+  map.addSource('measurement-ref-points-source', {
+    type: 'geojson',
+    data: asMapGeoJson({ type: 'FeatureCollection', features: [] }),
+  })
 }
 
 export function ensureCrosshairImage(map: MapLibreMap) {
@@ -80,6 +84,18 @@ export function ensureCrosshairImage(map: MapLibreMap) {
 }
 
 export function addDraftLayers(map: MapLibreMap) {
+  map.addLayer({
+    id: 'draft-ref-points-circle',
+    source: 'measurement-ref-points-source',
+    type: 'circle',
+    paint: {
+      'circle-color': '#00ffff',
+      'circle-opacity': 0.9,
+      'circle-radius': 6,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2,
+    },
+  })
   map.addLayer({
     id: 'draft-guide-line',
     source: 'measurement-guide-source',

@@ -34,7 +34,12 @@ import { MapLocateControl } from './map-locate-control.js'
 import { MapHoverPopover } from './map-hover-popover.js'
 import { serviceGroupColor, type FieldDisplayMode } from './map-service-colors.js'
 import { sanitizeUnit } from './measurement-summary.js'
-import { calculatePerpendicularSnapping, findSnapTarget, type SnapTarget } from './map-snapping.js'
+import {
+  calculatePerpendicularSnapping,
+  findIntersectionSnapping,
+  findSnapTarget,
+  type SnapTarget,
+} from './map-snapping.js'
 import { TouchMagnifierGlass } from './touch-magnifier-glass.js'
 
 export type MapMode = 'view' | 'point' | 'line' | 'area' | 'measure' | 'edit'
@@ -344,6 +349,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
   const lastZoomedSelection = useRef<string | null>(null)
   const activeBasemapId = useRef(props.basemapId)
   const activeSnapTargetRef = useRef<SnapTarget | null>(null)
+  const hoveredRefPointsRef = useRef<Position[]>([])
 
   const [hoveredFeature, setHoveredFeature] = useState<{
     feature: MapFeature
@@ -521,6 +527,14 @@ export function MeasurementMap(props: MeasurementMapProps) {
             )
             activeSnapTargetRef.current = snapTarget
 
+            if (snapTarget?.snapType === 'vertex') {
+              const pos = snapTarget.coordinates
+              const existing = hoveredRefPointsRef.current
+              if (!existing.some((p) => p[0] === pos[0] && p[1] === pos[1])) {
+                hoveredRefPointsRef.current = [...existing, pos].slice(-2)
+              }
+            }
+
             const snapSource = map.getSource<GeoJSONSource>('snap-target-source')
             if (snapSource) {
               snapSource.setData(asMapGeoJson(snapIndicatorCollection(snapTarget)))
@@ -530,11 +544,33 @@ export function MeasurementMap(props: MeasurementMapProps) {
               ? snapTarget.coordinates
               : ([event.lngLat.lng, event.lngLat.lat] as Position)
 
+            let isIntersection = false
             let isPerpendicular = false
             let isParallel = false
             let cornerLines: [Position, Position, Position] | null = null
+            let interGuideLines: Array<[Position, Position]> = []
 
-            if (!snapTarget && current.draftPositions.length >= 2) {
+            const effectiveRefPoints: Position[] = []
+            if (current.draftPositions.length >= 1) {
+              effectiveRefPoints.push(current.draftPositions[current.draftPositions.length - 1]!)
+            }
+            for (const refP of hoveredRefPointsRef.current) {
+              if (!effectiveRefPoints.some((ep) => ep[0] === refP[0] && ep[1] === refP[1])) {
+                effectiveRefPoints.push(refP)
+              }
+            }
+
+            if (!snapTarget && effectiveRefPoints.length >= 2) {
+              const interSnap = findIntersectionSnapping(map, event.point, effectiveRefPoints)
+              if (interSnap) {
+                activePos = interSnap.activePos
+                isIntersection = true
+                cornerLines = interSnap.cornerSymbolLines
+                interGuideLines = interSnap.guideLines
+              }
+            }
+
+            if (!snapTarget && !isIntersection && current.draftPositions.length >= 2) {
               const alignSnap = calculatePerpendicularSnapping(
                 map,
                 event.point,
@@ -548,10 +584,37 @@ export function MeasurementMap(props: MeasurementMapProps) {
               }
             }
 
+            const refPointsSource = map.getSource<GeoJSONSource>('measurement-ref-points-source')
+            if (refPointsSource) {
+              const refFeatures = hoveredRefPointsRef.current.map((pos) => ({
+                type: 'Feature' as const,
+                properties: {},
+                geometry: { type: 'Point' as const, coordinates: pos },
+              }))
+              refPointsSource.setData(
+                asMapGeoJson({ type: 'FeatureCollection', features: refFeatures }),
+              )
+            }
+
             const guideSource = map.getSource<GeoJSONSource>('measurement-guide-source')
             if (guideSource) {
               const guideFeatures: GeoJSON.Feature[] = []
-              if (current.draftPositions.length >= 1) {
+              if (isIntersection && interGuideLines.length > 0) {
+                for (const gLine of interGuideLines) {
+                  guideFeatures.push({
+                    type: 'Feature',
+                    properties: { isPerpendicular: true },
+                    geometry: { type: 'LineString', coordinates: gLine },
+                  })
+                }
+                if (cornerLines) {
+                  guideFeatures.push({
+                    type: 'Feature',
+                    properties: { isPerpendicularSymbol: true },
+                    geometry: { type: 'LineString', coordinates: cornerLines },
+                  })
+                }
+              } else if (current.draftPositions.length >= 1) {
                 const lastPos = current.draftPositions[current.draftPositions.length - 1]!
                 guideFeatures.push({
                   type: 'Feature',
@@ -581,11 +644,13 @@ export function MeasurementMap(props: MeasurementMapProps) {
               )
             }
 
-            const perpTag = isPerpendicular
-              ? ' ∟ Vuông góc (90°)'
-              : isParallel
-                ? ' ═ Song song'
-                : ''
+            const perpTag = isIntersection
+              ? ' 🎯 Giao điểm vuông góc (90°)'
+              : isPerpendicular
+                ? ' ∟ Vuông góc (90°)'
+                : isParallel
+                  ? ' ═ Song song'
+                  : ''
             let text = ''
 
             if (current.mode === 'point') {
@@ -630,6 +695,13 @@ export function MeasurementMap(props: MeasurementMapProps) {
             setHoveredFeature(null)
           } else {
             activeSnapTargetRef.current = null
+            hoveredRefPointsRef.current = []
+            const refPointsSource = map.getSource<GeoJSONSource>('measurement-ref-points-source')
+            if (refPointsSource) {
+              refPointsSource.setData(
+                asMapGeoJson({ type: 'FeatureCollection', features: [] }),
+              )
+            }
             const guideSource = map.getSource<GeoJSONSource>('measurement-guide-source')
             if (guideSource) {
               guideSource.setData(
