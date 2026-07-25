@@ -52,3 +52,88 @@ export function findSnapTarget(
 
   return closestTarget
 }
+
+export interface AlignmentSnapResult {
+  activePos: Position
+  cornerSymbolLines: [Position, Position, Position] | null
+  isParallel: boolean
+  isPerpendicular: boolean
+}
+
+export function calculatePerpendicularSnapping(
+  map: MapLibreMap,
+  mousePoint: { x: number; y: number },
+  draftPositions: Position[],
+  tolerancePx: number = 14,
+): AlignmentSnapResult | null {
+  if (draftPositions.length < 2) return null
+
+  const p1 = map.project(draftPositions[draftPositions.length - 2]!)
+  const p2 = map.project(draftPositions[draftPositions.length - 1]!)
+  const c = mousePoint
+
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  const len = Math.sqrt(dx * dx + dy * dy)
+  if (len < 2) return null
+
+  const tx = dx / len
+  const ty = dy / len
+  const nx = -ty
+  const ny = tx
+
+  const wx = c.x - p2.x
+  const wy = c.y - p2.y
+
+  const wt = wx * tx + wy * ty
+  const wn = wx * nx + wy * ny
+
+  const distToPerp = Math.abs(wt)
+  const distToParallel = Math.abs(wn)
+
+  if (distToPerp <= tolerancePx) {
+    const snapPx: [number, number] = [p2.x + wn * nx, p2.y + wn * ny]
+    const unprojected = map.unproject(snapPx)
+    const activePos: Position = [unprojected.lng, unprojected.lat]
+
+    const size = 12
+    const signN = wn >= 0 ? 1 : -1
+    const signT = wt >= 0 ? 1 : -1
+
+    const cornerA: [number, number] = [p2.x + signN * size * nx, p2.y + signN * size * ny]
+    const cornerB: [number, number] = [
+      p2.x + signN * size * nx + signT * size * tx,
+      p2.y + signN * size * ny + signT * size * ty,
+    ]
+    const cornerC: [number, number] = [p2.x + signT * size * tx, p2.y + signT * size * ty]
+
+    const llA = map.unproject(cornerA)
+    const llB = map.unproject(cornerB)
+    const llC = map.unproject(cornerC)
+
+    return {
+      activePos,
+      cornerSymbolLines: [
+        [llA.lng, llA.lat],
+        [llB.lng, llB.lat],
+        [llC.lng, llC.lat],
+      ],
+      isParallel: false,
+      isPerpendicular: true,
+    }
+  }
+
+  if (distToParallel <= tolerancePx) {
+    const snapPx: [number, number] = [p2.x + wt * tx, p2.y + wt * ty]
+    const unprojected = map.unproject(snapPx)
+    const activePos: Position = [unprojected.lng, unprojected.lat]
+    return {
+      activePos,
+      cornerSymbolLines: null,
+      isParallel: true,
+      isPerpendicular: false,
+    }
+  }
+
+  return null
+}

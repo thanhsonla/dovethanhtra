@@ -6,7 +6,7 @@ import type {
   WorkItem,
   WorkType,
 } from '@dove/contracts'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { api } from '../api.js'
 import { DrawingToolbar, type MapPanelName } from './drawing-toolbar.js'
@@ -209,6 +209,12 @@ export function MapWorkspace(props: {
       void refreshWork(selectedWorkId).catch(() => undefined)
   }, [selectedWorkId])
 
+  const cancelDraft = useCallback(() => {
+    drawingWorkflow.cancel()
+    setEditHistory(null)
+    setCompactAddition(false)
+  }, [drawingWorkflow])
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
@@ -217,6 +223,11 @@ export function MapWorkspace(props: {
 
       if (isInput) {
         (activeEl as HTMLElement).blur()
+      }
+
+      if (mode !== 'view') {
+        cancelDraft()
+        return
       }
 
       if (
@@ -243,7 +254,7 @@ export function MapWorkspace(props: {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedId, mapFeatures, activePanel])
+  }, [mode, cancelDraft, selectedId, mapFeatures, activePanel])
 
   const selectMapFeature = (id: string) => {
     if (!id) {
@@ -324,11 +335,6 @@ export function MapWorkspace(props: {
     setEditHistory(null)
     setRoutePreview(null)
     setSelectedId(null)
-  }
-  const cancelDraft = () => {
-    drawingWorkflow.cancel()
-    setEditHistory(null)
-    setCompactAddition(false)
   }
   const selectWork = (item: WorkItem) => {
     setSelectedWorkId(item.id)

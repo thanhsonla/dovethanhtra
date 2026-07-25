@@ -67,6 +67,10 @@ export function addDraftSources(
     type: 'geojson',
     data: asMapGeoJson(draftVertexCollection(points, selectedIndex)),
   })
+  map.addSource('measurement-guide-source', {
+    type: 'geojson',
+    data: asMapGeoJson({ type: 'FeatureCollection', features: [] }),
+  })
 }
 
 export function ensureCrosshairImage(map: MapLibreMap) {
@@ -76,6 +80,31 @@ export function ensureCrosshairImage(map: MapLibreMap) {
 }
 
 export function addDraftLayers(map: MapLibreMap) {
+  map.addLayer({
+    id: 'draft-guide-line',
+    source: 'measurement-guide-source',
+    type: 'line',
+    paint: {
+      'line-color': [
+        'case',
+        ['boolean', ['get', 'isPerpendicularSymbol'], false],
+        '#00ff66',
+        ['boolean', ['get', 'isPerpendicular'], false],
+        '#00ff66',
+        ['boolean', ['get', 'isParallel'], false],
+        '#ffff00',
+        '#0284c7',
+      ],
+      'line-dasharray': [
+        'case',
+        ['boolean', ['get', 'isPerpendicularSymbol'], false],
+        ['literal', [1, 0]],
+        ['literal', [3, 3]],
+      ],
+      'line-width': ['case', ['boolean', ['get', 'isPerpendicularSymbol'], false], 2.5, 2],
+      'line-opacity': 0.9,
+    },
+  })
   map.addLayer({
     id: 'draft-fill',
     source: 'measurement-draft',

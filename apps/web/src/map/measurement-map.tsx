@@ -34,7 +34,7 @@ import { MapLocateControl } from './map-locate-control.js'
 import { MapHoverPopover } from './map-hover-popover.js'
 import { serviceGroupColor, type FieldDisplayMode } from './map-service-colors.js'
 import { sanitizeUnit } from './measurement-summary.js'
-import { findSnapTarget, type SnapTarget } from './map-snapping.js'
+import { calculatePerpendicularSnapping, findSnapTarget, type SnapTarget } from './map-snapping.js'
 import { TouchMagnifierGlass } from './touch-magnifier-glass.js'
 
 export type MapMode = 'view' | 'point' | 'line' | 'area' | 'measure' | 'edit'
@@ -526,9 +526,66 @@ export function MeasurementMap(props: MeasurementMapProps) {
               snapSource.setData(asMapGeoJson(snapIndicatorCollection(snapTarget)))
             }
 
-            const activePos = snapTarget
+            let activePos = snapTarget
               ? snapTarget.coordinates
               : ([event.lngLat.lng, event.lngLat.lat] as Position)
+
+            let isPerpendicular = false
+            let isParallel = false
+            let cornerLines: [Position, Position, Position] | null = null
+
+            if (!snapTarget && current.draftPositions.length >= 2) {
+              const alignSnap = calculatePerpendicularSnapping(
+                map,
+                event.point,
+                current.draftPositions,
+              )
+              if (alignSnap) {
+                activePos = alignSnap.activePos
+                isPerpendicular = alignSnap.isPerpendicular
+                isParallel = alignSnap.isParallel
+                cornerLines = alignSnap.cornerSymbolLines
+              }
+            }
+
+            const guideSource = map.getSource<GeoJSONSource>('measurement-guide-source')
+            if (guideSource) {
+              const guideFeatures: GeoJSON.Feature[] = []
+              if (current.draftPositions.length >= 1) {
+                const lastPos = current.draftPositions[current.draftPositions.length - 1]!
+                guideFeatures.push({
+                  type: 'Feature',
+                  properties: { isParallel, isPerpendicular },
+                  geometry: { type: 'LineString', coordinates: [lastPos, activePos] },
+                })
+                if (current.mode === 'area' && current.draftPositions.length >= 2) {
+                  guideFeatures.push({
+                    type: 'Feature',
+                    properties: { isClosing: true },
+                    geometry: {
+                      type: 'LineString',
+                      coordinates: [activePos, current.draftPositions[0]!],
+                    },
+                  })
+                }
+                if (cornerLines) {
+                  guideFeatures.push({
+                    type: 'Feature',
+                    properties: { isPerpendicularSymbol: true },
+                    geometry: { type: 'LineString', coordinates: cornerLines },
+                  })
+                }
+              }
+              guideSource.setData(
+                asMapGeoJson({ type: 'FeatureCollection', features: guideFeatures }),
+              )
+            }
+
+            const perpTag = isPerpendicular
+              ? ' ∟ Vuông góc (90°)'
+              : isParallel
+                ? ' ═ Song song'
+                : ''
             let text = ''
 
             if (current.mode === 'point') {
@@ -546,8 +603,8 @@ export function MeasurementMap(props: MeasurementMapProps) {
               const distM = length(feature) * 1000
               text =
                 current.mode === 'measure'
-                  ? `Đo nháp: ${distM.toFixed(1)} m`
-                  : `Chiều dài: ${distM.toFixed(1)} m`
+                  ? `Đo nháp: ${distM.toFixed(1)} m${perpTag}`
+                  : `Chiều dài: ${distM.toFixed(1)} m${perpTag}`
             } else if (current.mode === 'area' && current.draftPositions.length >= 2) {
               const polyPositions = [
                 ...current.draftPositions,
@@ -560,7 +617,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
                 geometry: { type: 'Polygon' as const, coordinates: [polyPositions] },
               }
               const areaM2 = area(feature)
-              text = `Diện tích: ${areaM2.toFixed(1)} m²`
+              text = `Diện tích: ${areaM2.toFixed(1)} m²${perpTag}`
             } else if (current.mode === 'measure') {
               text = 'Nhấp để bắt đầu đo nháp'
             }
@@ -573,6 +630,12 @@ export function MeasurementMap(props: MeasurementMapProps) {
             setHoveredFeature(null)
           } else {
             activeSnapTargetRef.current = null
+            const guideSource = map.getSource<GeoJSONSource>('measurement-guide-source')
+            if (guideSource) {
+              guideSource.setData(
+                asMapGeoJson({ type: 'FeatureCollection', features: [] }),
+              )
+            }
             setTooltipState((prev) => (prev.visible ? { ...prev, visible: false } : prev))
 
             if (current.mode === 'view') {
