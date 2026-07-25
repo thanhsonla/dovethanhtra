@@ -1741,3 +1741,74 @@
   object-fit: cover;
 }
 
+/* Touch Magnifier Glass (Kính lúp điểm chấm 2x cho iPad/Điện thoại) */
+.touch-magnifier-glass {
+  position: absolute;
+  z-index: 120;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(56, 189, 248, 0.9), 0 0 16px rgba(56, 189, 248, 0.4);
+  background: #0f172a;
+  overflow: hidden;
+  animation: magnifier-bounce 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-origin: center bottom;
+}
+
+@keyframes magnifier-bounce {
+  from {
+    opacity: 0;
+    transform: scale(0.6) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.touch-magnifier-glass__canvas {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: block;
+}
+
+.touch-magnifier-glass__badge {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #38bdf8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.touch-magnifier-glass__snap {
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.touch-magnifier-glass__pointer {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: rgba(56, 189, 248, 0.9);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+

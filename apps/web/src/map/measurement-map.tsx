@@ -347,6 +347,13 @@ export function MeasurementMap(props: MeasurementMapProps) {
     y: number
   } | null>(null)
 
+  const [touchMagnifierState, setTouchMagnifierState] = useState<{
+    visible: boolean
+    touchX: number
+    touchY: number
+    snapType?: string | null
+  }>({ visible: false, touchX: 0, touchY: 0, snapType: null })
+
   const [tooltipState, setTooltipState] = useState<{
     text: string
     visible: boolean
@@ -415,12 +422,52 @@ export function MeasurementMap(props: MeasurementMapProps) {
           center: [104.685, 20.805],
           container: container.current,
           doubleClickZoom: false,
+          preserveDrawingBuffer: true,
           style,
           zoom: 11.5,
         })
         map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
         applyRotationPolicy(map, descriptor)
         replaceAttribution(map, descriptor.attribution)
+
+        map.on('touchstart', (event) => {
+          const current = latest.current
+          if (['point', 'line', 'area', 'measure'].includes(current.mode)) {
+            const touch = event.originalEvent.touches?.[0]
+            if (touch && container.current) {
+              const rect = container.current.getBoundingClientRect()
+              setTouchMagnifierState({
+                visible: true,
+                touchX: touch.clientX - rect.left,
+                touchY: touch.clientY - rect.top,
+                snapType: activeSnapTargetRef.current?.snapType ?? null,
+              })
+            }
+          }
+        })
+
+        map.on('touchmove', (event) => {
+          const current = latest.current
+          if (['point', 'line', 'area', 'measure'].includes(current.mode)) {
+            const touch = event.originalEvent.touches?.[0]
+            if (touch && container.current) {
+              const rect = container.current.getBoundingClientRect()
+              setTouchMagnifierState({
+                visible: true,
+                touchX: touch.clientX - rect.left,
+                touchY: touch.clientY - rect.top,
+                snapType: activeSnapTargetRef.current?.snapType ?? null,
+              })
+            }
+          }
+        })
+
+        const hideTouchLoupe = () => {
+          setTouchMagnifierState((prev) => (prev.visible ? { ...prev, visible: false } : prev))
+        }
+
+        map.on('touchend', hideTouchLoupe)
+        map.on('touchcancel', hideTouchLoupe)
         map.on('style.load', () => {
           syncData(map, latest.current)
           refreshAttribution(map, latest.current.basemapProvider.get(latest.current.basemapId))
@@ -779,6 +826,16 @@ export function MeasurementMap(props: MeasurementMapProps) {
           y={hoveredFeature.y}
         />
       )}
+      <TouchMagnifierGlass
+        mapCanvas={mapRef.current ? mapRef.current.getCanvas() : null}
+        touchX={touchMagnifierState.touchX}
+        touchY={touchMagnifierState.touchY}
+        visible={
+          touchMagnifierState.visible &&
+          ['point', 'line', 'area', 'measure'].includes(props.mode)
+        }
+        snapType={touchMagnifierState.snapType}
+      />
     </div>
   )
 }
