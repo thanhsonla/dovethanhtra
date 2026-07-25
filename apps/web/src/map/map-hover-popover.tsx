@@ -1,19 +1,25 @@
 import type { MapFeature } from '@dove/contracts'
-import { formatQuantity } from './measurement-summary.js'
+import { polygonPerimeterMeters } from './map-geometry.js'
+import { formatQuantity, sanitizeUnit } from './measurement-summary.js'
 
-function cleanUnit(unit: string): string {
-  if (!unit || unit === 'm.lần') return 'm'
-  return unit.replace(/m\.lần/g, 'm')
-}
-
-function getQuantityLine(kind: string, rawQty: number, rawUnit: string): string {
-  const targetUnit = cleanUnit(rawUnit)
+function getQuantityLine(
+  kind: string,
+  rawQty: number,
+  rawUnit: string,
+  geometry: MapFeature['measurement']['rawGeometry'],
+): string {
+  const targetUnit = sanitizeUnit(rawUnit)
   if (kind === 'point') {
     return `Số điểm: ${formatQuantity(rawQty || 1, targetUnit || 'điểm')}`
   }
 
   if (kind === 'area' || kind === 'polygon') {
-    return `Diện tích: ${formatQuantity(rawQty, targetUnit || 'm²')}`
+    const perimeter = polygonPerimeterMeters(geometry)
+    const perimeterStr =
+      perimeter != null
+        ? ` (Chu vi: ${perimeter.toLocaleString('vi-VN', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} m)`
+        : ''
+    return `Diện tích: ${formatQuantity(rawQty, targetUnit || 'm²')}${perimeterStr}`
   }
 
   // Line String / Route (Length)
@@ -32,8 +38,9 @@ export function MapHoverPopover(props: {
   const rawQty = measurement.calculatedQuantity ?? measurement.baseValue ?? 0
   const kind = (measurement.geometryKind as string) || 'line'
   const rawUnit = measurement.unit || ''
+  const geom = measurement.normalizedGeometry ?? measurement.rawGeometry
 
-  const quantityLine = getQuantityLine(kind, rawQty, rawUnit)
+  const quantityLine = getQuantityLine(kind, rawQty, rawUnit, geom)
 
   // Route / Street / Work Name
   const displayName =

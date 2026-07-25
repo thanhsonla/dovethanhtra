@@ -14,10 +14,15 @@ const partNames: Record<MeasurementGeometryKind, string> = {
   route: 'Tuyến',
 }
 
+export function sanitizeUnit(unit?: string | null): string {
+  if (!unit) return ''
+  return unit.replace(/\.lần/gi, '').replace(/lần/gi, '').trim()
+}
+
 export function formatQuantity(value: number | null | undefined, unit: string): string {
   if (value === null || value === undefined) return 'Chưa tính'
-  const targetUnit = unit || ''
-  if ((targetUnit === 'm²' || targetUnit === 'ha') && value >= 10000) {
+  const targetUnit = sanitizeUnit(unit)
+  if ((targetUnit === 'm²' || targetUnit === 'm2' || targetUnit === 'ha') && value >= 10000) {
     const ha = value / 10000
     return `${ha.toLocaleString('vi-VN', {
       maximumFractionDigits: 2,

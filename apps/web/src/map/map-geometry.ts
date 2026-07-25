@@ -40,6 +40,15 @@ export function geometryFromPositions(
   return null
 }
 
+export function polygonPerimeterMeters(geometry: GeoJsonGeometry | null): number | null {
+  if (!geometry) return null
+  if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') {
+    const feature = { type: 'Feature' as const, properties: {}, geometry }
+    return length(feature) * 1000
+  }
+  return null
+}
+
 export function temporaryValue(geometry: GeoJsonGeometry | null): string {
   if (!geometry) return 'Chưa đủ điểm'
   const feature = { type: 'Feature' as const, properties: {}, geometry }

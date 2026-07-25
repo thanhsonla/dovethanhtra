@@ -9,6 +9,7 @@ import type {
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { api } from '../api.js'
+import { polygonPerimeterMeters } from './map-geometry.js'
 import { measurementPartName } from './measurement-entry-defaults.js'
 import { measurementBaseTotal, measurementBaseValue } from './measurement-summary.js'
 
@@ -340,16 +341,38 @@ export function MapFeatureCard(props: {
               </strong>
             </div>
             <div className="map-feature-card__parts" aria-label="Các lần đo">
-              {workMeasurements.map((measurement, index) => (
-                <div className="map-feature-card__part" key={measurement.id}>
-                  <span>
-                    {measurement.geometryKind === 'route'
-                      ? `Lộ trình ${String(index + 1).padStart(2, '0')}`
-                      : measurementPartName(measurement.geometryKind, index + 1)}
-                  </span>
-                  <strong>{measurementBaseValue(measurement)}</strong>
-                </div>
-              ))}
+              {workMeasurements.map((measurement, index) => {
+                const perimeterM =
+                  measurement.geometryKind === 'area'
+                    ? polygonPerimeterMeters(
+                        measurement.normalizedGeometry ?? measurement.rawGeometry,
+                      )
+                    : null
+
+                return (
+                  <div className="map-feature-card__part" key={measurement.id}>
+                    <span>
+                      {measurement.geometryKind === 'route'
+                        ? `Lộ trình ${String(index + 1).padStart(2, '0')}`
+                        : measurementPartName(measurement.geometryKind, index + 1)}
+                    </span>
+                    <strong>
+                      {measurementBaseValue(measurement)}
+                      {perimeterM != null && (
+                        <small className="map-feature-card__perimeter-badge">
+                          {' '}
+                          (Chu vi:{' '}
+                          {perimeterM.toLocaleString('vi-VN', {
+                            maximumFractionDigits: 1,
+                            minimumFractionDigits: 1,
+                          })}{' '}
+                          m)
+                        </small>
+                      )}
+                    </strong>
+                  </div>
+                )
+              })}
             </div>
             <div className="map-feature-card__item">
               <span className="map-feature-card__label">Ngày lập:</span>

@@ -33,6 +33,7 @@ import { geometryExtent } from './map-selection.js'
 import { MapLocateControl } from './map-locate-control.js'
 import { MapHoverPopover } from './map-hover-popover.js'
 import { serviceGroupColor, type FieldDisplayMode } from './map-service-colors.js'
+import { sanitizeUnit } from './measurement-summary.js'
 import { findSnapTarget, type SnapTarget } from './map-snapping.js'
 import { TouchMagnifierGlass } from './touch-magnifier-glass.js'
 
@@ -90,9 +91,10 @@ function featureCollection(props: MeasurementMapProps) {
         const isGroupMember = Boolean(selectedWorkItemId && item.workItemId === selectedWorkItemId)
         const isDimmed = Boolean(props.selectedId && !isGroupMember)
 
+        const cleanUnitStr = sanitizeUnit(item.unit)
         const qtyStr =
           item.calculatedQuantity != null
-            ? `${item.calculatedQuantity.toFixed(1)} ${item.unit || ''}`.trim()
+            ? `${item.calculatedQuantity.toFixed(1)} ${cleanUnitStr}`.trim()
             : ''
         const label = qtyStr ? `${item.name} (${qtyStr})` : item.name
 
@@ -110,7 +112,7 @@ function featureCollection(props: MeasurementMapProps) {
             name: item.name,
             selected: isSelected,
             status: item.status,
-            unit: item.unit || '',
+            unit: cleanUnitStr,
             workItemName: featureMeta?.workItemName ?? item.name,
           },
           geometry: item.normalizedGeometry ?? item.rawGeometry,

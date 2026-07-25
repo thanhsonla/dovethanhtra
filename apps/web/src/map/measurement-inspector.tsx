@@ -7,7 +7,13 @@ import type {
 import { type FormEvent, useState } from 'react'
 
 import { api } from '../api.js'
-import { calculationInputMeta, requiredInputs, temporaryValue } from './map-geometry.js'
+import {
+  calculationInputMeta,
+  polygonPerimeterMeters,
+  requiredInputs,
+  temporaryValue,
+} from './map-geometry.js'
+import { sanitizeUnit } from './measurement-summary.js'
 
 function field(values: FormData, name: string): string {
   const value = values.get(name)
@@ -304,12 +310,18 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
       props.onError(reason instanceof Error ? reason.message : 'Không thể tải GeoJSON.')
     }
   }
-  const unit =
+  const defaultUnit =
     measurement.geometryKind === 'area'
       ? 'm²'
       : measurement.geometryKind === 'line' || measurement.geometryKind === 'route'
         ? 'm'
         : 'điểm'
+  const cleanUnit = sanitizeUnit(measurement.unit) || defaultUnit
+
+  const perimeterM =
+    measurement.geometryKind === 'area'
+      ? polygonPerimeterMeters(measurement.normalizedGeometry ?? measurement.rawGeometry)
+      : null
 
   const formattedTime = new Date(measurement.createdAt).toLocaleString('vi-VN', {
     day: '2-digit',
@@ -320,8 +332,8 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
   })
 
   const valueText = measurement.baseValue
-    ? `${measurement.baseValue.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`
-    : `0.00 ${unit}`
+    ? `${measurement.baseValue.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cleanUnit}`
+    : `0.00 ${cleanUnit}`
 
   return (
     <div className="measurement-detail">
@@ -334,8 +346,23 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
         </p>
       </div>
       <div className="measurement-detail__metric">
-        <span className="measurement-detail__metric-label">Giá trị ({unit})</span>
+        <span className="measurement-detail__metric-label">Giá trị ({cleanUnit})</span>
         <strong className="measurement-detail__metric-value">{valueText}</strong>
+        {perimeterM != null && (
+          <div
+            className="measurement-detail__perimeter-info"
+            style={{ marginTop: '6px', fontSize: '0.85rem', color: '#475569' }}
+          >
+            Chu vi:{' '}
+            <strong>
+              {perimeterM.toLocaleString('vi-VN', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })}{' '}
+              m
+            </strong>
+          </div>
+        )}
       </div>
       <div className="button-row">
         <button className="button button--quiet" onClick={() => void downloadGeoJson()}>

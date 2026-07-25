@@ -1,13 +1,16 @@
 import type { Measurement } from '@dove/contracts'
+import { polygonPerimeterMeters } from './map-geometry.js'
+import { sanitizeUnit } from './measurement-summary.js'
 
 export function MeasurementCompactInfo(props: { measurement: Measurement }) {
   const measurement = props.measurement
-  const unit =
+  const defaultUnit =
     measurement.geometryKind === 'area'
       ? 'm²'
       : measurement.geometryKind === 'line' || measurement.geometryKind === 'route'
         ? 'm'
         : 'điểm'
+  const cleanUnit = sanitizeUnit(measurement.unit) || defaultUnit
   const value = (measurement.baseValue ?? 0).toLocaleString('vi-VN', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
@@ -19,6 +22,11 @@ export function MeasurementCompactInfo(props: { measurement: Measurement }) {
     month: '2-digit',
     year: 'numeric',
   })
+
+  const perimeterM =
+    measurement.geometryKind === 'area'
+      ? polygonPerimeterMeters(measurement.normalizedGeometry ?? measurement.rawGeometry)
+      : null
 
   return (
     <dl className="measurement-compact-info">
@@ -33,10 +41,21 @@ export function MeasurementCompactInfo(props: { measurement: Measurement }) {
       <div>
         <dt>Số liệu</dt>
         <dd className="measurement-compact-info__value">
-          {value}
-          {unit}
+          {value} {cleanUnit}
         </dd>
       </div>
+      {perimeterM != null && (
+        <div>
+          <dt>Chu vi</dt>
+          <dd className="measurement-compact-info__value">
+            {perimeterM.toLocaleString('vi-VN', {
+              maximumFractionDigits: 1,
+              minimumFractionDigits: 1,
+            })}{' '}
+            m
+          </dd>
+        </div>
+      )}
     </dl>
   )
 }
