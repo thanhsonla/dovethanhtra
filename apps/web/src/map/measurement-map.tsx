@@ -42,7 +42,7 @@ import {
 } from './map-snapping.js'
 import { TouchMagnifierGlass } from './touch-magnifier-glass.js'
 
-export type MapMode = 'view' | 'point' | 'line' | 'area' | 'measure' | 'edit'
+export type MapMode = 'view' | 'point' | 'line' | 'area' | 'measure' | 'edit' | 'rect'
 export type Position = [number, number]
 
 const asMapGeoJson = (value: unknown) => value as GeoJSON
@@ -59,6 +59,8 @@ interface MeasurementMapProps {
   fieldMode?: FieldDisplayMode
   focusVersion?: number
   hiddenWorkItemIds: Set<string>
+  isMagnifierEnabled?: boolean
+  isOrthoEnabled?: boolean
   isSnappingEnabled?: boolean
   mapFeatures?: MapFeature[]
   measurements: Measurement[]
@@ -516,7 +518,16 @@ export function MeasurementMap(props: MeasurementMapProps) {
 
         map.on('mousemove', (event) => {
           const current = latest.current
-          if (['point', 'line', 'area', 'measure'].includes(current.mode)) {
+          if (['point', 'line', 'area', 'measure', 'rect'].includes(current.mode)) {
+            if (current.isMagnifierEnabled && container.current) {
+              setTouchMagnifierState({
+                visible: true,
+                touchX: event.point.x,
+                touchY: event.point.y,
+                snapType: activeSnapTargetRef.current?.snapType ?? null,
+              })
+            }
+
             const existingGeometries = current.measurements.map(
               (m) => m.normalizedGeometry ?? m.rawGeometry,
             )
@@ -551,8 +562,33 @@ export function MeasurementMap(props: MeasurementMapProps) {
             let isIntersection = false
             let isPerpendicular = false
             let isParallel = false
+            let isOrtho = false
+            let orthoTag = ''
             let cornerLines: [Position, Position, Position] | null = null
             let interGuideLines: Array<[Position, Position]> = []
+
+            if (
+              (event.originalEvent.shiftKey || current.isOrthoEnabled) &&
+              current.draftPositions.length >= 1 &&
+              !snapTarget &&
+              !isIntersection
+            ) {
+              const lastPos = current.draftPositions[current.draftPositions.length - 1]!
+              const pScreen = map.project(lastPos)
+              const dx = Math.abs(event.point.x - pScreen.x)
+              const dy = Math.abs(event.point.y - pScreen.y)
+              let orthoPx: [number, number]
+              if (dx >= dy) {
+                orthoPx = [event.point.x, pScreen.y]
+                orthoTag = ' 📐 Khóa trục Ngang (0°)'
+              } else {
+                orthoPx = [pScreen.x, event.point.y]
+                orthoTag = ' 📐 Khóa trục Dọc (90°)'
+              }
+              const unproj = map.unproject(orthoPx)
+              activePos = [unproj.lng, unproj.lat]
+              isOrtho = true
+            }
 
             const effectiveRefPoints: Position[] = []
             if (current.draftPositions.length >= 1) {
@@ -564,7 +600,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
               }
             }
 
-            if (!snapTarget && effectiveRefPoints.length >= 2) {
+            if (!snapTarget && !isOrtho && effectiveRefPoints.length >= 2) {
               const interSnap = findIntersectionSnapping(map, event.point, effectiveRefPoints)
               if (interSnap) {
                 activePos = interSnap.activePos
@@ -574,7 +610,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
               }
             }
 
-            if (!snapTarget && !isIntersection && current.draftPositions.length >= 2) {
+            if (!snapTarget && !isIntersection && !isOrtho && current.draftPositions.length >= 2) {
               const alignSnap = calculatePerpendicularSnapping(
                 map,
                 event.point,
@@ -618,6 +654,16 @@ export function MeasurementMap(props: MeasurementMapProps) {
                     geometry: { type: 'LineString', coordinates: cornerLines },
                   })
                 }
+              } else if (current.mode === 'rect' && current.draftPositions.length >= 1) {
+                const P1 = current.draftPositions[0]!
+                const P2: Position = [activePos[0], P1[1]]
+                const P3: Position = activePos
+                const P4: Position = [P1[0], activePos[1]]
+                guideFeatures.push({
+                  type: 'Feature',
+                  properties: { isPerpendicular: true },
+                  geometry: { type: 'LineString', coordinates: [P1, P2, P3, P4, P1] },
+                })
               } else if (current.draftPositions.length >= 1) {
                 const lastPos = current.draftPositions[current.draftPositions.length - 1]!
                 guideFeatures.push({
@@ -648,17 +694,36 @@ export function MeasurementMap(props: MeasurementMapProps) {
               )
             }
 
-            const perpTag = isIntersection
-              ? ' 🎯 Giao điểm vuông góc (90°)'
-              : isPerpendicular
-                ? ' ∟ Vuông góc (90°)'
-                : isParallel
-                  ? ' ═ Song song'
-                  : ''
+            const perpTag = isOrtho
+              ? orthoTag
+              : isIntersection
+                ? ' 🎯 Giao điểm vuông góc (90°)'
+                : isPerpendicular
+                  ? ' ∟ Vuông góc (90°)'
+                  : isParallel
+                    ? ' ═ Song song'
+                    : ''
             let text = ''
 
             if (current.mode === 'point') {
               text = 'Nhấp để chọn điểm'
+            } else if (current.mode === 'rect') {
+              if (current.draftPositions.length === 0) {
+                text = 'Nhấp điểm 1: Đỉnh góc hình chữ nhật'
+              } else if (current.draftPositions.length >= 1) {
+                const P1 = current.draftPositions[0]!
+                const P2: Position = [activePos[0], P1[1]]
+                const P3: Position = activePos
+                const P4: Position = [P1[0], activePos[1]]
+                const polyPositions = [P1, P2, P3, P4, P1]
+                const feature = {
+                  type: 'Feature' as const,
+                  properties: {},
+                  geometry: { type: 'Polygon' as const, coordinates: [polyPositions] },
+                }
+                const areaM2 = area(feature)
+                text = `Hình chữ nhật: ${areaM2.toFixed(1)} m² (Nhấp đỉnh chéo để chốt)`
+              }
             } else if (
               (current.mode === 'line' || current.mode === 'measure') &&
               current.draftPositions.length > 0

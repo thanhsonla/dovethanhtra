@@ -58,7 +58,16 @@ export function handleMapShortcut(event: MapShortcutEvent, actions: MapShortcutA
     if (actions.canDelete) actions.onDelete()
     return true
   }
-  const mode = key === 'd' ? 'line' : key === 'a' ? 'area' : key === 'p' ? 'point' : null
+  const mode =
+    key === 'd'
+      ? 'line'
+      : key === 'a'
+        ? 'area'
+        : key === 'p'
+          ? 'point'
+          : key === 'r'
+            ? ('rect' as DrawableMeasurementGeometryKind)
+            : null
   if (!mode) return false
   event.preventDefault()
   actions.onStart(mode)
@@ -72,8 +81,11 @@ function ToolIcon(props: {
     | 'delete'
     | 'finish'
     | 'line'
+    | 'magnifier'
     | 'measure'
+    | 'ortho'
     | 'point'
+    | 'rect'
     | 'redo'
     | 'snap'
     | 'undo'
@@ -107,10 +119,22 @@ function ToolIcon(props: {
         <path d="m7.5 18.5 2-2M10.5 15.5l3-3M13.5 12.5l2-2M16.5 9.5l3-3" />
       </g>
     ),
+    magnifier: (
+      <g fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="6" />
+        <path d="m15.5 15.5 4.5 4.5" strokeLinecap="round" />
+      </g>
+    ),
     measure: (
       <g>
         <path d="M2 17h20v4H2v-4z" />
         <path d="M6 17v-2M10 17v-3M14 17v-2M18 17v-3" stroke="currentColor" strokeWidth="1.5" />
+      </g>
+    ),
+    ortho: (
+      <g fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 20V4h16" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 12h8v8" strokeDasharray="2 2" strokeWidth="1.5" />
       </g>
     ),
     point: (
@@ -118,6 +142,9 @@ function ToolIcon(props: {
         <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11z" />
         <circle cx="12" cy="10" fill="currentColor" r="2.5" />
       </g>
+    ),
+    rect: (
+      <rect x="4" y="6" width="16" height="12" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
     ),
     redo: <path d="m15 14 5-5-5-5M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13" />,
     snap: (
@@ -175,6 +202,8 @@ export function DrawingToolbar(props: {
   canFinish: boolean
   canRedo: boolean
   canUndo: boolean
+  isMagnifierEnabled?: boolean
+  isOrthoEnabled?: boolean
   isSnappingEnabled?: boolean
   mode: MapMode
   onCancel: () => void
@@ -182,7 +211,9 @@ export function DrawingToolbar(props: {
   onFinish: () => void
   onHistory: (direction: 'undo' | 'redo') => void
   onOpenPanel: (panel: ToolbarPanelName) => void
-  onStart: (mode: DrawableMeasurementGeometryKind | 'measure') => void
+  onStart: (mode: DrawableMeasurementGeometryKind | 'measure' | 'rect') => void
+  onToggleMagnifier?: () => void
+  onToggleOrtho?: () => void
   onToggleSnapping?: () => void
 }) {
   useEffect(() => {
@@ -210,13 +241,14 @@ export function DrawingToolbar(props: {
   ])
 
   const tools: Array<{
-    kind: DrawableMeasurementGeometryKind | 'measure'
+    kind: DrawableMeasurementGeometryKind | 'measure' | 'rect'
     label: string
     shortcut?: string
   }> = [
     { kind: 'point', label: 'Điểm', shortcut: 'P' },
     { kind: 'line', label: 'Chiều dài', shortcut: 'D' },
     { kind: 'area', label: 'Diện tích', shortcut: 'A' },
+    { kind: 'rect', label: 'Hình chữ nhật 2 nhấp', shortcut: 'R' },
     { kind: 'measure', label: 'Đo nháp' },
   ]
 
@@ -251,6 +283,34 @@ export function DrawingToolbar(props: {
           type="button"
         >
           <ToolIcon name="snap" />
+        </button>
+        <button
+          aria-label={props.isOrthoEnabled ? 'Tắt khóa hướng Ortho' : 'Bật khóa hướng Ortho (Shift)'}
+          aria-pressed={props.isOrthoEnabled}
+          className={props.isOrthoEnabled ? 'is-active' : undefined}
+          onClick={() => props.onToggleOrtho?.()}
+          title={
+            props.isOrthoEnabled
+              ? 'Khóa hướng Ortho: Đang BẬT (Khóa 0°/90°)'
+              : 'Khóa hướng Ortho: Đang TẮT (Giữ phím Shift để khóa tạm thời)'
+          }
+          type="button"
+        >
+          <ToolIcon name="ortho" />
+        </button>
+        <button
+          aria-label={props.isMagnifierEnabled ? 'Tắt kính lúp' : 'Bật kính lúp 2x'}
+          aria-pressed={props.isMagnifierEnabled}
+          className={props.isMagnifierEnabled ? 'is-active' : undefined}
+          onClick={() => props.onToggleMagnifier?.()}
+          title={
+            props.isMagnifierEnabled
+              ? 'Kính lúp 2x: Đang BẬT'
+              : 'Kính lúp 2x: Đang TẮT (Cho PC/Màn hình lớn)'
+          }
+          type="button"
+        >
+          <ToolIcon name="magnifier" />
         </button>
         <button
           aria-label="Lùi điểm"

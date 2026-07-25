@@ -365,6 +365,36 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
         )}
       </div>
       <div className="button-row">
+        {(measurement.geometryKind === 'line' || measurement.geometryKind === 'route') && (
+          <button
+            className="button button--quiet"
+            type="button"
+            onClick={async () => {
+              try {
+                const raw = measurement.rawGeometry
+                if (raw.type === 'LineString') {
+                  const reversedGeom: GeoJsonGeometry = {
+                    ...raw,
+                    coordinates: (raw.coordinates as [number, number][]).slice().reverse(),
+                  }
+                  const updated = await api.supersedeMeasurement(measurement.id, {
+                    calculationInputs: measurement.calculationInputs,
+                    geometry: reversedGeom,
+                    geometryKind: measurement.geometryKind === 'route' ? 'line' : measurement.geometryKind,
+                    name: measurement.name,
+                    reason: 'Đảo ngược vị trí điểm đầu và điểm cuối tuyến',
+                  })
+                  await props.onChanged(updated)
+                }
+              } catch (reason) {
+                props.onError(reason instanceof Error ? reason.message : 'Không thể đảo chiều tuyến.')
+              }
+            }}
+            title="Đảo ngược vị trí điểm đầu và điểm cuối của tuyến"
+          >
+            🔄 Đảo chiều
+          </button>
+        )}
         <button className="button button--quiet" onClick={() => void downloadGeoJson()}>
           Tải GeoJSON
         </button>

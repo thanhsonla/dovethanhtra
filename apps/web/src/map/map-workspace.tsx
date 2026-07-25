@@ -67,6 +67,8 @@ export function MapWorkspace(props: {
   const [compactAddition, setCompactAddition] = useState(false)
   const [showCommunes, setShowCommunes] = useState(true)
   const [isSnappingEnabled, setIsSnappingEnabled] = useState(true)
+  const [isOrthoEnabled, setIsOrthoEnabled] = useState(false)
+  const [isMagnifierEnabled, setIsMagnifierEnabled] = useState(false)
   const hidden = useMemo(() => new Set<string>(), [])
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [routePreview, setRoutePreview] = useState<GeoJsonGeometry | null>(null)
@@ -322,11 +324,19 @@ export function MapWorkspace(props: {
     setRoutePreview(null)
     setSelectedId(null)
   }
-  const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind | 'measure') => {
+  const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind | 'measure' | 'rect') => {
     setCompactAddition(false)
     if (nextMode === 'measure') {
       setMode('measure')
       dispatchDrawing({ type: 'reset' })
+      setEditHistory(null)
+      setRoutePreview(null)
+      setSelectedId(null)
+      return
+    }
+    if (nextMode === 'rect') {
+      if (!drawingWorkflow.start('area', 'capture')) return
+      setMode('rect')
       setEditHistory(null)
       setRoutePreview(null)
       setSelectedId(null)
@@ -385,6 +395,8 @@ export function MapWorkspace(props: {
             }
             canRedo={Boolean((editHistory ?? drawing.history).future.length)}
             canUndo={Boolean((editHistory ?? drawing.history).past.length)}
+            isMagnifierEnabled={isMagnifierEnabled}
+            isOrthoEnabled={isOrthoEnabled}
             isSnappingEnabled={isSnappingEnabled}
             mode={mode}
             onCancel={cancelDraft}
@@ -395,6 +407,8 @@ export function MapWorkspace(props: {
             onHistory={changeHistory}
             onOpenPanel={(panel) => setActivePanel((current) => (current === panel ? null : panel))}
             onStart={startCaptureDrawing}
+            onToggleMagnifier={() => setIsMagnifierEnabled((prev) => !prev)}
+            onToggleOrtho={() => setIsOrthoEnabled((prev) => !prev)}
             onToggleSnapping={() => setIsSnappingEnabled((prev) => !prev)}
           />
           <MeasurementMap
@@ -409,6 +423,8 @@ export function MapWorkspace(props: {
             fieldMode={fieldMode}
             focusVersion={focusVersion}
             hiddenWorkItemIds={hidden}
+            isMagnifierEnabled={isMagnifierEnabled}
+            isOrthoEnabled={isOrthoEnabled}
             isSnappingEnabled={isSnappingEnabled}
             mapFeatures={renderedMapFeatures}
             measurements={mapMeasurements}
