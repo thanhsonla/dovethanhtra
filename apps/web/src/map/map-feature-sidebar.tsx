@@ -183,13 +183,22 @@ export function MapFeatureSidebar(props: {
           </div>
         ) : (
           <div className="map-feature-sidebar__zones">
-            {sortedZones.map((zone) => (
-              <details key={zone.zoneName} open className="map-sidebar-zone-group">
-                <summary className="map-sidebar-zone-summary">
-                  <span>📍</span>
-                  <strong>{zone.zoneName}</strong>
-                  <span className="map-sidebar-zone-count">({zone.groups.length} đối tượng)</span>
-                </summary>
+            {sortedZones.map((zone) => {
+              const isZoneSelected = zone.groups.some((group) =>
+                group.measurements.some((m) => m.id === props.selectedId),
+              )
+
+              return (
+                <details
+                  key={zone.zoneName}
+                  open={isZoneSelected ? true : undefined}
+                  className="map-sidebar-zone-group"
+                >
+                  <summary className="map-sidebar-zone-summary">
+                    <span>📍</span>
+                    <strong>{zone.zoneName}</strong>
+                    <span className="map-sidebar-zone-count">({zone.groups.length} đối tượng)</span>
+                  </summary>
                 <div className="map-sidebar-zone-content">
                   <ul className="map-feature-sidebar__list">
                     {zone.groups.map((group) => {
@@ -246,8 +255,9 @@ export function MapFeatureSidebar(props: {
                   </ul>
                 </div>
               </details>
-            ))}
-          </div>
+            )
+          })}
+        </div>
         )}
       </div>
     </div>

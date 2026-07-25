@@ -659,7 +659,11 @@ export function MeasurementMap(props: MeasurementMapProps) {
             layers: interactiveLayers,
           })[0]
           const id: unknown = hit?.properties?.id
-          if (typeof id === 'string') current.onSelect(id)
+          if (typeof id === 'string') {
+            current.onSelect(id)
+          } else {
+            current.onSelect('')
+          }
         })
         map.on('dblclick', (event) => {
           if (['line', 'area', 'measure'].includes(latest.current.mode)) {

@@ -207,7 +207,62 @@ export function MapWorkspace(props: {
       void refreshWork(selectedWorkId).catch(() => undefined)
   }, [selectedWorkId])
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      const activeEl = document.activeElement
+      const isInput = activeEl && ['INPUT', 'SELECT', 'TEXTAREA'].includes(activeEl.tagName)
+
+      if (isInput) {
+        (activeEl as HTMLElement).blur()
+      }
+
+      if (
+        selectedId ||
+        mapFeatures.filters.search ||
+        mapFeatures.filters.workItemId ||
+        mapFeatures.filters.managementZoneId
+      ) {
+        setSelectedId(null)
+        mapFeatures.setFilters({
+          componentId: '',
+          geometryKind: '',
+          managementZoneId: '',
+          search: '',
+          serviceGroupId: '',
+          status: '',
+          workItemId: '',
+        })
+        setActivePanel(null)
+      } else if (activePanel) {
+        setActivePanel(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedId, mapFeatures, activePanel])
+
   const selectMapFeature = (id: string) => {
+    if (!id) {
+      setSelectedId(null)
+      if (
+        mapFeatures.filters.search ||
+        mapFeatures.filters.workItemId ||
+        mapFeatures.filters.managementZoneId
+      ) {
+        mapFeatures.setFilters({
+          componentId: '',
+          geometryKind: '',
+          managementZoneId: '',
+          search: '',
+          serviceGroupId: '',
+          status: '',
+          workItemId: '',
+        })
+      }
+      return
+    }
     const feature = mapFeatures.items.find((item) => item.measurement.id === id) ?? null
     lastSelectedFeatureRef.current = feature
     setSelectedId(id)
