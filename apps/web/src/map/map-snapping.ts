@@ -19,7 +19,7 @@ export function findSnapTarget(
   mousePoint: { x: number; y: number },
   draftPositions: Position[],
   existingGeometries: GeoJsonGeometry[],
-  snapRadiusPx: number = 15,
+  snapRadiusPx: number = 8,
 ): SnapTarget | null {
   let closestTarget: SnapTarget | null = null
   let minDistance = snapRadiusPx
@@ -64,7 +64,7 @@ export function calculatePerpendicularSnapping(
   map: MapLibreMap,
   mousePoint: { x: number; y: number },
   draftPositions: Position[],
-  tolerancePx: number = 14,
+  tolerancePx: number = 8,
 ): AlignmentSnapResult | null {
   if (draftPositions.length < 2) return null
 
@@ -150,7 +150,7 @@ export function findIntersectionSnapping(
   map: MapLibreMap,
   mousePoint: { x: number; y: number },
   refPoints: Position[],
-  tolerancePx: number = 20,
+  tolerancePx: number = 10,
 ): IntersectionSnapResult | null {
   if (refPoints.length < 2) return null
 

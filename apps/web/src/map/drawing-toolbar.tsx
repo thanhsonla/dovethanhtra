@@ -66,7 +66,17 @@ export function handleMapShortcut(event: MapShortcutEvent, actions: MapShortcutA
 }
 
 function ToolIcon(props: {
-  name: 'area' | 'cancel' | 'delete' | 'finish' | 'line' | 'measure' | 'point' | 'redo' | 'undo'
+  name:
+    | 'area'
+    | 'cancel'
+    | 'delete'
+    | 'finish'
+    | 'line'
+    | 'measure'
+    | 'point'
+    | 'redo'
+    | 'snap'
+    | 'undo'
 }) {
   const paths = {
     area: (
@@ -110,6 +120,12 @@ function ToolIcon(props: {
       </g>
     ),
     redo: <path d="m15 14 5-5-5-5M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13" />,
+    snap: (
+      <g>
+        <path d="M6 3v6a6 6 0 0 0 12 0V3h-4v6a2 2 0 0 1-4 0V3H6z" fill="currentColor" />
+        <path d="M6 3h4v3H6zm8 0h4v3h-4z" fill="currentColor" opacity="0.6" />
+      </g>
+    ),
     undo: <path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />,
   }
   return (
@@ -159,6 +175,7 @@ export function DrawingToolbar(props: {
   canFinish: boolean
   canRedo: boolean
   canUndo: boolean
+  isSnappingEnabled?: boolean
   mode: MapMode
   onCancel: () => void
   onDelete: () => void
@@ -166,6 +183,7 @@ export function DrawingToolbar(props: {
   onHistory: (direction: 'undo' | 'redo') => void
   onOpenPanel: (panel: ToolbarPanelName) => void
   onStart: (mode: DrawableMeasurementGeometryKind | 'measure') => void
+  onToggleSnapping?: () => void
 }) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -220,6 +238,20 @@ export function DrawingToolbar(props: {
           </button>
         ))}
         <span className="map-primary-toolbar__separator" aria-hidden="true" />
+        <button
+          aria-label={props.isSnappingEnabled !== false ? 'Tắt bắt điểm' : 'Bật bắt điểm'}
+          aria-pressed={props.isSnappingEnabled !== false}
+          className={props.isSnappingEnabled !== false ? 'is-active' : undefined}
+          onClick={() => props.onToggleSnapping?.()}
+          title={
+            props.isSnappingEnabled !== false
+              ? 'Chế độ bắt điểm: Đang BẬT (Bán kính 8px)'
+              : 'Chế độ bắt điểm: Đang TẮT (Con trỏ tự do)'
+          }
+          type="button"
+        >
+          <ToolIcon name="snap" />
+        </button>
         <button
           aria-label="Lùi điểm"
           aria-keyshortcuts="Meta+Z Control+Z"

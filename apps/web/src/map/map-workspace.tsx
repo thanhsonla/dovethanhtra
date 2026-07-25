@@ -66,6 +66,7 @@ export function MapWorkspace(props: {
   const [focusVersion, setFocusVersion] = useState(0)
   const [compactAddition, setCompactAddition] = useState(false)
   const [showCommunes, setShowCommunes] = useState(true)
+  const [isSnappingEnabled, setIsSnappingEnabled] = useState(true)
   const hidden = useMemo(() => new Set<string>(), [])
   const [editHistory, setEditHistory] = useState<HistoryState<GeoJsonGeometry> | null>(null)
   const [routePreview, setRoutePreview] = useState<GeoJsonGeometry | null>(null)
@@ -384,6 +385,7 @@ export function MapWorkspace(props: {
             }
             canRedo={Boolean((editHistory ?? drawing.history).future.length)}
             canUndo={Boolean((editHistory ?? drawing.history).past.length)}
+            isSnappingEnabled={isSnappingEnabled}
             mode={mode}
             onCancel={cancelDraft}
             onDelete={() => {
@@ -393,6 +395,7 @@ export function MapWorkspace(props: {
             onHistory={changeHistory}
             onOpenPanel={(panel) => setActivePanel((current) => (current === panel ? null : panel))}
             onStart={startCaptureDrawing}
+            onToggleSnapping={() => setIsSnappingEnabled((prev) => !prev)}
           />
           <MeasurementMap
             basemapId={basemapId}
@@ -406,6 +409,7 @@ export function MapWorkspace(props: {
             fieldMode={fieldMode}
             focusVersion={focusVersion}
             hiddenWorkItemIds={hidden}
+            isSnappingEnabled={isSnappingEnabled}
             mapFeatures={renderedMapFeatures}
             measurements={mapMeasurements}
             mode={mode}

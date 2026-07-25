@@ -59,6 +59,7 @@ interface MeasurementMapProps {
   fieldMode?: FieldDisplayMode
   focusVersion?: number
   hiddenWorkItemIds: Set<string>
+  isSnappingEnabled?: boolean
   mapFeatures?: MapFeature[]
   measurements: Measurement[]
   mode: MapMode
@@ -519,12 +520,15 @@ export function MeasurementMap(props: MeasurementMapProps) {
             const existingGeometries = current.measurements.map(
               (m) => m.normalizedGeometry ?? m.rawGeometry,
             )
-            const snapTarget = findSnapTarget(
-              map,
-              event.point,
-              current.draftPositions,
-              existingGeometries,
-            )
+            const snapTarget =
+              current.isSnappingEnabled !== false
+                ? findSnapTarget(
+                    map,
+                    event.point,
+                    current.draftPositions,
+                    existingGeometries,
+                  )
+                : null
             activeSnapTargetRef.current = snapTarget
 
             if (snapTarget?.snapType === 'vertex') {
