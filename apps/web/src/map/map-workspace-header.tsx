@@ -1,10 +1,13 @@
 import type { BasemapProvider } from './basemap-provider.js'
+import type { FieldDisplayMode } from './map-service-colors.js'
 
 export function MapWorkspaceHeader(props: {
   basemapId: string
   basemaps: BasemapProvider
+  fieldMode?: FieldDisplayMode
   onBack?: () => void
   onBasemapChange(id: string): void
+  onFieldModeChange?(mode: FieldDisplayMode): void
   showCommunes: boolean
   onShowCommunesChange(value: boolean): void
 }) {
@@ -12,6 +15,7 @@ export function MapWorkspaceHeader(props: {
   const selectable = props.basemaps
     .descriptors()
     .filter((item) => !props.basemaps.supportsOffline(item.id))
+  const fieldMode = props.fieldMode ?? 'normal'
 
   return (
     <header className="map-header">
@@ -27,6 +31,33 @@ export function MapWorkspaceHeader(props: {
         </button>
       )}
       <div className="map-header__controls">
+        <div className="field-mode-toggle" role="group" aria-label="Chế độ hiển thị thực địa">
+          <button
+            type="button"
+            className={`field-mode-btn ${fieldMode === 'normal' ? 'is-active' : ''}`}
+            onClick={() => props.onFieldModeChange?.('normal')}
+            title="Chế độ hiển thị chuẩn"
+          >
+            🌐 <span>Chuẩn</span>
+          </button>
+          <button
+            type="button"
+            className={`field-mode-btn ${fieldMode === 'sun' ? 'is-active' : ''}`}
+            onClick={() => props.onFieldModeChange?.('sun')}
+            title="Chế độ Chói nắng ngoài thực địa (Tăng tương phản & màu Neon)"
+          >
+            ☀️ <span>Chói nắng</span>
+          </button>
+          <button
+            type="button"
+            className={`field-mode-btn ${fieldMode === 'night' ? 'is-active' : ''}`}
+            onClick={() => props.onFieldModeChange?.('night')}
+            title="Chế độ Ban đêm (Tối màu dịu mắt & màu Dạ quang)"
+          >
+            🌙 <span>Đêm</span>
+          </button>
+        </div>
+
         <label className="commune-toggle" title="Hiện ranh giới và tên phường/xã">
           <input
             aria-label="Hiện ranh giới và tên phường xã"

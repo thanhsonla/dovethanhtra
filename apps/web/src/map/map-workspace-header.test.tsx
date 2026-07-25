@@ -24,4 +24,23 @@ describe('compact map workspace header', () => {
     expect(html).not.toContain('Dữ liệu hiện trường')
     expect(html).not.toContain('map-header__title')
   })
+
+  it('renders field mode toggle buttons for sun and night modes', () => {
+    const basemaps = createBasemapProvider({})
+    const html = renderToString(
+      <MapWorkspaceHeader
+        basemapId={basemaps.defaultId}
+        basemaps={basemaps}
+        fieldMode="sun"
+        onBasemapChange={() => undefined}
+        onFieldModeChange={() => undefined}
+        onShowCommunesChange={() => undefined}
+        showCommunes
+      />,
+    )
+
+    expect(html).toContain('Chói nắng')
+    expect(html).toContain('Đêm')
+    expect(html).toContain('field-mode-toggle')
+  })
 })

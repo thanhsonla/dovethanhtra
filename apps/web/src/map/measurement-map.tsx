@@ -32,7 +32,7 @@ import {
 import { geometryExtent } from './map-selection.js'
 import { MapLocateControl } from './map-locate-control.js'
 import { MapHoverPopover } from './map-hover-popover.js'
-import { serviceGroupColor } from './map-service-colors.js'
+import { serviceGroupColor, type FieldDisplayMode } from './map-service-colors.js'
 import { findSnapTarget, type SnapTarget } from './map-snapping.js'
 import { TouchMagnifierGlass } from './touch-magnifier-glass.js'
 
@@ -50,6 +50,7 @@ interface MeasurementMapProps {
   draftPositions: Position[]
   draftSelectedIndex: number | null
   editMeasurement: Measurement | null
+  fieldMode?: FieldDisplayMode
   focusVersion?: number
   hiddenWorkItemIds: Set<string>
   mapFeatures?: MapFeature[]
@@ -84,7 +85,7 @@ function featureCollection(props: MeasurementMapProps) {
           ? (((JSON.parse(item.note) as Record<string, unknown>).color as string | undefined) ??
             null)
           : null
-        const color = customColor ?? serviceGroupColor(featureMeta?.serviceGroupName)
+        const color = customColor ?? serviceGroupColor(featureMeta?.serviceGroupName, props.fieldMode)
         const isSelected = item.id === props.selectedId
         const isGroupMember = Boolean(selectedWorkItemId && item.workItemId === selectedWorkItemId)
         const isDimmed = Boolean(props.selectedId && !isGroupMember)
@@ -814,7 +815,12 @@ export function MeasurementMap(props: MeasurementMapProps) {
   ])
 
   return (
-    <div className="measurement-map" ref={container} aria-label="Bản đồ phép đo">
+    <div
+      className="measurement-map"
+      data-field-mode={props.fieldMode ?? 'normal'}
+      ref={container}
+      aria-label="Bản đồ phép đo"
+    >
       <MapLocateControl map={mapRef.current} />
       {tooltipState.visible && (
         <div

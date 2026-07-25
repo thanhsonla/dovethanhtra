@@ -20,6 +20,7 @@ import {
 import { geometryFromPositions, positionsFromGeometry } from './map-geometry.js'
 import { MapWorkspaceHeader } from './map-workspace-header.js'
 import { inheritedCalculationInputs, nextMeasurementName } from './measurement-entry-defaults.js'
+import type { FieldDisplayMode } from './map-service-colors.js'
 import { MapAlert } from './map-alert.js'
 import { MeasurementMap } from './measurement-map.js'
 import { MapWorkspaceOverlays } from './map-workspace-overlays.js'
@@ -61,6 +62,7 @@ export function MapWorkspace(props: {
     activeWorkId(props.inspectionCase.id, measurable),
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [fieldMode, setFieldMode] = useState<FieldDisplayMode>('normal')
   const [focusVersion, setFocusVersion] = useState(0)
   const [compactAddition, setCompactAddition] = useState(false)
   const [showCommunes, setShowCommunes] = useState(true)
@@ -352,12 +354,14 @@ export function MapWorkspace(props: {
   }
 
   return (
-    <main className="map-shell">
+    <main className="map-shell" data-field-mode={fieldMode}>
       <MapWorkspaceHeader
         basemapId={basemapId}
         basemaps={basemaps}
+        fieldMode={fieldMode}
         {...(props.onBack ? { onBack: props.onBack } : {})}
         onBasemapChange={setBasemapId}
+        onFieldModeChange={setFieldMode}
         showCommunes={showCommunes}
         onShowCommunesChange={setShowCommunes}
       />
@@ -393,6 +397,7 @@ export function MapWorkspace(props: {
             draftPositions={draftPositions}
             draftSelectedIndex={drawing.selectedIndex}
             editMeasurement={editMeasurement}
+            fieldMode={fieldMode}
             focusVersion={focusVersion}
             hiddenWorkItemIds={hidden}
             mapFeatures={renderedMapFeatures}
