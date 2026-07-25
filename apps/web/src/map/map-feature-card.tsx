@@ -65,8 +65,16 @@ export function MapFeatureCard(props: {
     )
     .toSorted((left, right) => left.createdAt.localeCompare(right.createdAt))
   const noteData = noteMetadata(item.note)
-  const initialColor = (noteData?.color as string | undefined) ?? '#10b981'
-  const [selectedColor, setSelectedColor] = useState(initialColor)
+  const groupInitialColor = useMemo(() => {
+    for (const m of workMeasurements) {
+      const data = noteMetadata(m.note)
+      if (typeof data?.color === 'string' && data.color) {
+        return data.color
+      }
+    }
+    return '#10b981'
+  }, [workMeasurements])
+  const [selectedColor, setSelectedColor] = useState(groupInitialColor)
   const [isEditing, setIsEditing] = useState(false)
   const [nameInput, setNameInput] = useState(item.name)
   const [zoneInput, setZoneInput] = useState(props.feature.managementZoneId ?? '')
@@ -76,6 +84,10 @@ export function MapFeatureCard(props: {
   const [error, setError] = useState<string | null>(null)
   const cardRef = useRef<HTMLElement | null>(null)
   const colorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    setSelectedColor(groupInitialColor)
+  }, [groupInitialColor])
 
   useEffect(
     () => () => {
@@ -188,35 +200,47 @@ export function MapFeatureCard(props: {
   }
 
   const commitColor = async (colorHex: string) => {
-    const nextNote = JSON.stringify({ ...(noteData ?? {}), color: colorHex })
-    const optimistic = { ...props.feature, measurement: { ...item, note: nextNote } }
     try {
       setError(null)
-      const updated = await api.supersedeMeasurement(item.id, {
-        calculationInputs: item.calculationInputs,
-        name: item.name,
-        geometryKind: item.geometryKind === 'route' ? 'line' : item.geometryKind,
-        geometry: item.normalizedGeometry ?? item.rawGeometry,
-        reason: 'Thay đổi màu nét',
-        note: nextNote,
-      })
-      replaceFeature(item.id, { ...optimistic, measurement: updated })
+      const results = await Promise.all(
+        workMeasurements.map(async (m) => {
+          const mData = noteMetadata(m.note)
+          const nextNote = JSON.stringify({ ...(mData ?? {}), color: colorHex })
+          return api.supersedeMeasurement(m.id, {
+            calculationInputs: m.calculationInputs,
+            name: m.name,
+            geometryKind: m.geometryKind === 'route' ? 'line' : m.geometryKind,
+            geometry: m.normalizedGeometry ?? m.rawGeometry,
+            reason: 'Thay đổi màu nét nhóm đối tượng',
+            note: nextNote,
+          })
+        }),
+      )
+      const updatedPrimary = results.find((m) => m.id === item.id) ?? results[0]
+      if (updatedPrimary) {
+        const nextNote = JSON.stringify({ ...(noteData ?? {}), color: colorHex })
+        replaceFeature(item.id, {
+          ...props.feature,
+          measurement: { ...updatedPrimary, note: nextNote },
+        })
+      }
       void props.onRefresh?.()
     } catch (reason: unknown) {
-      setSelectedColor(initialColor)
+      setSelectedColor(groupInitialColor)
       replaceFeature(item.id, props.feature)
-      setError(reason instanceof Error ? reason.message : 'Không thể đổi màu')
+      setError(reason instanceof Error ? reason.message : 'Không thể đổi màu nhóm đối tượng')
     }
   }
 
   const handleChangeColor = (colorHex: string) => {
     if (colorHex === selectedColor) return
     setSelectedColor(colorHex)
+    const nextNote = JSON.stringify({ ...(noteData ?? {}), color: colorHex })
     replaceFeature(item.id, {
       ...props.feature,
       measurement: {
         ...item,
-        note: JSON.stringify({ ...(noteData ?? {}), color: colorHex }),
+        note: nextNote,
       },
     })
     if (colorTimer.current) clearTimeout(colorTimer.current)

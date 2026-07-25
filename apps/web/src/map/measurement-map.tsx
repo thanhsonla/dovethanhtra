@@ -81,6 +81,22 @@ function featureCollection(props: MeasurementMapProps) {
   const selectedItem = props.measurements.find((m) => m.id === props.selectedId)
   const selectedWorkItemId = selectedItem?.workItemId
 
+  // Build group color lookup for measurements sharing the same workItemId
+  const groupColorMap = new Map<string, string>()
+  for (const item of props.measurements) {
+    if (item.status === 'superseded' || props.hiddenWorkItemIds.has(item.workItemId)) continue
+    if (item.note?.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(item.note) as Record<string, unknown>
+        if (typeof parsed.color === 'string' && parsed.color) {
+          groupColorMap.set(item.workItemId, parsed.color)
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+    }
+  }
+
   return {
     type: 'FeatureCollection' as const,
     features: props.measurements
@@ -89,10 +105,7 @@ function featureCollection(props: MeasurementMapProps) {
       )
       .map((item) => {
         const featureMeta = mapFeatureMap.get(item.id)
-        const customColor = item.note?.startsWith('{')
-          ? (((JSON.parse(item.note) as Record<string, unknown>).color as string | undefined) ??
-            null)
-          : null
+        const customColor = groupColorMap.get(item.workItemId) ?? null
         const color = customColor ?? serviceGroupColor(featureMeta?.serviceGroupName, props.fieldMode)
         const isSelected = item.id === props.selectedId
         const isGroupMember = Boolean(selectedWorkItemId && item.workItemId === selectedWorkItemId)
