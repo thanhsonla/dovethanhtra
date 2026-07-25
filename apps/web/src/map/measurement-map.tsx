@@ -997,6 +997,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
           ['point', 'line', 'area', 'measure'].includes(props.mode)
         }
         snapType={touchMagnifierState.snapType}
+        triggerRepaint={() => mapRef.current?.triggerRepaint()}
       />
     </div>
   )

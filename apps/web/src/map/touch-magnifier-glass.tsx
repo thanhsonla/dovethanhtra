@@ -6,11 +6,13 @@ export interface TouchMagnifierGlassProps {
   touchY: number
   visible: boolean
   snapType?: string | null | undefined
+  triggerRepaint?: () => void
 }
 
 export function TouchMagnifierGlass(props: TouchMagnifierGlassProps) {
-  const { mapCanvas, touchX, touchY, visible, snapType } = props
+  const { mapCanvas, touchX, touchY, visible, snapType, triggerRepaint } = props
   const loupeCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
     if (!visible || !mapCanvas || !loupeCanvasRef.current) return
@@ -20,6 +22,10 @@ export function TouchMagnifierGlass(props: TouchMagnifierGlassProps) {
     const renderLoupe = () => {
       const loupeCanvas = loupeCanvasRef.current
       if (!loupeCanvas || !mapCanvas) return
+
+      if (triggerRepaint) {
+        triggerRepaint()
+      }
 
       const ctx = loupeCanvas.getContext('2d')
       if (!ctx) return
@@ -32,6 +38,26 @@ export function TouchMagnifierGlass(props: TouchMagnifierGlassProps) {
       if (loupeCanvas.width !== targetWidth || loupeCanvas.height !== targetHeight) {
         loupeCanvas.width = targetWidth
         loupeCanvas.height = targetHeight
+      }
+
+      // Initialize or resize offscreen backup canvas
+      if (!offscreenCanvasRef.current) {
+        offscreenCanvasRef.current = document.createElement('canvas')
+      }
+      const offscreen = offscreenCanvasRef.current
+      if (mapCanvas.width > 0 && mapCanvas.height > 0) {
+        if (offscreen.width !== mapCanvas.width || offscreen.height !== mapCanvas.height) {
+          offscreen.width = mapCanvas.width
+          offscreen.height = mapCanvas.height
+        }
+        const offCtx = offscreen.getContext('2d')
+        if (offCtx) {
+          try {
+            offCtx.drawImage(mapCanvas, 0, 0)
+          } catch {
+            // Ignore canvas draw errors
+          }
+        }
       }
 
       const zoomScale = 2.0
@@ -51,21 +77,43 @@ export function TouchMagnifierGlass(props: TouchMagnifierGlassProps) {
       ctx.fillStyle = '#0f172a'
       ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-      // Render 2x zoomed portion from main WebGL map canvas
+      // Render 2x zoomed portion from main WebGL map canvas or offscreen backup
+      let drawn = false
       try {
-        ctx.drawImage(
-          mapCanvas,
-          srcX,
-          srcY,
-          srcRegionSize,
-          srcRegionSize,
-          0,
-          0,
-          targetWidth,
-          targetHeight,
-        )
+        if (mapCanvas.width > 0 && mapCanvas.height > 0) {
+          ctx.drawImage(
+            mapCanvas,
+            srcX,
+            srcY,
+            srcRegionSize,
+            srcRegionSize,
+            0,
+            0,
+            targetWidth,
+            targetHeight,
+          )
+          drawn = true
+        }
       } catch {
-        // Ignore canvas transient bounds error
+        // Ignore bounds error
+      }
+
+      if (!drawn && offscreen.width > 0 && offscreen.height > 0) {
+        try {
+          ctx.drawImage(
+            offscreen,
+            srcX,
+            srcY,
+            srcRegionSize,
+            srcRegionSize,
+            0,
+            0,
+            targetWidth,
+            targetHeight,
+          )
+        } catch {
+          // Ignore offscreen bounds error
+        }
       }
 
       // Precision Center Crosshair (+)
