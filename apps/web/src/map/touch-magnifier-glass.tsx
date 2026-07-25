@@ -5,7 +5,7 @@ export interface TouchMagnifierGlassProps {
   touchX: number
   touchY: number
   visible: boolean
-  snapType?: string | null
+  snapType?: string | null | undefined
 }
 
 export function TouchMagnifierGlass(props: TouchMagnifierGlassProps) {
