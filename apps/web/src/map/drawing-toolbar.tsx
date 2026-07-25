@@ -241,7 +241,7 @@ export function DrawingToolbar(props: {
   ])
 
   const tools: Array<{
-    kind: DrawableMeasurementGeometryKind | 'measure' | 'rect'
+    kind: DrawableMeasurementGeometryKind | 'rect'
     label: string
     shortcut?: string
   }> = [
@@ -249,7 +249,6 @@ export function DrawingToolbar(props: {
     { kind: 'line', label: 'Chiều dài', shortcut: 'D' },
     { kind: 'area', label: 'Diện tích', shortcut: 'A' },
     { kind: 'rect', label: 'Hình chữ nhật 2 nhấp', shortcut: 'R' },
-    { kind: 'measure', label: 'Đo nháp' },
   ]
 
   return (
