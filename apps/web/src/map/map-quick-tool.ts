@@ -9,7 +9,6 @@ const modeLabels: Record<MapMode, string> = {
   line: 'Vẽ tuyến',
   measure: 'Đo nháp',
   point: 'Vẽ điểm',
-  rect: 'Vẽ hình chữ nhật',
   view: 'Xem',
 }
 

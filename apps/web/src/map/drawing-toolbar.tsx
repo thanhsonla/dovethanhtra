@@ -65,9 +65,7 @@ export function handleMapShortcut(event: MapShortcutEvent, actions: MapShortcutA
         ? 'area'
         : key === 'p'
           ? 'point'
-          : key === 'r'
-            ? ('rect' as DrawableMeasurementGeometryKind)
-            : null
+          : null
   if (!mode) return false
   event.preventDefault()
   actions.onStart(mode)
@@ -203,7 +201,6 @@ export function DrawingToolbar(props: {
   canRedo: boolean
   canUndo: boolean
   isMagnifierEnabled?: boolean
-  isOrthoEnabled?: boolean
   isSnappingEnabled?: boolean
   mode: MapMode
   onCancel: () => void
@@ -211,9 +208,8 @@ export function DrawingToolbar(props: {
   onFinish: () => void
   onHistory: (direction: 'undo' | 'redo') => void
   onOpenPanel: (panel: ToolbarPanelName) => void
-  onStart: (mode: DrawableMeasurementGeometryKind | 'measure' | 'rect') => void
+  onStart: (mode: DrawableMeasurementGeometryKind | 'measure') => void
   onToggleMagnifier?: () => void
-  onToggleOrtho?: () => void
   onToggleSnapping?: () => void
 }) {
   useEffect(() => {
@@ -241,14 +237,13 @@ export function DrawingToolbar(props: {
   ])
 
   const tools: Array<{
-    kind: DrawableMeasurementGeometryKind | 'rect'
+    kind: DrawableMeasurementGeometryKind
     label: string
     shortcut?: string
   }> = [
     { kind: 'point', label: 'Điểm', shortcut: 'P' },
     { kind: 'line', label: 'Chiều dài', shortcut: 'D' },
     { kind: 'area', label: 'Diện tích', shortcut: 'A' },
-    { kind: 'rect', label: 'Hình chữ nhật 2 nhấp', shortcut: 'R' },
   ]
 
   return (
@@ -282,20 +277,6 @@ export function DrawingToolbar(props: {
           type="button"
         >
           <ToolIcon name="snap" />
-        </button>
-        <button
-          aria-label={props.isOrthoEnabled ? 'Tắt khóa hướng Ortho' : 'Bật khóa hướng Ortho (Shift)'}
-          aria-pressed={props.isOrthoEnabled}
-          className={props.isOrthoEnabled ? 'is-active' : undefined}
-          onClick={() => props.onToggleOrtho?.()}
-          title={
-            props.isOrthoEnabled
-              ? 'Khóa hướng Ortho: Đang BẬT (Khóa 0°/90°)'
-              : 'Khóa hướng Ortho: Đang TẮT (Giữ phím Shift để khóa tạm thời)'
-          }
-          type="button"
-        >
-          <ToolIcon name="ortho" />
         </button>
         <button
           aria-label={props.isMagnifierEnabled ? 'Tắt kính lúp' : 'Bật kính lúp 2x'}
