@@ -284,6 +284,50 @@ describe('Milestone 2 measurement workflow', () => {
     })
     expect(standardArea.baseValue).toBeGreaterThan(9_950)
     expect(standardArea.baseValue).toBeLessThan(10_050)
+    await confirm(standardArea.id)
+
+    const areaWithSubtractionResponse = await app.inject({
+      headers,
+      method: 'POST',
+      url: `/api/v1/measurements/${standardArea.id}/supersede`,
+      payload: {
+        calculationInputs: standardArea.calculationInputs,
+        geometry: {
+          coordinates: [
+            [
+              [104.67, 20.8],
+              [104.670961, 20.8],
+              [104.670961, 20.800904],
+              [104.67, 20.800904],
+              [104.67, 20.8],
+            ],
+            [
+              [104.6702, 20.8002],
+              [104.6705, 20.8002],
+              [104.6705, 20.8005],
+              [104.6702, 20.8005],
+              [104.6702, 20.8002],
+            ],
+          ],
+          type: 'Polygon',
+        },
+        geometryKind: 'area',
+        name: standardArea.name,
+        reason: 'Bổ sung vùng bớt nằm trong diện tích đối tượng',
+      },
+    })
+    expect(areaWithSubtractionResponse.statusCode, areaWithSubtractionResponse.body).toBe(201)
+    const areaWithSubtraction = areaWithSubtractionResponse.json<Measurement>()
+    expect(areaWithSubtraction).toMatchObject({
+      status: 'confirmed',
+      supersedesId: standardArea.id,
+      version: 2,
+    })
+    expect(areaWithSubtraction.baseValue).toBeGreaterThan(8_500)
+    expect(areaWithSubtraction.baseValue).toBeLessThan(standardArea.baseValue!)
+    expect(
+      (areaWithSubtraction.normalizedGeometry?.coordinates as unknown[][] | undefined)?.length,
+    ).toBe(2)
 
     const invalidArea = await createMeasurement(areaWork.id, {
       geometry: {

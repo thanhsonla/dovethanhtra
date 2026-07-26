@@ -368,7 +368,8 @@ và các cổng bảo mật trong runbook.
 - Luồng nhập nhanh Ưu tiên 3 thêm **Tiến độ hồ sơ** và điều hướng **Đến việc cần
   làm**. Tiến độ chỉ nêu số công tác có dữ liệu, bộ phận confirmed và mục cần xử lý;
   không tự gán trạng thái hoàn thành vì danh mục không có chỉ tiêu số lượng bắt buộc.
-- Lớp địa giới 75 xã/phường dùng nét đứt đỏ, tăng độ đậm theo zoom. API trả thêm
+- Lớp địa giới 75 xã/phường dùng nét đứt nâu xám dịu, tăng nhẹ độ đậm theo zoom để
+  không lẫn với màu đỏ/cam/xanh của công cụ và lớp nghiệp vụ. API trả thêm
   `ST_PointOnSurface` của từng địa giới để đặt tên viết hoa, đứng, đậm bên trong
   hình xã; cỡ chữ và chiều rộng nhãn tự điều chỉnh theo mức zoom, độc lập với hướng
   xoay của nền bản đồ.
@@ -502,3 +503,10 @@ và các cổng bảo mật trong runbook.
   `docs/15_STABILITY_REMEDIATION_PLAN.md`: production phải dùng API không tự ngủ,
   cấu hình object storage để readiness từ `503` thành `200`, đổi credential từng
   xuất hiện trong Git và chạy lại integration/E2E trước phát hành.
+- Ngày 26/07/2026, lớp địa giới 75 xã/phường đổi sang bảng màu nâu xám dịu
+  (`#a99a83`, nhãn `#665d50`), giảm opacity/độ dày để tách khỏi màu công cụ.
+  Thẻ đối tượng diện tích đã xác nhận có nút **Bớt** cạnh **Thêm**: vùng vẽ bớt
+  được kiểm tra nằm hoàn toàn trong polygon, không giao vùng bớt cũ, ghép thành
+  interior ring và lưu bằng `supersedeMeasurement`. PostGIS tiếp tục là nguồn diện
+  tích ròng chính thức; bản đồ tô vùng bớt màu hồng mận dịu và thẻ liệt kê riêng
+  **Vùng thêm/Vùng bớt**.

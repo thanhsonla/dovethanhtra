@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { serviceGroupColor } from './map-service-colors.js'
+import {
+  AREA_SUBTRACTION_COLOR,
+  COMMUNE_BOUNDARY_COLORS,
+  serviceGroupColor,
+} from './map-service-colors.js'
 
 describe('serviceGroupColor', () => {
   it('returns default fallback color for null or empty service group name', () => {
@@ -27,5 +31,14 @@ describe('serviceGroupColor', () => {
     expect(serviceGroupColor('Dịch vụ Vệ sinh môi trường', 'night')).toBe('#38bdf8')
     expect(serviceGroupColor('Hệ thống Chiếu sáng công cộng', 'night')).toBe('#facc15')
     expect(serviceGroupColor(null, 'night')).toBe('#38bdf8')
+  })
+
+  it('keeps boundaries and subtraction areas visually separate from drawing tools', () => {
+    expect(COMMUNE_BOUNDARY_COLORS).toEqual({
+      label: '#665d50',
+      line: '#a99a83',
+    })
+    expect(AREA_SUBTRACTION_COLOR).toBe('#b05a78')
+    expect(Object.values(COMMUNE_BOUNDARY_COLORS)).not.toContain(AREA_SUBTRACTION_COLOR)
   })
 })

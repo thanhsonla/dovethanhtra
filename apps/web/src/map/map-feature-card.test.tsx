@@ -100,4 +100,59 @@ describe('map feature card', () => {
       ),
     ).not.toThrow()
   })
+
+  it('shows subtraction action and separates interior holes from added area', () => {
+    const areaFeature = feature({
+      baseValue: 80,
+      calculatedQuantity: 80,
+      geometryKind: 'area',
+      normalizedGeometry: {
+        coordinates: [
+          [
+            [104.65, 20.8],
+            [104.66, 20.8],
+            [104.66, 20.81],
+            [104.65, 20.81],
+            [104.65, 20.8],
+          ],
+          [
+            [104.653, 20.803],
+            [104.657, 20.803],
+            [104.657, 20.807],
+            [104.653, 20.807],
+            [104.653, 20.803],
+          ],
+        ],
+        type: 'Polygon',
+      },
+      rawGeometry: {
+        coordinates: [
+          [
+            [104.65, 20.8],
+            [104.66, 20.8],
+            [104.66, 20.81],
+            [104.65, 20.81],
+            [104.65, 20.8],
+          ],
+        ],
+        type: 'Polygon',
+      },
+      unit: 'm²',
+    })
+    const html = renderToString(
+      <MapFeatureCard
+        feature={areaFeature}
+        onAdd={() => undefined}
+        onClose={() => undefined}
+        onSubtract={() => undefined}
+        workMeasurements={[areaFeature.measurement]}
+      />,
+    )
+
+    expect(html).toContain('>Bớt<')
+    expect(html).toContain('Vùng thêm 01')
+    expect(html).toContain('Vùng bớt')
+    expect(html).toContain('01')
+    expect(html).toContain('map-feature-card__part--subtraction')
+  })
 })

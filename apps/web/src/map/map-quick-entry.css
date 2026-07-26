@@ -225,6 +225,26 @@
   font-size: 1.08rem;
 }
 
+.measurement-form--subtraction {
+  border-color: #dfb2c1;
+}
+
+.measurement-quick-summary--subtraction {
+  border-color: #dfb2c1;
+  background: #f9edf1;
+}
+
+.measurement-quick-summary--subtraction span,
+.measurement-quick-summary--subtraction small,
+.measurement-quick-summary--subtraction strong {
+  color: #8b3f59;
+}
+
+.measurement-subtraction-save {
+  border-color: #8b3f59;
+  background: #8b3f59;
+}
+
 .measurement-quick-summary {
   display: grid;
   gap: 3px;

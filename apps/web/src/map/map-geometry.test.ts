@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  addPolygonHole,
   calculationInputMeta,
   geometryFromPositions,
+  polygonHoleAreasMeters,
+  polygonHoleGeometries,
+  polygonOuterAreaMeters,
   positionsFromGeometry,
   temporaryValue,
 } from './map-geometry.js'
@@ -82,5 +86,56 @@ describe('draft map geometry', () => {
     expect(calculationInputMeta('frequency')).toMatchObject({
       label: 'Tần suất thực hiện',
     })
+  })
+
+  it('adds an interior subtraction ring and exposes its area separately', () => {
+    const outer = geometryFromPositions('area', [
+      [104.65, 20.8],
+      [104.66, 20.8],
+      [104.66, 20.81],
+      [104.65, 20.81],
+    ])!
+    const subtraction = geometryFromPositions('area', [
+      [104.653, 20.803],
+      [104.657, 20.803],
+      [104.657, 20.807],
+      [104.653, 20.807],
+    ])!
+    const result = addPolygonHole(outer, subtraction)
+
+    expect(result.type).toBe('Polygon')
+    expect((result.coordinates as unknown[][]).length).toBe(2)
+    expect(polygonHoleGeometries(result)).toHaveLength(1)
+    expect(polygonHoleAreasMeters(result)[0]).toBeGreaterThan(0)
+    expect(polygonOuterAreaMeters(result)).toBeGreaterThan(polygonHoleAreasMeters(result)[0]!)
+  })
+
+  it('rejects a subtraction outside the selected polygon or overlapping an existing hole', () => {
+    const outer = geometryFromPositions('area', [
+      [104.65, 20.8],
+      [104.66, 20.8],
+      [104.66, 20.81],
+      [104.65, 20.81],
+    ])!
+    const outside = geometryFromPositions('area', [
+      [104.659, 20.809],
+      [104.661, 20.809],
+      [104.661, 20.811],
+    ])!
+    expect(() => addPolygonHole(outer, outside)).toThrow(/nằm hoàn toàn bên trong/u)
+
+    const firstHole = geometryFromPositions('area', [
+      [104.653, 20.803],
+      [104.657, 20.803],
+      [104.657, 20.807],
+      [104.653, 20.807],
+    ])!
+    const withHole = addPolygonHole(outer, firstHole)
+    const overlap = geometryFromPositions('area', [
+      [104.656, 20.806],
+      [104.658, 20.806],
+      [104.658, 20.808],
+    ])!
+    expect(() => addPolygonHole(withHole, overlap)).toThrow(/không được giao/u)
   })
 })

@@ -29,10 +29,15 @@ import {
   createDraftVertexMarkers,
   createMeasurementEditMarkers,
 } from './measurement-edit-markers.js'
+import { polygonHoleGeometries } from './map-geometry.js'
 import { geometryExtent } from './map-selection.js'
 import { MapLocateControl } from './map-locate-control.js'
 import { MapHoverPopover } from './map-hover-popover.js'
-import { serviceGroupColor, type FieldDisplayMode } from './map-service-colors.js'
+import {
+  AREA_SUBTRACTION_COLOR,
+  serviceGroupColor,
+  type FieldDisplayMode,
+} from './map-service-colors.js'
 import { sanitizeUnit } from './measurement-summary.js'
 import {
   calculatePerpendicularSnapping,
@@ -106,7 +111,8 @@ function featureCollection(props: MeasurementMapProps) {
       .map((item) => {
         const featureMeta = mapFeatureMap.get(item.id)
         const customColor = groupColorMap.get(item.workItemId) ?? null
-        const color = customColor ?? serviceGroupColor(featureMeta?.serviceGroupName, props.fieldMode)
+        const color =
+          customColor ?? serviceGroupColor(featureMeta?.serviceGroupName, props.fieldMode)
         const isSelected = item.id === props.selectedId
         const isGroupMember = Boolean(selectedWorkItemId && item.workItemId === selectedWorkItemId)
         const isDimmed = Boolean(props.selectedId && !isGroupMember)
@@ -137,6 +143,36 @@ function featureCollection(props: MeasurementMapProps) {
           },
           geometry: item.normalizedGeometry ?? item.rawGeometry,
         }
+      }),
+  }
+}
+
+function subtractionCollection(props: MeasurementMapProps) {
+  const selectedItem = props.measurements.find((measurement) => measurement.id === props.selectedId)
+  const selectedWorkItemId = selectedItem?.workItemId
+  return {
+    type: 'FeatureCollection' as const,
+    features: props.measurements
+      .filter(
+        (item) => item.status !== 'superseded' && !props.hiddenWorkItemIds.has(item.workItemId),
+      )
+      .flatMap((item) => {
+        const isGroupMember = Boolean(selectedWorkItemId && item.workItemId === selectedWorkItemId)
+        return polygonHoleGeometries(item.normalizedGeometry ?? item.rawGeometry).map(
+          (geometry, index) => ({
+            type: 'Feature' as const,
+            id: `${item.id}-subtraction-${index}`,
+            properties: {
+              dimmed: Boolean(props.selectedId && !isGroupMember),
+              groupMember: isGroupMember,
+              id: item.id,
+              parentMeasurementId: item.id,
+              selected: item.id === props.selectedId,
+              sequence: index + 1,
+            },
+            geometry,
+          }),
+        )
       }),
   }
 }
@@ -174,6 +210,10 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
     type: 'geojson',
     data: asMapGeoJson(featureCollection(props)),
   })
+  map.addSource('measurement-subtractions', {
+    type: 'geojson',
+    data: asMapGeoJson(subtractionCollection(props)),
+  })
   map.addSource('snap-target-source', {
     type: 'geojson',
     data: asMapGeoJson(snapIndicatorCollection(null)),
@@ -199,6 +239,26 @@ function ensureLayers(map: MapLibreMap, props: MeasurementMapProps) {
         '#25865c',
       ],
       'fill-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.12, 0.45],
+    },
+  })
+  map.addLayer({
+    id: 'measurement-area-subtractions',
+    source: 'measurement-subtractions',
+    type: 'fill',
+    paint: {
+      'fill-color': AREA_SUBTRACTION_COLOR,
+      'fill-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.14, 0.58],
+    },
+  })
+  map.addLayer({
+    id: 'measurement-area-subtraction-outlines',
+    source: 'measurement-subtractions',
+    type: 'line',
+    paint: {
+      'line-color': '#ffffff',
+      'line-dasharray': [2, 1.5],
+      'line-opacity': ['case', ['boolean', ['get', 'dimmed'], false], 0.25, 0.95],
+      'line-width': ['case', ['boolean', ['get', 'selected'], false], 3, 2],
     },
   })
   map.addLayer({
@@ -330,6 +390,9 @@ function syncData(map: MapLibreMap, props: MeasurementMapProps) {
     asMapGeoJson(boundaryCollection(props.boundary)),
   )
   ;(map.getSource('measurements') as GeoJSONSource).setData(asMapGeoJson(featureCollection(props)))
+  ;(map.getSource('measurement-subtractions') as GeoJSONSource).setData(
+    asMapGeoJson(subtractionCollection(props)),
+  )
   syncCommuneBoundaryData(map, props.communeBoundaries)
   syncDraftData(map, props.draftGeometry, props.draftPositions, props.draftSelectedIndex)
   if (map.getLayer('commune-boundary-lines')) {
@@ -511,6 +574,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
         )
         const interactiveLayers = [
           'measurement-areas',
+          'measurement-area-subtractions',
           'measurement-lines',
           'measurement-lines-hit',
           'measurement-points',
@@ -545,12 +609,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
             )
             const snapTarget =
               current.isSnappingEnabled !== false
-                ? findSnapTarget(
-                    map,
-                    event.point,
-                    current.draftPositions,
-                    existingGeometries,
-                  )
+                ? findSnapTarget(map, event.point, current.draftPositions, existingGeometries)
                 : null
             activeSnapTargetRef.current = snapTarget
 
@@ -725,20 +784,20 @@ export function MeasurementMap(props: MeasurementMapProps) {
             hoveredRefPointsRef.current = []
             const refPointsSource = map.getSource<GeoJSONSource>('measurement-ref-points-source')
             if (refPointsSource) {
-              refPointsSource.setData(
-                asMapGeoJson({ type: 'FeatureCollection', features: [] }),
-              )
+              refPointsSource.setData(asMapGeoJson({ type: 'FeatureCollection', features: [] }))
             }
             const guideSource = map.getSource<GeoJSONSource>('measurement-guide-source')
             if (guideSource) {
-              guideSource.setData(
-                asMapGeoJson({ type: 'FeatureCollection', features: [] }),
-              )
+              guideSource.setData(asMapGeoJson({ type: 'FeatureCollection', features: [] }))
             }
             setTooltipState((prev) => (prev.visible ? { ...prev, visible: false } : prev))
 
             if (current.mode === 'view') {
-              const hit = map.queryRenderedFeatures(event.point, { layers: interactiveLayers })[0]
+              const availableLayers = interactiveLayers.filter((layerId) => map.getLayer(layerId))
+              const hit =
+                availableLayers.length > 0
+                  ? map.queryRenderedFeatures(event.point, { layers: availableLayers })[0]
+                  : undefined
               const hitId: unknown = hit?.properties?.id
               if (typeof hitId === 'string') {
                 const foundFeature = current.mapFeatures?.find((f) => f.measurement.id === hitId)
@@ -772,10 +831,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
                   })
                 } else if (measurementObj) {
                   const updatedQty =
-                    measurementObj.calculatedQuantity ||
-                    propQty ||
-                    measurementObj.baseValue ||
-                    0
+                    measurementObj.calculatedQuantity || propQty || measurementObj.baseValue || 0
                   const fallbackFeature: MapFeature = {
                     measurement: {
                       ...measurementObj,
@@ -789,7 +845,11 @@ export function MeasurementMap(props: MeasurementMapProps) {
                     workItemName: propWorkName || measurementObj.name,
                     workComponentName: null,
                   }
-                  setHoveredFeature({ feature: fallbackFeature, x: event.point.x, y: event.point.y })
+                  setHoveredFeature({
+                    feature: fallbackFeature,
+                    x: event.point.x,
+                    y: event.point.y,
+                  })
                 } else {
                   setHoveredFeature(null)
                 }
@@ -805,9 +865,13 @@ export function MeasurementMap(props: MeasurementMapProps) {
         map.on('click', (event) => {
           const current = latest.current
           if (['point', 'line', 'area', 'measure'].includes(current.mode)) {
-            const vertex = map.queryRenderedFeatures(event.point, {
-              layers: ['draft-vertex-hit', 'draft-vertices'],
-            })[0]
+            const draftLayers = ['draft-vertex-hit', 'draft-vertices'].filter((layerId) =>
+              map.getLayer(layerId),
+            )
+            const vertex =
+              draftLayers.length > 0
+                ? map.queryRenderedFeatures(event.point, { layers: draftLayers })[0]
+                : undefined
             const index: unknown = vertex?.properties?.index
             if (typeof index === 'number') {
               current.onSelectDraftVertex(index)
@@ -820,9 +884,11 @@ export function MeasurementMap(props: MeasurementMapProps) {
             current.onAddPosition(clickPos)
             return
           }
-          const hit = map.queryRenderedFeatures(event.point, {
-            layers: interactiveLayers,
-          })[0]
+          const availableLayers = interactiveLayers.filter((layerId) => map.getLayer(layerId))
+          const hit =
+            availableLayers.length > 0
+              ? map.queryRenderedFeatures(event.point, { layers: availableLayers })[0]
+              : undefined
           const id: unknown = hit?.properties?.id
           if (typeof id === 'string') {
             current.onSelect(id)
@@ -1006,8 +1072,7 @@ export function MeasurementMap(props: MeasurementMapProps) {
         touchX={touchMagnifierState.touchX}
         touchY={touchMagnifierState.touchY}
         visible={
-          touchMagnifierState.visible &&
-          ['point', 'line', 'area', 'measure'].includes(props.mode)
+          touchMagnifierState.visible && ['point', 'line', 'area', 'measure'].includes(props.mode)
         }
         snapType={touchMagnifierState.snapType}
         triggerRepaint={() => mapRef.current?.triggerRepaint()}

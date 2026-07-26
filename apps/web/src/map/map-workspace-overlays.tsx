@@ -18,6 +18,7 @@ export function MapWorkspaceOverlays(props: {
   basemapLabel: string
   capture: StoredCaptureDraft | null
   draftGeometry: GeoJsonGeometry | null
+  isSubtractingArea?: boolean
   mode: MapMode
   onAddFeature?: (() => void) | undefined
   onClearSelection(): void
@@ -26,6 +27,7 @@ export function MapWorkspaceOverlays(props: {
   onRemoveFeature?: ((measurementId: string) => void) | undefined
   onReplaceFeature?: ((previousId: string, feature: MapFeature) => void) | undefined
   onRefreshFeatures?: (() => Promise<void> | void) | undefined
+  onSubtractFeature?: (() => void) | undefined
   onWorkChanged?: ((item: WorkItem) => void) | undefined
   selectedFeature: MapFeature | null
   groups: ServiceGroup[]
@@ -38,7 +40,13 @@ export function MapWorkspaceOverlays(props: {
     <>
       {(props.mode === 'line' || props.mode === 'area') && (
         <output className="map-live-result" aria-label="Kết quả đo trực tiếp" aria-live="polite">
-          <span>{props.mode === 'line' ? 'Tổng tuyến bổ sung' : 'Diện tích vùng bổ sung'}</span>
+          <span>
+            {props.mode === 'line'
+              ? 'Tổng tuyến bổ sung'
+              : props.isSubtractingArea
+                ? 'Diện tích vùng bớt'
+                : 'Diện tích vùng bổ sung'}
+          </span>
           <strong>{temporaryValue(props.draftGeometry)}</strong>
         </output>
       )}
@@ -53,6 +61,7 @@ export function MapWorkspaceOverlays(props: {
           onRemoveFeature={props.onRemoveFeature}
           onReplaceFeature={props.onReplaceFeature}
           onRefresh={props.onRefreshFeatures}
+          onSubtract={props.onSubtractFeature}
           onWorkChanged={props.onWorkChanged}
           workItem={props.workItem}
           workMeasurements={props.workMeasurements}

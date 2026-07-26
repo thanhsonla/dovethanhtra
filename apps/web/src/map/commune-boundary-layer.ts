@@ -2,6 +2,8 @@ import type { AdminAreaBoundary } from '@dove/contracts'
 import type { GeoJSON } from 'geojson'
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap, type Marker } from 'maplibre-gl'
 
+import { COMMUNE_BOUNDARY_COLORS } from './map-service-colors.js'
+
 interface CommuneLabelMarker {
   element: HTMLDivElement
   marker: Marker
@@ -31,10 +33,10 @@ export function addCommuneBoundaryLayer(map: MapLibreMap, boundaries: AdminAreaB
     source: 'commune-boundaries',
     type: 'line',
     paint: {
-      'line-color': '#df1f2d',
-      'line-dasharray': [4, 2],
-      'line-opacity': 0.95,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.2, 13, 2.2, 17, 3.1],
+      'line-color': COMMUNE_BOUNDARY_COLORS.line,
+      'line-dasharray': [3, 2],
+      'line-opacity': 0.78,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 13, 1.7, 17, 2.4],
     },
   })
 }
@@ -104,6 +106,7 @@ export function replaceCommuneLabels(
     const element = document.createElement('div')
     element.className = 'commune-boundary-label'
     element.textContent = item.name.toLocaleUpperCase('vi-VN')
+    element.style.color = COMMUNE_BOUNDARY_COLORS.label
     element.setAttribute('aria-hidden', 'true')
     element.dataset.adminAreaCode = item.code
     const marker = new maplibregl.Marker({

@@ -2,6 +2,7 @@ import type {
   GeoJsonGeometry,
   DrawableMeasurementGeometryKind,
   InspectionCase,
+  Measurement,
   ServiceGroup,
   WorkItem,
   WorkType,
@@ -65,6 +66,7 @@ export function MapWorkspace(props: {
   const [fieldMode, setFieldMode] = useState<FieldDisplayMode>('normal')
   const [focusVersion, setFocusVersion] = useState(0)
   const [compactAddition, setCompactAddition] = useState(false)
+  const [subtractionTarget, setSubtractionTarget] = useState<Measurement | null>(null)
   const [showCommunes, setShowCommunes] = useState(true)
   const [isSnappingEnabled, setIsSnappingEnabled] = useState(true)
   const [isMagnifierEnabled, setIsMagnifierEnabled] = useState(false)
@@ -215,6 +217,7 @@ export function MapWorkspace(props: {
     drawingWorkflow.cancel()
     setEditHistory(null)
     setCompactAddition(false)
+    setSubtractionTarget(null)
   }, [drawingWorkflow])
 
   useEffect(() => {
@@ -224,7 +227,7 @@ export function MapWorkspace(props: {
       const isInput = activeEl && ['INPUT', 'SELECT', 'TEXTAREA'].includes(activeEl.tagName)
 
       if (isInput) {
-        (activeEl as HTMLElement).blur()
+        ;(activeEl as HTMLElement).blur()
       }
 
       if (mode !== 'view') {
@@ -284,6 +287,7 @@ export function MapWorkspace(props: {
     setFocusVersion((current) => current + 1)
     setMode('view')
     setEditHistory(null)
+    setSubtractionTarget(null)
     clearCapture()
     setDraftReady(false)
   }
@@ -305,6 +309,7 @@ export function MapWorkspace(props: {
     rememberActiveWork(props.inspectionCase.id, measurement.workItemId)
     setMode('view')
     setEditHistory(null)
+    setSubtractionTarget(null)
     clearCapture()
     setDraftReady(false)
     setActivePanel(null)
@@ -316,6 +321,7 @@ export function MapWorkspace(props: {
     asCompactAddition = false,
   ) => {
     setCompactAddition(asCompactAddition)
+    setSubtractionTarget(null)
     setSelectedWorkId(workItemId)
     rememberActiveWork(props.inspectionCase.id, workItemId)
     drawingWorkflow.start(nextMode, 'measurement')
@@ -325,6 +331,7 @@ export function MapWorkspace(props: {
   }
   const startCaptureDrawing = (nextMode: DrawableMeasurementGeometryKind | 'measure') => {
     setCompactAddition(false)
+    setSubtractionTarget(null)
     if (nextMode === 'measure') {
       setMode('measure')
       dispatchDrawing({ type: 'reset' })
@@ -447,6 +454,7 @@ export function MapWorkspace(props: {
             basemapLabel={selectedBasemap.label}
             capture={captureSync.latest}
             draftGeometry={draftGeometry}
+            isSubtractingArea={Boolean(subtractionTarget)}
             mode={mode}
             groups={props.groups}
             onAddFeature={() => {
@@ -469,6 +477,18 @@ export function MapWorkspace(props: {
               if (selectedFeature) {
                 await refreshMeasurementData(selectedFeature.measurement.workItemId)
               }
+            }}
+            onSubtractFeature={() => {
+              if (!selected || selected.geometryKind !== 'area') return
+              setCompactAddition(false)
+              setSubtractionTarget(selected)
+              setSelectedWorkId(selected.workItemId)
+              rememberActiveWork(props.inspectionCase.id, selected.workItemId)
+              drawingWorkflow.start('area', 'measurement')
+              setEditHistory(null)
+              setRoutePreview(null)
+              setSelectedId(null)
+              setActivePanel(null)
             }}
             selectedFeature={selectedFeature}
             onWorkChanged={props.onWorkChanged}
@@ -535,6 +555,7 @@ export function MapWorkspace(props: {
             measurement: selected,
             selectedKind,
             selectedWork,
+            subtractionTarget,
             onCancel: () => {
               cancelDraft()
               setActivePanel(null)
@@ -594,7 +615,10 @@ export function MapWorkspace(props: {
             zones,
           }}
           sidebar={{
-            features: mapFeatures.inventoryItems.length > 0 ? mapFeatures.inventoryItems : mapFeatures.items,
+            features:
+              mapFeatures.inventoryItems.length > 0
+                ? mapFeatures.inventoryItems
+                : mapFeatures.items,
             loading: mapFeatures.inventoryLoading,
             measurements: allMeasurements,
             selectedId,

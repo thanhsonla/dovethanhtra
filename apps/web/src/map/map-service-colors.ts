@@ -1,5 +1,12 @@
 export type FieldDisplayMode = 'normal' | 'sun' | 'night'
 
+export const COMMUNE_BOUNDARY_COLORS = {
+  label: '#665d50',
+  line: '#a99a83',
+} as const
+
+export const AREA_SUBTRACTION_COLOR = '#b05a78'
+
 const SERVICE_GROUP_COLORS_NORMAL: Record<string, string> = {
   'cây xanh': '#10b981', // Green
   'vệ sinh': '#3b82f6', // Blue

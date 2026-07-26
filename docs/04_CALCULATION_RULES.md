@@ -14,6 +14,10 @@
 8. Luồng nhập nhanh có thể ẩn hệ số nhưng không được tự đặt hệ số nghiệp vụ. Với
    point/line/area cơ bản, máy chủ lưu số lượng, mét hoặc mét vuông gốc; công thức có
    biến bắt buộc chỉ được xác nhận sau khi người dùng bổ sung đủ đầu vào.
+9. Vùng người dùng chủ động chọn **Bớt** được biểu diễn bằng interior ring của
+   Polygon, không phải một số âm chỉ tồn tại ở giao diện. Vùng phải nằm hoàn toàn
+   trong outer ring và không giao vùng bớt khác; thay đổi tạo phiên bản measurement
+   mới để giữ hình học trước đó và audit.
 
 ## 2. Kiểu đo cơ bản
 
@@ -36,6 +40,10 @@ Kết quả mặc định là mét. Nếu công tác tính cả hai bên đườ
 ### RULE-AREA-1 — Diện tích địa lý
 
 `base_area_m2 = ST_Area(normalized_geometry::geography)`
+
+Với Polygon có interior ring, PostGIS tính trực tiếp:
+
+`base_area_m2 = outer_area_m2 - Σ(interior_ring_area_m2)`
 
 Diện tích quy đổi theo tần suất:
 

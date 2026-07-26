@@ -33,6 +33,7 @@ export function MapDetailsPanel(props: {
   onSaved(measurement: Measurement, action: 'continue' | 'done'): Promise<void>
   selectedKind: MeasurementGeometryKind | null
   selectedWork: WorkItem | null
+  subtractionTarget: Measurement | null
 }) {
   const drawableKind: DrawableMeasurementGeometryKind | null =
     props.selectedKind === 'point' || props.selectedKind === 'line' || props.selectedKind === 'area'
@@ -82,6 +83,7 @@ export function MapDetailsPanel(props: {
           measurement={props.measurement}
           selectedKind={drawableKind}
           selectedWork={props.selectedWork}
+          subtractionTarget={props.subtractionTarget}
           onCancel={() => props.onCancel()}
           onChanged={(measurement) => props.onChanged(measurement)}
           onEdit={() => props.onEdit()}
@@ -89,7 +91,7 @@ export function MapDetailsPanel(props: {
           onSaved={(measurement, action) => props.onSaved(measurement, action)}
         />
       )}
-      {!props.compactAddition && (
+      {!props.compactAddition && !props.subtractionTarget && (
         <>
           <FieldPanel
             measurement={props.measurement}

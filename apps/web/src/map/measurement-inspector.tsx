@@ -8,6 +8,7 @@ import { type FormEvent, useState } from 'react'
 
 import { api } from '../api.js'
 import {
+  addPolygonHole,
   calculationInputMeta,
   polygonPerimeterMeters,
   requiredInputs,
@@ -43,6 +44,7 @@ export interface MeasurementInspectorProps {
   onSaved(item: Measurement, action: 'continue' | 'done'): Promise<void>
   selectedKind: DrawableMeasurementGeometryKind | null
   selectedWork: WorkItem | null
+  subtractionTarget: Measurement | null
 }
 
 export function MeasurementInspector(props: MeasurementInspectorProps) {
@@ -74,6 +76,25 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
     )
     setBusy(true)
     try {
+      if (props.subtractionTarget) {
+        if (props.subtractionTarget.geometryKind !== 'area' || props.selectedKind !== 'area') {
+          throw new Error('Nút Bớt chỉ áp dụng cho đối tượng diện tích.')
+        }
+        const geometry = addPolygonHole(
+          props.subtractionTarget.normalizedGeometry ?? props.subtractionTarget.rawGeometry,
+          props.draftGeometry,
+        )
+        const updated = await api.supersedeMeasurement(props.subtractionTarget.id, {
+          calculationInputs: props.subtractionTarget.calculationInputs,
+          geometry,
+          geometryKind: 'area',
+          name: props.subtractionTarget.name,
+          note: props.subtractionTarget.note,
+          reason: 'Bổ sung vùng bớt nằm trong diện tích đối tượng',
+        })
+        await deliverSaved(updated, 'done')
+        return
+      }
       const created = await api.createMeasurement(props.selectedWork.id, {
         calculationInputs,
         geometry: props.draftGeometry,
@@ -165,6 +186,23 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
   }
 
   if (props.draftReady && props.draftGeometry) {
+    if (props.subtractionTarget) {
+      return (
+        <form
+          className="measurement-form measurement-form--addition measurement-form--subtraction"
+          onSubmit={(event) => void save(event)}
+        >
+          <div className="measurement-quick-summary measurement-quick-summary--subtraction">
+            <span>Số liệu vùng bớt</span>
+            <strong>−{temporaryValue(props.draftGeometry)}</strong>
+            <small>Vùng phải nằm hoàn toàn trong diện tích đối tượng đã chọn.</small>
+          </div>
+          <button className="button measurement-subtraction-save" disabled={busy} type="submit">
+            {busy ? 'Đang lưu…' : 'Lưu vùng bớt'}
+          </button>
+        </form>
+      )
+    }
     if (props.compactAddition) {
       return (
         <form
@@ -380,14 +418,17 @@ export function MeasurementInspector(props: MeasurementInspectorProps) {
                   const updated = await api.supersedeMeasurement(measurement.id, {
                     calculationInputs: measurement.calculationInputs,
                     geometry: reversedGeom,
-                    geometryKind: measurement.geometryKind === 'route' ? 'line' : measurement.geometryKind,
+                    geometryKind:
+                      measurement.geometryKind === 'route' ? 'line' : measurement.geometryKind,
                     name: measurement.name,
                     reason: 'Đảo ngược vị trí điểm đầu và điểm cuối tuyến',
                   })
                   await props.onChanged(updated)
                 }
               } catch (reason) {
-                props.onError(reason instanceof Error ? reason.message : 'Không thể đảo chiều tuyến.')
+                props.onError(
+                  reason instanceof Error ? reason.message : 'Không thể đảo chiều tuyến.',
+                )
               }
             }}
             title="Đảo ngược vị trí điểm đầu và điểm cuối của tuyến"

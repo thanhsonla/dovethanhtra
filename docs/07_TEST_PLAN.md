@@ -60,6 +60,7 @@ Thử tại một khu vực đã biết chiều dài/diện tích và một tuy�
 | MEAS-012  | Lưu và tiếp tục đo            | Mở lại đúng công cụ sau khi máy chủ lưu |
 | MEAS-013  | Phiếu lưu nhanh sau khi đo    | Chỉ tên, 12 khu vực, số liệu sát đơn vị và một nút Lưu |
 | MEAS-014  | Ngăn Thông tin đối tượng      | Chỉ tên, thời gian, số liệu, chọn ảnh và chụp ảnh |
+| MEAS-015  | Bớt vùng trong polygon        | Tạo interior ring, diện tích ròng và version mới |
 | ROUTE-001 | Tính route hợp lệ             | Lưu distance, geometry, provider, time |
 | ROUTE-002 | Tính lại route                | Tạo version, không ghi đè              |
 | ROUTE-003 | Không tìm được route          | Lỗi xử lý được, không tạo bản ghi rỗng |
@@ -127,6 +128,10 @@ qua nút “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu.
 - Drawer phát sinh từ nút **Thêm** dùng biến thể compact, chỉ có số liệu phần bổ
   sung, tên và một nút **Lưu**; không hiện hệ số, ghi chú hoặc hai luồng lưu cũ. Sau
   khi lưu, thẻ phải tính tổng các phép đo còn hiệu lực và liệt kê đúng từng phần.
+- Nút **Bớt** chỉ hiện với đối tượng diện tích đã xác nhận, mở công cụ vẽ vùng và
+  từ chối geometry chạm/ra ngoài outer ring hoặc giao vùng bớt cũ. Lưu thành công
+  phải tạo version mới, PostGIS tính diện tích ròng; bản đồ và thẻ dùng màu riêng,
+  thẻ liệt kê đúng **Vùng thêm** và **Vùng bớt**.
 - Thành phần đầu tiên phải mang nhãn **Điểm/Tuyến/Vùng 01** thay vì lặp lại tên đầy
   đủ của đối tượng. Thẻ nằm bên phải, đóng được bằng nút ×, phím **Esc** và thao tác
   pointer bên ngoài; thao tác bên trong thẻ không được làm thẻ tự đóng.

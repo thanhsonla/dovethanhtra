@@ -9,9 +9,17 @@ import type {
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { api } from '../api.js'
-import { polygonPerimeterMeters } from './map-geometry.js'
+import {
+  polygonHoleAreasMeters,
+  polygonOuterAreaMeters,
+  polygonPerimeterMeters,
+} from './map-geometry.js'
 import { measurementPartName } from './measurement-entry-defaults.js'
-import { measurementBaseTotal, measurementBaseValue } from './measurement-summary.js'
+import {
+  formatQuantity,
+  measurementBaseTotal,
+  measurementBaseValue,
+} from './measurement-summary.js'
 
 const COLOR_PALETTE = [
   { name: 'Xanh lá', value: '#10b981' },
@@ -46,6 +54,7 @@ export function MapFeatureCard(props: {
   onAdd?: (() => void) | undefined
   onClose: () => void
   onEdit?: (() => void) | undefined
+  onSubtract?: (() => void) | undefined
   onRefresh?: (() => Promise<void> | void) | undefined
   onRemoveFeature?: ((measurementId: string) => void) | undefined
   onReplaceFeature?: ((previousId: string, feature: MapFeature) => void) | undefined
@@ -56,6 +65,7 @@ export function MapFeatureCard(props: {
   zones?: ManagementZone[] | undefined
 }) {
   const item = props.feature.measurement
+  const itemGeometry = item.normalizedGeometry ?? item.rawGeometry
   const workMeasurements = (props.workMeasurements ?? [item])
     .filter(
       (measurement) =>
@@ -259,6 +269,8 @@ export function MapFeatureCard(props: {
     }
   }
 
+  let subtractionSequence = 0
+
   return (
     <article className="map-feature-card" aria-label="Thông tin đối tượng đã chọn" ref={cardRef}>
       <button
@@ -366,34 +378,52 @@ export function MapFeatureCard(props: {
             </div>
             <div className="map-feature-card__parts" aria-label="Các lần đo">
               {workMeasurements.map((measurement, index) => {
+                const geometry = measurement.normalizedGeometry ?? measurement.rawGeometry
                 const perimeterM =
-                  measurement.geometryKind === 'area'
-                    ? polygonPerimeterMeters(
-                        measurement.normalizedGeometry ?? measurement.rawGeometry,
-                      )
-                    : null
+                  measurement.geometryKind === 'area' ? polygonPerimeterMeters(geometry) : null
+                const holeAreas =
+                  measurement.geometryKind === 'area' ? polygonHoleAreasMeters(geometry) : []
+                const outerArea = holeAreas.length > 0 ? polygonOuterAreaMeters(geometry) : null
 
                 return (
-                  <div className="map-feature-card__part" key={measurement.id}>
-                    <span>
-                      {measurement.geometryKind === 'route'
-                        ? `Lộ trình ${String(index + 1).padStart(2, '0')}`
-                        : measurementPartName(measurement.geometryKind, index + 1)}
-                    </span>
-                    <strong>
-                      {measurementBaseValue(measurement)}
-                      {perimeterM != null && (
-                        <small className="map-feature-card__perimeter-badge">
-                          {' '}
-                          (Chu vi:{' '}
-                          {perimeterM.toLocaleString('vi-VN', {
-                            maximumFractionDigits: 1,
-                            minimumFractionDigits: 1,
-                          })}{' '}
-                          m)
-                        </small>
-                      )}
-                    </strong>
+                  <div className="map-feature-card__part-group" key={measurement.id}>
+                    <div className="map-feature-card__part">
+                      <span>
+                        {measurement.geometryKind === 'route'
+                          ? `Lộ trình ${String(index + 1).padStart(2, '0')}`
+                          : measurement.geometryKind === 'area' && holeAreas.length > 0
+                            ? `Vùng thêm ${String(index + 1).padStart(2, '0')}`
+                            : measurementPartName(measurement.geometryKind, index + 1)}
+                      </span>
+                      <strong>
+                        {outerArea == null
+                          ? measurementBaseValue(measurement)
+                          : formatQuantity(outerArea, 'm²')}
+                        {perimeterM != null && (
+                          <small className="map-feature-card__perimeter-badge">
+                            {' '}
+                            (Chu vi:{' '}
+                            {perimeterM.toLocaleString('vi-VN', {
+                              maximumFractionDigits: 1,
+                              minimumFractionDigits: 1,
+                            })}{' '}
+                            m)
+                          </small>
+                        )}
+                      </strong>
+                    </div>
+                    {holeAreas.map((holeArea) => {
+                      subtractionSequence += 1
+                      return (
+                        <div
+                          className="map-feature-card__part map-feature-card__part--subtraction"
+                          key={`${measurement.id}-subtraction-${subtractionSequence}`}
+                        >
+                          <span>Vùng bớt {String(subtractionSequence).padStart(2, '0')}</span>
+                          <strong>−{formatQuantity(holeArea, 'm²')}</strong>
+                        </div>
+                      )
+                    })}
                   </div>
                 )
               })}
@@ -466,6 +496,18 @@ export function MapFeatureCard(props: {
                   Thêm
                 </button>
               )}
+              {item.status === 'confirmed' &&
+                item.geometryKind === 'area' &&
+                itemGeometry.type === 'Polygon' &&
+                props.onSubtract && (
+                  <button
+                    className="map-feature-card__subtract-btn"
+                    onClick={props.onSubtract}
+                    type="button"
+                  >
+                    Bớt
+                  </button>
+                )}
               {item.status === 'confirmed' && item.geometryKind !== 'route' && props.onEdit && (
                 <button className="map-feature-card__edit-btn" onClick={props.onEdit} type="button">
                   Sửa hình dạng
