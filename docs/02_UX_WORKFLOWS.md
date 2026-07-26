@@ -104,7 +104,8 @@ Nhấn vào một dòng sẽ lọc bản đồ theo công tác tương ứng.
 Thẻ đối tượng hiển thị trực tiếp tên, ngày lập, khu vực, số liệu, loại dịch vụ, màu
 nét và các thao tác **Thêm**/sửa/xóa. **Thêm** khởi động đúng công cụ Điểm/Chiều
 dài/Diện tích để tạo một phép đo mới trong cùng công tác, không ghi đè geometry cũ.
-Với đối tượng diện tích đã xác nhận, nút **Bớt** nằm cạnh **Thêm**. Người dùng vẽ
+Với đối tượng diện tích đang hoạt động (nháp, cần xử lý hoặc đã xác nhận), nút
+**Bớt** nằm cạnh **Thêm**. Người dùng vẽ
 một vùng nằm hoàn toàn bên trong polygon; hệ thống lưu vùng này thành interior ring
 trong phiên bản phép đo mới để PostGIS tính diện tích ròng. Vùng bớt dùng màu hồng
 mận dịu, tách khỏi màu phần thêm; thẻ liệt kê **Vùng thêm 01…** và

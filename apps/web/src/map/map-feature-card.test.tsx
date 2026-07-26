@@ -155,4 +155,39 @@ describe('map feature card', () => {
     expect(html).toContain('01')
     expect(html).toContain('map-feature-card__part--subtraction')
   })
+
+  it.each(['draft', 'needs_attention'] as const)(
+    'shows subtraction action for an active %s area measurement',
+    (status) => {
+      const areaFeature = feature({
+        confirmedAt: null,
+        geometryKind: 'area',
+        normalizedGeometry: null,
+        rawGeometry: {
+          coordinates: [
+            [
+              [104.65, 20.8],
+              [104.66, 20.8],
+              [104.66, 20.81],
+              [104.65, 20.81],
+              [104.65, 20.8],
+            ],
+          ],
+          type: 'Polygon',
+        },
+        status,
+        unit: 'm²',
+      })
+      const html = renderToString(
+        <MapFeatureCard
+          feature={areaFeature}
+          onClose={() => undefined}
+          onSubtract={() => undefined}
+        />,
+      )
+
+      expect(html).toContain('>Bớt<')
+      expect(html).toContain('Bớt một vùng khỏi diện tích')
+    },
+  )
 })

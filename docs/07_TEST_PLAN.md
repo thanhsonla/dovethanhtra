@@ -128,7 +128,8 @@ qua nút “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu.
 - Drawer phát sinh từ nút **Thêm** dùng biến thể compact, chỉ có số liệu phần bổ
   sung, tên và một nút **Lưu**; không hiện hệ số, ghi chú hoặc hai luồng lưu cũ. Sau
   khi lưu, thẻ phải tính tổng các phép đo còn hiệu lực và liệt kê đúng từng phần.
-- Nút **Bớt** chỉ hiện với đối tượng diện tích đã xác nhận, mở công cụ vẽ vùng và
+- Nút **Bớt** hiện với đối tượng diện tích đang hoạt động (nháp, cần xử lý hoặc đã
+  xác nhận), mở công cụ vẽ vùng và
   từ chối geometry chạm/ra ngoài outer ring hoặc giao vùng bớt cũ. Lưu thành công
   phải tạo version mới, PostGIS tính diện tích ròng; bản đồ và thẻ dùng màu riêng,
   thẻ liệt kê đúng **Vùng thêm** và **Vùng bớt**.

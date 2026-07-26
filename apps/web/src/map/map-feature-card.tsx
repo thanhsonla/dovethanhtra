@@ -66,6 +66,11 @@ export function MapFeatureCard(props: {
 }) {
   const item = props.feature.measurement
   const itemGeometry = item.normalizedGeometry ?? item.rawGeometry
+  const canSubtractArea =
+    item.geometryKind === 'area' &&
+    itemGeometry.type === 'Polygon' &&
+    item.status !== 'superseded' &&
+    item.status !== 'deleted'
   const workMeasurements = (props.workMeasurements ?? [item])
     .filter(
       (measurement) =>
@@ -496,18 +501,17 @@ export function MapFeatureCard(props: {
                   Thêm
                 </button>
               )}
-              {item.status === 'confirmed' &&
-                item.geometryKind === 'area' &&
-                itemGeometry.type === 'Polygon' &&
-                props.onSubtract && (
-                  <button
-                    className="map-feature-card__subtract-btn"
-                    onClick={props.onSubtract}
-                    type="button"
-                  >
-                    Bớt
-                  </button>
-                )}
+              {canSubtractArea && props.onSubtract && (
+                <button
+                  aria-label="Bớt một vùng khỏi diện tích"
+                  className="map-feature-card__subtract-btn"
+                  onClick={props.onSubtract}
+                  title="Vẽ vùng nằm bên trong để trừ khỏi diện tích"
+                  type="button"
+                >
+                  Bớt
+                </button>
+              )}
               {item.status === 'confirmed' && item.geometryKind !== 'route' && props.onEdit && (
                 <button className="map-feature-card__edit-btn" onClick={props.onEdit} type="button">
                   Sửa hình dạng

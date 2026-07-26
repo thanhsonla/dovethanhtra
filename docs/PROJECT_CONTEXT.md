@@ -505,7 +505,8 @@ và các cổng bảo mật trong runbook.
   xuất hiện trong Git và chạy lại integration/E2E trước phát hành.
 - Ngày 26/07/2026, lớp địa giới 75 xã/phường đổi sang bảng màu nâu xám dịu
   (`#a99a83`, nhãn `#665d50`), giảm opacity/độ dày để tách khỏi màu công cụ.
-  Thẻ đối tượng diện tích đã xác nhận có nút **Bớt** cạnh **Thêm**: vùng vẽ bớt
+  Thẻ đối tượng diện tích đang hoạt động (nháp, cần xử lý hoặc đã xác nhận) có nút
+  **Bớt** cạnh **Thêm**: vùng vẽ bớt
   được kiểm tra nằm hoàn toàn trong polygon, không giao vùng bớt cũ, ghép thành
   interior ring và lưu bằng `supersedeMeasurement`. PostGIS tiếp tục là nguồn diện
   tích ròng chính thức; bản đồ tô vùng bớt màu hồng mận dịu và thẻ liệt kê riêng
