@@ -511,3 +511,6 @@ và các cổng bảo mật trong runbook.
   interior ring và lưu bằng `supersedeMeasurement`. PostGIS tiếp tục là nguồn diện
   tích ròng chính thức; bản đồ tô vùng bớt màu hồng mận dịu và thẻ liệt kê riêng
   **Vùng thêm/Vùng bớt**.
+- Thành phần thêm và từng vùng bớt trên thẻ có thể xóa riêng sau bước xác nhận:
+  phần thêm được xóa mềm theo measurement; vùng bớt được gỡ bằng phiên bản polygon
+  mới. Outer ring và các thành phần còn lại của đối tượng chính luôn được giữ.

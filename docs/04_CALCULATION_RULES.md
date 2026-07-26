@@ -18,6 +18,9 @@
    Polygon, không phải một số âm chỉ tồn tại ở giao diện. Vùng phải nằm hoàn toàn
    trong outer ring và không giao vùng bớt khác; thay đổi tạo phiên bản measurement
    mới để giữ hình học trước đó và audit.
+10. Xóa riêng phần thêm phải xóa mềm đúng measurement bổ sung. Xóa riêng vùng bớt
+    phải tạo phiên bản geometry mới đã loại đúng interior ring; không thao tác nào
+    được sửa hoặc xóa outer ring của đối tượng chính.
 
 ## 2. Kiểu đo cơ bản
 

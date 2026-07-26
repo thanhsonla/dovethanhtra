@@ -111,6 +111,9 @@ trong phiên bản phép đo mới để PostGIS tính diện tích ròng. Vùng
 mận dịu, tách khỏi màu phần thêm; thẻ liệt kê **Vùng thêm 01…** và
 **Vùng bớt 01…** kèm dấu trừ. Vùng bớt không được chạm biên, ra ngoài hoặc giao
 vùng bớt đã có.
+Mỗi phần bổ sung và mỗi vùng bớt có thao tác xóa riêng kèm xác nhận. Xóa phần bổ
+sung chỉ xóa mềm measurement tương ứng; xóa vùng bớt tạo phiên bản polygon mới đã
+gỡ đúng interior ring. Cả hai thao tác đều giữ nguyên đối tượng chính và lịch sử.
 Sau khi kết thúc geometry bổ sung, drawer gọn chỉ hiển thị số liệu tạm, tên phần bổ
 sung và một nút **Lưu**. Thẻ đối tượng hiển thị **Tổng số liệu** của các phép đo còn
 hiệu lực, bên dưới là số thứ tự chuẩn **Điểm/Tuyến/Vùng 01, 02…** và số liệu của

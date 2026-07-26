@@ -154,6 +154,29 @@ describe('map feature card', () => {
     expect(html).toContain('Vùng bớt')
     expect(html).toContain('01')
     expect(html).toContain('map-feature-card__part--subtraction')
+    expect(html).toContain('Xóa riêng Vùng bớt 01')
+    expect(html).not.toContain('Xóa riêng Vùng thêm 01')
+  })
+
+  it('offers separate deletion only for added measurements, not the primary measurement', () => {
+    const primary = feature({ geometryKind: 'area', unit: 'm²' })
+    const addition = feature({
+      geometryKind: 'area',
+      id: '00000000-0000-4000-8000-000000000009',
+      name: 'Vùng bổ sung',
+      unit: 'm²',
+    })
+    const html = renderToString(
+      <MapFeatureCard
+        feature={primary}
+        onClose={() => undefined}
+        workMeasurements={[primary.measurement, addition.measurement]}
+      />,
+    )
+
+    expect(html).not.toContain('Xóa riêng Vùng 01')
+    expect(html).toContain('Xóa riêng Vùng 02')
+    expect(html).toContain('không ảnh hưởng đối tượng chính')
   })
 
   it.each(['draft', 'needs_attention'] as const)(

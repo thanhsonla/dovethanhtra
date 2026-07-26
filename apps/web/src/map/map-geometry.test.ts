@@ -8,6 +8,7 @@ import {
   polygonHoleGeometries,
   polygonOuterAreaMeters,
   positionsFromGeometry,
+  removePolygonHole,
   temporaryValue,
 } from './map-geometry.js'
 
@@ -137,5 +138,34 @@ describe('draft map geometry', () => {
       [104.658, 20.808],
     ])!
     expect(() => addPolygonHole(withHole, overlap)).toThrow(/không được giao/u)
+  })
+
+  it('removes only the selected subtraction ring and preserves the main polygon', () => {
+    const outer = geometryFromPositions('area', [
+      [104.65, 20.8],
+      [104.66, 20.8],
+      [104.66, 20.81],
+      [104.65, 20.81],
+    ])!
+    const firstHole = geometryFromPositions('area', [
+      [104.652, 20.802],
+      [104.654, 20.802],
+      [104.654, 20.804],
+      [104.652, 20.804],
+    ])!
+    const secondHole = geometryFromPositions('area', [
+      [104.656, 20.806],
+      [104.658, 20.806],
+      [104.658, 20.808],
+      [104.656, 20.808],
+    ])!
+    const withTwoHoles = addPolygonHole(addPolygonHole(outer, firstHole), secondHole)
+    const result = removePolygonHole(withTwoHoles, 0)
+
+    expect(result.type).toBe('Polygon')
+    expect((result.coordinates as unknown[][]).length).toBe(2)
+    expect((result.coordinates as unknown[][])[0]).toEqual((outer.coordinates as unknown[][])[0])
+    expect(polygonHoleGeometries(result)).toEqual(polygonHoleGeometries(withTwoHoles).slice(1))
+    expect(() => removePolygonHole(result, 1)).toThrow(/Không tìm thấy vùng bớt/u)
   })
 })

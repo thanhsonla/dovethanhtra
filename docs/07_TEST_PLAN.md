@@ -133,6 +133,9 @@ qua nút “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu.
   từ chối geometry chạm/ra ngoài outer ring hoặc giao vùng bớt cũ. Lưu thành công
   phải tạo version mới, PostGIS tính diện tích ròng; bản đồ và thẻ dùng màu riêng,
   thẻ liệt kê đúng **Vùng thêm** và **Vùng bớt**.
+- Xóa riêng một phần thêm chỉ làm phần đó biến mất và cập nhật tổng; xóa riêng một
+  vùng bớt chỉ gỡ đúng interior ring bằng phiên bản mới. Outer ring/đối tượng chính,
+  các phần còn lại và lịch sử phải được giữ nguyên.
 - Thành phần đầu tiên phải mang nhãn **Điểm/Tuyến/Vùng 01** thay vì lặp lại tên đầy
   đủ của đối tượng. Thẻ nằm bên phải, đóng được bằng nút ×, phím **Esc** và thao tác
   pointer bên ngoài; thao tác bên trong thẻ không được làm thẻ tự đóng.

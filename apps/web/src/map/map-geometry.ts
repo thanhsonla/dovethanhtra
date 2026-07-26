@@ -181,6 +181,25 @@ export function addPolygonHole(
   }
 }
 
+export function removePolygonHole(geometry: GeoJsonGeometry, holeIndex: number): GeoJsonGeometry {
+  const rings = polygonRings(geometry)
+  const outer = rings?.[0]
+  if (!rings || !outer || !Number.isInteger(holeIndex) || holeIndex < 0) {
+    throw new Error('Không tìm thấy vùng bớt cần xóa.')
+  }
+  const holes = rings.slice(1)
+  if (holeIndex >= holes.length) {
+    throw new Error('Không tìm thấy vùng bớt cần xóa.')
+  }
+  return {
+    coordinates: [
+      closeRing(outer),
+      ...holes.filter((_, index) => index !== holeIndex).map(closeRing),
+    ],
+    type: 'Polygon',
+  }
+}
+
 export function polygonHoleGeometries(geometry: GeoJsonGeometry | null): GeoJsonGeometry[] {
   if (!geometry) return []
   if (geometry.type === 'Polygon') {

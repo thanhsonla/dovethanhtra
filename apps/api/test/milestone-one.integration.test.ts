@@ -329,6 +329,45 @@ describe('Milestone 2 measurement workflow', () => {
       (areaWithSubtraction.normalizedGeometry?.coordinates as unknown[][] | undefined)?.length,
     ).toBe(2)
 
+    const areaAfterRemovingSubtractionResponse = await app.inject({
+      headers,
+      method: 'POST',
+      url: `/api/v1/measurements/${areaWithSubtraction.id}/supersede`,
+      payload: {
+        calculationInputs: areaWithSubtraction.calculationInputs,
+        geometry: {
+          coordinates: [
+            [
+              [104.67, 20.8],
+              [104.670961, 20.8],
+              [104.670961, 20.800904],
+              [104.67, 20.800904],
+              [104.67, 20.8],
+            ],
+          ],
+          type: 'Polygon',
+        },
+        geometryKind: 'area',
+        name: areaWithSubtraction.name,
+        reason: 'Xóa riêng vùng bớt 01, giữ nguyên vùng chính',
+      },
+    })
+    expect(
+      areaAfterRemovingSubtractionResponse.statusCode,
+      areaAfterRemovingSubtractionResponse.body,
+    ).toBe(201)
+    const areaAfterRemovingSubtraction = areaAfterRemovingSubtractionResponse.json<Measurement>()
+    expect(areaAfterRemovingSubtraction).toMatchObject({
+      status: 'confirmed',
+      supersedesId: areaWithSubtraction.id,
+      version: 3,
+    })
+    expect(areaAfterRemovingSubtraction.baseValue).toBeCloseTo(standardArea.baseValue!, 2)
+    expect(
+      (areaAfterRemovingSubtraction.normalizedGeometry?.coordinates as unknown[][] | undefined)
+        ?.length,
+    ).toBe(1)
+
     const invalidArea = await createMeasurement(areaWork.id, {
       geometry: {
         coordinates: [

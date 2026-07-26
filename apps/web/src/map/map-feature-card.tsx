@@ -13,6 +13,7 @@ import {
   polygonHoleAreasMeters,
   polygonOuterAreaMeters,
   polygonPerimeterMeters,
+  removePolygonHole,
 } from './map-geometry.js'
 import { measurementPartName } from './measurement-entry-defaults.js'
 import {
@@ -96,6 +97,8 @@ export function MapFeatureCard(props: {
   const [groupInput, setGroupInput] = useState(props.feature.serviceGroupId)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [componentDeleteKey, setComponentDeleteKey] = useState<string | null>(null)
+  const [componentDeletingKey, setComponentDeletingKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const cardRef = useRef<HTMLElement | null>(null)
   const colorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -274,7 +277,57 @@ export function MapFeatureCard(props: {
     }
   }
 
+  const handleDeleteAddition = async (measurement: Measurement, key: string) => {
+    try {
+      setComponentDeletingKey(key)
+      setError(null)
+      await api.deleteMeasurement(measurement.id)
+      props.onRemoveFeature?.(measurement.id)
+      setComponentDeleteKey(null)
+      if (measurement.id === item.id) props.onClose()
+      await props.onRefresh?.()
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : 'Không thể xóa riêng phần bổ sung.')
+      void props.onRefresh?.()
+    } finally {
+      setComponentDeletingKey(null)
+    }
+  }
+
+  const handleDeleteSubtraction = async (
+    measurement: Measurement,
+    holeIndex: number,
+    subtractionNumber: number,
+    key: string,
+  ) => {
+    try {
+      setComponentDeletingKey(key)
+      setError(null)
+      const geometry = removePolygonHole(
+        measurement.normalizedGeometry ?? measurement.rawGeometry,
+        holeIndex,
+      )
+      const updated = await api.supersedeMeasurement(measurement.id, {
+        calculationInputs: measurement.calculationInputs,
+        geometry,
+        geometryKind: 'area',
+        name: measurement.name,
+        note: measurement.note,
+        reason: `Xóa riêng vùng bớt ${String(subtractionNumber).padStart(2, '0')}`,
+      })
+      replaceFeature(measurement.id, { ...props.feature, measurement: updated })
+      setComponentDeleteKey(null)
+      await props.onRefresh?.()
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : 'Không thể xóa riêng vùng bớt.')
+      void props.onRefresh?.()
+    } finally {
+      setComponentDeletingKey(null)
+    }
+  }
+
   let subtractionSequence = 0
+  const primaryMeasurementId = workMeasurements[0]?.id
 
   return (
     <article className="map-feature-card" aria-label="Thông tin đối tượng đã chọn" ref={cardRef}>
@@ -389,17 +442,20 @@ export function MapFeatureCard(props: {
                 const holeAreas =
                   measurement.geometryKind === 'area' ? polygonHoleAreasMeters(geometry) : []
                 const outerArea = holeAreas.length > 0 ? polygonOuterAreaMeters(geometry) : null
+                const partLabel =
+                  measurement.geometryKind === 'route'
+                    ? `Lộ trình ${String(index + 1).padStart(2, '0')}`
+                    : measurement.geometryKind === 'area' && holeAreas.length > 0
+                      ? `Vùng thêm ${String(index + 1).padStart(2, '0')}`
+                      : measurementPartName(measurement.geometryKind, index + 1)
+                const additionDeleteKey = `addition:${measurement.id}`
+                const canDeleteAddition =
+                  measurement.id !== primaryMeasurementId && measurement.geometryKind !== 'route'
 
                 return (
                   <div className="map-feature-card__part-group" key={measurement.id}>
                     <div className="map-feature-card__part">
-                      <span>
-                        {measurement.geometryKind === 'route'
-                          ? `Lộ trình ${String(index + 1).padStart(2, '0')}`
-                          : measurement.geometryKind === 'area' && holeAreas.length > 0
-                            ? `Vùng thêm ${String(index + 1).padStart(2, '0')}`
-                            : measurementPartName(measurement.geometryKind, index + 1)}
-                      </span>
+                      <span>{partLabel}</span>
                       <strong>
                         {outerArea == null
                           ? measurementBaseValue(measurement)
@@ -416,16 +472,98 @@ export function MapFeatureCard(props: {
                           </small>
                         )}
                       </strong>
-                    </div>
-                    {holeAreas.map((holeArea) => {
-                      subtractionSequence += 1
-                      return (
-                        <div
-                          className="map-feature-card__part map-feature-card__part--subtraction"
-                          key={`${measurement.id}-subtraction-${subtractionSequence}`}
+                      {canDeleteAddition && (
+                        <button
+                          aria-label={`Xóa riêng ${partLabel}`}
+                          className="map-feature-card__part-delete"
+                          disabled={componentDeletingKey !== null}
+                          onClick={() =>
+                            setComponentDeleteKey((current) =>
+                              current === additionDeleteKey ? null : additionDeleteKey,
+                            )
+                          }
+                          title={`Xóa riêng ${partLabel}, không ảnh hưởng đối tượng chính`}
+                          type="button"
                         >
-                          <span>Vùng bớt {String(subtractionSequence).padStart(2, '0')}</span>
-                          <strong>−{formatQuantity(holeArea, 'm²')}</strong>
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    {componentDeleteKey === additionDeleteKey && (
+                      <div className="map-feature-card__part-confirm">
+                        <span>Xóa riêng {partLabel}?</span>
+                        <button
+                          disabled={componentDeletingKey !== null}
+                          onClick={() => setComponentDeleteKey(null)}
+                          type="button"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          disabled={componentDeletingKey !== null}
+                          onClick={() => void handleDeleteAddition(measurement, additionDeleteKey)}
+                          type="button"
+                        >
+                          {componentDeletingKey === additionDeleteKey ? 'Đang xóa…' : 'Xóa'}
+                        </button>
+                      </div>
+                    )}
+                    {holeAreas.map((holeArea, holeIndex) => {
+                      subtractionSequence += 1
+                      const subtractionNumber = subtractionSequence
+                      const subtractionLabel = `Vùng bớt ${String(subtractionNumber).padStart(
+                        2,
+                        '0',
+                      )}`
+                      const subtractionDeleteKey = `subtraction:${measurement.id}:${holeIndex}`
+                      return (
+                        <div key={subtractionDeleteKey}>
+                          <div className="map-feature-card__part map-feature-card__part--subtraction">
+                            <span>{subtractionLabel}</span>
+                            <strong>−{formatQuantity(holeArea, 'm²')}</strong>
+                            <button
+                              aria-label={`Xóa riêng ${subtractionLabel}`}
+                              className="map-feature-card__part-delete"
+                              disabled={componentDeletingKey !== null}
+                              onClick={() =>
+                                setComponentDeleteKey((current) =>
+                                  current === subtractionDeleteKey ? null : subtractionDeleteKey,
+                                )
+                              }
+                              title={`Xóa riêng ${subtractionLabel}, giữ nguyên vùng chính`}
+                              type="button"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          {componentDeleteKey === subtractionDeleteKey && (
+                            <div className="map-feature-card__part-confirm">
+                              <span>Xóa riêng {subtractionLabel}?</span>
+                              <button
+                                disabled={componentDeletingKey !== null}
+                                onClick={() => setComponentDeleteKey(null)}
+                                type="button"
+                              >
+                                Hủy
+                              </button>
+                              <button
+                                disabled={componentDeletingKey !== null}
+                                onClick={() =>
+                                  void handleDeleteSubtraction(
+                                    measurement,
+                                    holeIndex,
+                                    subtractionNumber,
+                                    subtractionDeleteKey,
+                                  )
+                                }
+                                type="button"
+                              >
+                                {componentDeletingKey === subtractionDeleteKey
+                                  ? 'Đang xóa…'
+                                  : 'Xóa'}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
