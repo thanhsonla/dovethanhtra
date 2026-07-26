@@ -12,14 +12,29 @@ const budgets = [
   {
     gzipBytes: 300_000,
     label: 'JavaScript bản đồ lazy-load',
-    pattern: /^map-workspace-[\w-]+\.js$/,
+    pattern: /^map-workspace-(?!drawers-)[\w-]+\.js$/,
     rawBytes: 1_100_000,
   },
   {
     gzipBytes: 20_000,
-    label: 'CSS ứng dụng',
+    label: 'CSS khởi động',
     pattern: /^index-[\w-]+\.css$/,
     rawBytes: 100_000,
+  },
+  {
+    gzipBytes: 19_000,
+    label: 'CSS bản đồ lazy-load',
+    pattern: /^map-workspace-[\w-]+\.css$/,
+    rawBytes: 112_000,
+  },
+  {
+    aggregate: true,
+    gzipBytes: 25_000,
+    label: 'JavaScript bảng thông tin theo yêu cầu',
+    minimumMatches: 2,
+    pattern:
+      /^(?:map-workspace-drawers|map-feature-card|measurement-summary|offline-store)-[\w-]+\.js$/,
+    rawBytes: 85_000,
   },
 ]
 
@@ -32,16 +47,23 @@ function kilobytes(bytes) {
 
 for (const budget of budgets) {
   const matches = files.filter((file) => budget.pattern.test(file))
-  if (matches.length !== 1) {
-    console.error(`✗ ${budget.label}: cần đúng một asset, tìm thấy ${matches.length}.`)
+  const validMatchCount = budget.aggregate
+    ? matches.length >= (budget.minimumMatches ?? 1)
+    : matches.length === 1
+  if (!validMatchCount) {
+    const expectation = budget.aggregate
+      ? `ít nhất ${budget.minimumMatches ?? 1} asset`
+      : 'đúng một asset'
+    console.error(`✗ ${budget.label}: cần ${expectation}, tìm thấy ${matches.length}.`)
     failures.push(budget.label)
     continue
   }
-  const content = readFileSync(new URL(matches[0], assetsDirectory))
-  const gzipBytes = gzipSync(content).byteLength
-  const ok = content.byteLength <= budget.rawBytes && gzipBytes <= budget.gzipBytes
+  const contents = matches.map((file) => readFileSync(new URL(file, assetsDirectory)))
+  const rawBytes = contents.reduce((total, content) => total + content.byteLength, 0)
+  const gzipBytes = contents.reduce((total, content) => total + gzipSync(content).byteLength, 0)
+  const ok = rawBytes <= budget.rawBytes && gzipBytes <= budget.gzipBytes
   console.log(
-    `${ok ? '✓' : '✗'} ${budget.label}: ${kilobytes(content.byteLength)} raw, ${kilobytes(gzipBytes)} gzip`,
+    `${ok ? '✓' : '✗'} ${budget.label}: ${kilobytes(rawBytes)} raw, ${kilobytes(gzipBytes)} gzip`,
   )
   if (!ok) {
     console.error(

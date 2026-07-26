@@ -7,7 +7,13 @@ import type {
   WorkItem,
   WorkType,
 } from '@dove/contracts'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import 'maplibre-gl/dist/maplibre-gl.css'
+import './map.css'
+import './map-interactions.css'
+import './map-quick-entry.css'
+import './map-work-progress.css'
 
 import { api } from '../api.js'
 import { DrawingToolbar, type MapPanelName } from './drawing-toolbar.js'
@@ -26,7 +32,6 @@ import { MapAlert } from './map-alert.js'
 import { MeasurementMap } from './measurement-map.js'
 import { MapWorkspaceOverlays } from './map-workspace-overlays.js'
 import { activeWorkId, measurementKindForWork, rememberActiveWork } from './map-workspace-state.js'
-import { MapWorkspaceDrawers } from './map-workspace-drawers.js'
 import { useMapDrawingWorkflow } from './use-map-drawing-workflow.js'
 import { useMapWorkspaceResources } from './use-map-workspace-resources.js'
 import {
@@ -34,6 +39,12 @@ import {
   useClassificationSelection,
 } from './use-capture-classification.js'
 import { useMapFeatures } from './use-map-features.js'
+
+const MapWorkspaceDrawers = lazy(() =>
+  import('./map-workspace-drawers.js').then((module) => ({
+    default: module.MapWorkspaceDrawers,
+  })),
+)
 export function MapWorkspace(props: {
   groups: ServiceGroup[]
   inspectionCase: InspectionCase
@@ -503,129 +514,141 @@ export function MapWorkspace(props: {
           />
         </section>
 
-        <MapWorkspaceDrawers
-          activePanel={activePanel}
-          capture={drawingWorkflow.capturePanel}
-          classification={classificationPanelProps({
-            captureSync,
-            clearCapture,
-            draft: classificationDraft,
-            onError: setError,
-            onPanel: setActivePanel,
-            onStart: startCaptureDrawing,
-            refreshWork: refreshMeasurementData,
-            selection: classificationSelection,
-            setSelectedId,
-            setSelectedWorkId,
-            workspace: props,
-          })}
-          data={{
-            inspectionCase: props.inspectionCase,
-            mode,
-            onConfirm: async (measurement) => {
-              try {
-                const confirmed = await api.confirmMeasurement(measurement.id)
-                setSelectedId(confirmed.id)
-                await refreshMeasurementData(confirmed.workItemId)
-              } catch (reason) {
-                setError(reason instanceof Error ? reason.message : 'Không thể xác nhận phép đo.')
-              }
-            },
-            onError: setError,
-            onOpenDetails: () => setActivePanel('details'),
-            onSelectMeasurement: (measurement) => selectMeasurement(measurement.id),
-            onSelectWork: selectWork,
-            onStart: startDrawing,
-            onWorkCreated: props.onWorkCreated,
-            selectedWork,
-            selectedWorkId,
-            summaries,
-            summary: selectedSummary,
-            workItems: measurable,
-            workTypes: props.workTypes,
-          }}
-          details={{
-            compactAddition,
-            defaultName: defaultMeasurementName,
-            draftGeometry,
-            draftReady,
-            editMode: mode === 'edit',
-            facilities,
-            initialCalculationInputs,
-            measurement: selected,
-            selectedKind,
-            selectedWork,
-            subtractionTarget,
-            onCancel: () => {
-              cancelDraft()
-              setActivePanel(null)
-            },
-            onChanged: async (measurement) => {
-              cancelDraft()
-              setSelectedId(measurement.id)
-              await refreshMeasurementData(measurement.workItemId)
-            },
-            onDataChanged: async (measurement) => {
-              if (measurement) setSelectedId(measurement.id)
-              if (selectedWork) await refreshMeasurementData(selectedWork.id)
-            },
-            onEdit: () => {
-              if (selected) {
-                setEditHistory(createHistory(selected.rawGeometry))
-                setMode('edit')
-              }
-            },
-            onError: setError,
-            onRoutePreview: setRoutePreview,
-            onRouteSaved: async (route) => {
-              setSelectedId(route.measurement.id)
-              await refreshMeasurementData(route.measurement.workItemId)
-            },
-            onSaved: async (measurement, action) => {
-              if (action === 'continue' && drawableKind) {
-                startDrawing(drawableKind, measurement.workItemId)
-                await refreshMeasurementData(measurement.workItemId)
-                return
-              }
-              cancelDraft()
-              setCompactAddition(false)
-              setSelectedId(measurement.id)
-              await refreshMeasurementData(measurement.workItemId)
-            },
-          }}
-          filters={{
-            confirmedTotals: mapFeatures.confirmedTotals,
-            filters: mapFeatures.filters,
-            groups: props.groups,
-            items: mapFeatures.items,
-            loading: mapFeatures.loading,
-            nextCursor: mapFeatures.nextCursor,
-            onChange: (next) => {
-              mapFeatures.setFilters(next)
-              const work = measurable.find((item) => item.id === next.workItemId)
-              if (work) {
-                setSelectedWorkId(work.id)
-                rememberActiveWork(props.inspectionCase.id, work.id)
-              }
-            },
-            onLoadMore: () => void mapFeatures.loadMore(),
-            onSelect: selectMapFeature,
-            selectedId,
-            workItems: measurable,
-            zones,
-          }}
-          sidebar={{
-            features:
-              mapFeatures.inventoryItems.length > 0
-                ? mapFeatures.inventoryItems
-                : mapFeatures.items,
-            loading: mapFeatures.inventoryLoading,
-            measurements: allMeasurements,
-            selectedId,
-            onSelect: (measurement) => selectMeasurement(measurement.id),
-          }}
-          onClose={() => setActivePanel(null)}
-        />
+        {activePanel && (
+          <Suspense
+            fallback={
+              <div className="map-drawer-loading" role="status">
+                Đang mở bảng thông tin…
+              </div>
+            }
+          >
+            <MapWorkspaceDrawers
+              activePanel={activePanel}
+              capture={drawingWorkflow.capturePanel}
+              classification={classificationPanelProps({
+                captureSync,
+                clearCapture,
+                draft: classificationDraft,
+                onError: setError,
+                onPanel: setActivePanel,
+                onStart: startCaptureDrawing,
+                refreshWork: refreshMeasurementData,
+                selection: classificationSelection,
+                setSelectedId,
+                setSelectedWorkId,
+                workspace: props,
+              })}
+              data={{
+                inspectionCase: props.inspectionCase,
+                mode,
+                onConfirm: async (measurement) => {
+                  try {
+                    const confirmed = await api.confirmMeasurement(measurement.id)
+                    setSelectedId(confirmed.id)
+                    await refreshMeasurementData(confirmed.workItemId)
+                  } catch (reason) {
+                    setError(
+                      reason instanceof Error ? reason.message : 'Không thể xác nhận phép đo.',
+                    )
+                  }
+                },
+                onError: setError,
+                onOpenDetails: () => setActivePanel('details'),
+                onSelectMeasurement: (measurement) => selectMeasurement(measurement.id),
+                onSelectWork: selectWork,
+                onStart: startDrawing,
+                onWorkCreated: props.onWorkCreated,
+                selectedWork,
+                selectedWorkId,
+                summaries,
+                summary: selectedSummary,
+                workItems: measurable,
+                workTypes: props.workTypes,
+              }}
+              details={{
+                compactAddition,
+                defaultName: defaultMeasurementName,
+                draftGeometry,
+                draftReady,
+                editMode: mode === 'edit',
+                facilities,
+                initialCalculationInputs,
+                measurement: selected,
+                selectedKind,
+                selectedWork,
+                subtractionTarget,
+                onCancel: () => {
+                  cancelDraft()
+                  setActivePanel(null)
+                },
+                onChanged: async (measurement) => {
+                  cancelDraft()
+                  setSelectedId(measurement.id)
+                  await refreshMeasurementData(measurement.workItemId)
+                },
+                onDataChanged: async (measurement) => {
+                  if (measurement) setSelectedId(measurement.id)
+                  if (selectedWork) await refreshMeasurementData(selectedWork.id)
+                },
+                onEdit: () => {
+                  if (selected) {
+                    setEditHistory(createHistory(selected.rawGeometry))
+                    setMode('edit')
+                  }
+                },
+                onError: setError,
+                onRoutePreview: setRoutePreview,
+                onRouteSaved: async (route) => {
+                  setSelectedId(route.measurement.id)
+                  await refreshMeasurementData(route.measurement.workItemId)
+                },
+                onSaved: async (measurement, action) => {
+                  if (action === 'continue' && drawableKind) {
+                    startDrawing(drawableKind, measurement.workItemId)
+                    await refreshMeasurementData(measurement.workItemId)
+                    return
+                  }
+                  cancelDraft()
+                  setCompactAddition(false)
+                  setSelectedId(measurement.id)
+                  await refreshMeasurementData(measurement.workItemId)
+                },
+              }}
+              filters={{
+                confirmedTotals: mapFeatures.confirmedTotals,
+                filters: mapFeatures.filters,
+                groups: props.groups,
+                items: mapFeatures.items,
+                loading: mapFeatures.loading,
+                nextCursor: mapFeatures.nextCursor,
+                onChange: (next) => {
+                  mapFeatures.setFilters(next)
+                  const work = measurable.find((item) => item.id === next.workItemId)
+                  if (work) {
+                    setSelectedWorkId(work.id)
+                    rememberActiveWork(props.inspectionCase.id, work.id)
+                  }
+                },
+                onLoadMore: () => void mapFeatures.loadMore(),
+                onSelect: selectMapFeature,
+                selectedId,
+                workItems: measurable,
+                zones,
+              }}
+              sidebar={{
+                features:
+                  mapFeatures.inventoryItems.length > 0
+                    ? mapFeatures.inventoryItems
+                    : mapFeatures.items,
+                loading: mapFeatures.inventoryLoading,
+                measurements: allMeasurements,
+                selectedId,
+                onSelect: (measurement) => selectMeasurement(measurement.id),
+              }}
+              onClose={() => setActivePanel(null)}
+            />
+          </Suspense>
+        )}
       </section>
     </main>
   )

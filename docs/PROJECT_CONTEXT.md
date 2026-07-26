@@ -514,3 +514,9 @@ và các cổng bảo mật trong runbook.
 - Thành phần thêm và từng vùng bớt trên thẻ có thể xóa riêng sau bước xác nhận:
   phần thêm được xóa mềm theo measurement; vùng bớt được gỡ bằng phiên bản polygon
   mới. Outer ring và các thành phần còn lại của đối tượng chính luôn được giữ.
+- Ngày 26/07/2026, bundle web được chia lại theo thời điểm sử dụng mà không tăng
+  các trần cũ: CSS bản đồ chỉ tải khi mở bản đồ; drawer quản lý/chi tiết và thẻ
+  đối tượng chỉ tải khi người dùng mở/chọn. Build hiện có JavaScript khởi động
+  204,34 kB raw/64,30 kB gzip, JavaScript bản đồ 1.099,32 kB/292,77 kB và CSS
+  khởi động 9,54 kB/2,68 kB. Cổng bundle kiểm thêm CSS bản đồ cùng tổng JavaScript
+  bảng thông tin theo yêu cầu để việc code-split không né ngân sách.

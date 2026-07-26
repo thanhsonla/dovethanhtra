@@ -166,6 +166,10 @@ qua nút “Thêm đoạn/vùng/điểm” trong ngăn Dữ liệu.
 - Export 10.000 dòng: tạo được trong giới hạn thời gian cấu hình.
 - 100 ảnh chờ đồng bộ: không làm treo giao diện.
 - Route provider chậm/timeout: UI có trạng thái và retry có giới hạn.
+- `pnpm bundle:check` kiểm riêng tài nguyên theo thời điểm sử dụng: JavaScript/CSS
+  khởi động, JavaScript/CSS mở bản đồ và tổng JavaScript của các bảng thông tin chỉ
+  tải khi người dùng mở. Trần cũ của JavaScript bản đồ (1.100 kB raw/300 kB gzip)
+  và CSS khởi động (100 kB raw/20 kB gzip) không được tăng để che lỗi.
 
 ## 9. Dung sai ban đầu
 
