@@ -492,4 +492,13 @@ và các cổng bảo mật trong runbook.
   4. **Đảo chiều Tuyến đo (`🔄 Đảo chiều`)**: Nút 1-click trong bảng chi tiết tuyến đo `MeasurementInspector` hỗ trợ đảo ngược mảng tọa độ tuyến (`coordinates.reverse()`) và lưu thành bản ghi hiệu chỉnh mới (`supersedeMeasurement`), giúp xử lý chuẩn xác hướng di chuyển công ích.
 - **Loại bỏ công cụ Đo nháp khỏi thanh công cụ (`DrawingToolbar`)**: Theo yêu cầu đơn giản hóa giao diện sử dụng thực địa, nút **Đo nháp** (`measure`) đã được loại bỏ khỏi danh sách công cụ đo nhanh trên thanh `DrawingToolbar`, tập trung giao diện chính cho 4 công cụ số hóa chính (`Điểm`, `Chiều dài`, `Diện tích`, `Hình chữ nhật`) cùng các tiện ích hỗ trợ (`🧲 Bắt điểm`, `📐 Ortho`, `🔍 Kính lúp`).
 - **Tối ưu hóa Tốc độ Đăng nhập & Xử lý Khởi động nguội Máy chủ API (Cold Start)**: Tự động phát lệnh kiểm tra siêu nhẹ `GET /api/v1/health` (`api.pingHealth()`) ngay khi mở trang web hoặc khi người dùng focus gõ tài khoản để khởi động ngầm máy chủ Render Free Tier. Thêm cơ chế tự động thử lại 3 lần (`Fetch Retry with Backoff`), cache mô-đun Argon2id phía máy chủ, và hiển thị thông báo trạng thái `⚡ Máy chủ đang kết nối ban đầu (Cold Start). Vui lòng chờ trong giây lát…` giúp loại bỏ cảm giác đăng nhập lâu/khó và đảm bảo đăng nhập mượt mà.
-
+- Rà soát production ngày 26/07/2026 xác nhận warm-up cũ gọi nhầm
+  `/api/v1/health` (`404`) và workflow keep-alive gọi `/api/v1/auth/me` (`404`).
+  Vercel/proxy warm phản hồi tốt, nhưng Render Free vẫn có cold start 46–57 giây;
+  lịch Actions thực tế có khoảng trống hàng giờ và không thể bảo đảm uptime.
+- Đã sửa warm-up sang `/api/v1/health/live`, retry giới hạn chỉ cho GET/HEAD hoặc
+  mutation có idempotency key, bỏ transaction thừa khi tạo session và làm Argon2
+  fail-closed, không còn mật khẩu fallback. Kế hoạch chốt tại
+  `docs/15_STABILITY_REMEDIATION_PLAN.md`: production phải dùng API không tự ngủ,
+  cấu hình object storage để readiness từ `503` thành `200`, đổi credential từng
+  xuất hiện trong Git và chạy lại integration/E2E trước phát hành.

@@ -12,3 +12,5 @@ test-results/
 *.tsbuildinfo
 *.log
 .vercel
+cookies.txt
+scripts/sync-local-to-supabase.mjs

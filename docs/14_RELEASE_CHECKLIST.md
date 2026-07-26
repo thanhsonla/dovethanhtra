@@ -14,6 +14,23 @@ chứng lưu trong CI hoặc biên bản chạy thử; fixture local không thay
 - [~] E2E luồng hồ sơ/cấu trúc đạt; bộ lọc đã đổi sang selector ổn định và cần chạy
   lại đầy đủ Chromium/WebKit trước khi đóng cổng.
 
+## Rà soát triển khai ngày 26/07/2026
+
+- [x] Vercel trả HTML `200`, reverse proxy cùng nguồn hoạt động và phiên hiện có mở
+  được bản đồ không có lỗi console.
+- [x] `/api/v1/health/live` trả `200`; session warm đo được khoảng 125 ms.
+- [ ] `/api/v1/health/ready` đang trả `503` vì object storage chưa kết nối.
+- [ ] Render API đang dùng gói Free và các lượt keep-alive cho thấy cold start
+  46–57 giây; chưa đáp ứng yêu cầu ổn định production.
+- [ ] Credential database/bootstrap từng xuất hiện trong repository phải được đổi,
+  thu hồi và quét lại toàn lịch sử trước deploy.
+- [~] Mã sửa warm-up/retry/fail-closed đã có local nhưng chưa được đẩy và deploy.
+- [~] E2E Chromium đi qua đăng nhập nhưng timeout tại `Ghi vị trí GPS` trong ngăn
+  Nâng cao; chưa thể coi toàn bộ regression đạt.
+
+Kế hoạch khắc phục chi tiết, không xét nội dung địa giới, nằm tại
+`docs/15_STABILITY_REMEDIATION_PLAN.md`.
+
 ## Còn chặn trước production
 
 - [ ] Field test trên thiết bị thực theo `docs/12_FIELD_TEST_PROTOCOL.md`.
@@ -21,6 +38,8 @@ chứng lưu trong CI hoặc biên bản chạy thử; fixture local không thay
 - [ ] Bằng chứng provider tile/route và quota trong môi trường triển khai thật.
 - [ ] Bổ sung E2E hồi quy GPS, route, ảnh, import, đối chiếu và export/version.
 - [ ] Chạy secret scan bằng Gitleaks trong CI và lưu kết quả release.
+- [ ] Dùng instance API không tự ngủ và đo 20 lượt đăng nhập p95 dưới 1 giây.
+- [ ] Cấu hình object storage để readiness trả `200`.
 
 ## Rollback
 

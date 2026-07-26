@@ -1,4 +1,4 @@
-import type * as Argon2 from '@node-rs/argon2'
+import { verify } from '@node-rs/argon2'
 import type { CurrentUser } from '@dove/contracts'
 
 import { AppError } from '../../platform/app-error.js'
@@ -12,24 +12,12 @@ export interface AuthSession {
   user: CurrentUser
 }
 
-let argon2Module: typeof Argon2 | null | undefined = undefined
-
 async function verifyPassword(hashStr: string, plain: string): Promise<boolean> {
-  if (argon2Module === undefined) {
-    try {
-      argon2Module = await import('@node-rs/argon2')
-    } catch {
-      argon2Module = null
-    }
+  try {
+    return await verify(hashStr, plain)
+  } catch {
+    return false
   }
-  if (argon2Module) {
-    try {
-      return await argon2Module.verify(hashStr, plain)
-    } catch {
-      // Fallback below
-    }
-  }
-  return plain === '12345678'
 }
 
 export class IdentityService {
@@ -49,12 +37,10 @@ export class IdentityService {
 
     const token = randomToken()
     const expiresAt = new Date(Date.now() + this.sessionTtlHours * 60 * 60 * 1000)
-    await this.database.transaction().execute(async (transaction) => {
-      await this.repository.createSession(transaction, {
-        userId: user.id,
-        tokenHash: sha256(token),
-        expiresAt,
-      })
+    await this.repository.createSession(this.database, {
+      userId: user.id,
+      tokenHash: sha256(token),
+      expiresAt,
     })
 
     return {

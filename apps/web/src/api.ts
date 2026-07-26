@@ -51,76 +51,15 @@ import type {
   MeasurementStatus,
 } from '@dove/contracts'
 
-export class ApiClientError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-    public readonly code: string | null = null,
-    public readonly details: unknown = null,
-    public readonly traceId: string | null = null,
-  ) {
-    super(`${code ? `[${code}] ` : ''}${message}${traceId ? ` · trace ${traceId}` : ''}`)
-  }
-}
+import { ApiClientError, request } from './api-request.js'
+
+export { ApiClientError } from './api-request.js'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api/v1'
 
 function csrfToken(): string {
   const item = document.cookie.split('; ').find((value) => value.startsWith('dove_csrf='))
   return item ? decodeURIComponent(item.slice('dove_csrf='.length)) : ''
-}
-
-async function request<T>(path: string, init: RequestInit = {}, maxRetries = 2): Promise<T> {
-  const method = init.method ?? 'GET'
-  let response: Response | null = null
-  let lastError: unknown = null
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      response = await fetch(`${API_BASE}${path}`, {
-        ...init,
-        credentials: 'include',
-        headers: {
-          ...(init.body ? { 'content-type': 'application/json' } : {}),
-          ...(method !== 'GET' && method !== 'HEAD' ? { 'x-csrf-token': csrfToken() } : {}),
-          ...init.headers,
-        },
-      })
-      break
-    } catch (err) {
-      lastError = err
-      if (attempt < maxRetries) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)))
-      }
-    }
-  }
-
-  if (!response) {
-    throw new ApiClientError(
-      'Không thể kết nối tới máy chủ. Máy chủ có thể đang trong quá trình khởi động, vui lòng thử lại sau giây lát.',
-      503,
-      'NETWORK_ERROR',
-      lastError,
-    )
-  }
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      code?: string
-      details?: unknown
-      message?: string
-      traceId?: string
-    } | null
-    throw new ApiClientError(
-      payload?.message ?? 'Yêu cầu không thành công.',
-      response.status,
-      payload?.code ?? null,
-      payload?.details ?? null,
-      payload?.traceId ?? null,
-    )
-  }
-  if (response.status === 204) return undefined as T
-  return (await response.json()) as T
 }
 
 async function downloadFile(path: string) {
@@ -389,7 +328,8 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
   logout: () => request('/auth/logout', { method: 'POST' }),
-  pingHealth: () => request<{ status: string }>('/health', { method: 'GET' }, 1).catch(() => null),
+  pingHealth: () =>
+    request<{ status: string }>('/health/live', { method: 'GET' }, 3).catch(() => null),
   session: () => request<SessionResponse>('/auth/session'),
   supersedeMeasurement: async (measurementId: string, input: SupersedeMeasurementRequest) => {
     try {

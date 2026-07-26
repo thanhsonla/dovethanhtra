@@ -201,6 +201,11 @@ từ React hoặc bật quyền truy cập bảng nghiệp vụ cho `anon`.
 
 **Thời lượng dự kiến:** 1 ngày.
 
+Rà soát thực tế ngày 26/07/2026 xác nhận Render Free có cold start khoảng 46–57
+giây và GitHub Actions schedule không chạy đều đủ để giữ dịch vụ thức. Môi trường
+production phải dùng instance không tự ngủ; keep-alive chỉ là biện pháp hỗ trợ cho
+staging/thử nghiệm, không được coi là SLA hoặc cổng ổn định đăng nhập.
+
 ### 8.1. Biến môi trường API
 
 | Biến | Bắt buộc | Nguồn | Ghi chú |

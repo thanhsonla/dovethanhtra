@@ -6,22 +6,31 @@ services:
     plan: free
     buildCommand: pnpm --filter @dove/contracts build && pnpm --filter @dove/api build
     startCommand: pnpm --filter @dove/api start
+    healthCheckPath: /api/v1/health/ready
     envVars:
       - key: NODE_VERSION
         value: 24.18.0
       - key: DATABASE_URL
-        value: postgresql://postgres.uqajicuudasoluzopius:C9s7%40uRy%3Fv3%24%40%24%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+        sync: false
       - key: API_HOST
         value: 0.0.0.0
       - key: LOG_LEVEL
         value: info
       - key: COOKIE_SECURE
         value: 'true'
-      - key: CORS_ORIGIN
-        value: https://dovethanhtra.vercel.app
-      - key: BOOTSTRAP_OWNER_EMAIL
-        value: admin@thanh
-      - key: BOOTSTRAP_OWNER_PASSWORD
-        value: '12345678'
-      - key: BOOTSTRAP_OWNER_NAME
-        value: Quản trị viên Admin
+      - key: SESSION_TTL_HOURS
+        value: '12'
+      - key: LOGIN_REQUESTS_PER_MINUTE
+        value: '5'
+      - key: MINIO_ENDPOINT
+        sync: false
+      - key: MINIO_PORT
+        value: '443'
+      - key: MINIO_USE_SSL
+        value: 'true'
+      - key: MINIO_BUCKET
+        sync: false
+      - key: MINIO_ROOT_USER
+        sync: false
+      - key: MINIO_ROOT_PASSWORD
+        sync: false
