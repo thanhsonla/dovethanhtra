@@ -6,9 +6,10 @@ import { MapDetailsPanel } from './map-details-panel.js'
 import { MapDrawer } from './map-drawer.js'
 import { MapFeatureFilterPanel } from './map-feature-filter-panel.js'
 import { MapFeatureSidebar } from './map-feature-sidebar.js'
+import { MapLayerPanel } from './map-layer-panel.js'
 import { MapQuickWorkflow } from './map-quick-workflow.js'
 
-type PanelName = 'capture' | 'classification' | 'data' | 'details' | 'filters'
+type PanelName = 'capture' | 'classification' | 'data' | 'details' | 'filters' | 'layers'
 
 export function MapWorkspaceDrawers(props: {
   activePanel: PanelName | null
@@ -17,6 +18,7 @@ export function MapWorkspaceDrawers(props: {
   data: ComponentProps<typeof MapQuickWorkflow>
   details: ComponentProps<typeof MapDetailsPanel>
   filters: ComponentProps<typeof MapFeatureFilterPanel>
+  layers: ComponentProps<typeof MapLayerPanel>
   sidebar: ComponentProps<typeof MapFeatureSidebar> | null
   onClose: () => void
 }) {
@@ -69,6 +71,14 @@ export function MapWorkspaceDrawers(props: {
     return (
       <MapDrawer id="map-filter-drawer" label="Tìm kiếm dữ liệu" onClose={props.onClose}>
         <MapFeatureFilterPanel {...props.filters} />
+      </MapDrawer>
+    )
+  }
+
+  if (props.activePanel === 'layers') {
+    return (
+      <MapDrawer id="map-layers-drawer" label="Lớp bản đồ" onClose={props.onClose}>
+        <MapLayerPanel {...props.layers} />
       </MapDrawer>
     )
   }

@@ -31,19 +31,43 @@ describe('map-first shell', () => {
     expect(html).toContain('aria-keyshortcuts="D"')
     expect(html).toContain('aria-label="Diện tích"')
     expect(html).toContain('aria-keyshortcuts="A"')
-    expect(html).toContain('aria-label="Lùi điểm"')
-    expect(html).toContain('aria-label="Khôi phục điểm"')
-    expect(html).toContain('aria-label="Xóa phần đang chọn"')
-    expect(html).toContain('aria-label="Kết thúc phép đo"')
-    expect(html).toContain('aria-keyshortcuts="Meta+S Control+S"')
     expect(html).toContain('aria-label="Tìm kiếm"')
     expect(html).toContain('aria-label="Bảng điều khiển bản đồ"')
     expect(html).toContain('aria-label="Quản lý số liệu"')
+    expect(html).toContain('aria-label="Lớp bản đồ"')
+    expect(html).toContain('aria-label="Thêm công cụ"')
     expect(html).not.toContain('map-data-rail')
     expect(html).toContain('aria-controls="map-data-drawer"')
     expect(html).toContain('aria-expanded="true"')
     expect(html).not.toContain('>Số liệu<')
     expect(html).not.toContain('map-data-rail__chevron')
+  })
+
+  it('only exposes editing actions while a geometry is being drawn', () => {
+    const html = renderToString(
+      <DrawingToolbar
+        activePanel={null}
+        canDelete
+        canFinish
+        canRedo
+        canUndo
+        mode="area"
+        onCancel={() => undefined}
+        onDelete={() => undefined}
+        onFinish={() => undefined}
+        onHistory={() => undefined}
+        onOpenPanel={() => undefined}
+        onStart={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Đang vẽ vùng')
+    expect(html).toContain('aria-label="Lùi điểm"')
+    expect(html).toContain('aria-label="Khôi phục điểm"')
+    expect(html).toContain('aria-label="Xóa phần đang chọn"')
+    expect(html).toContain('aria-label="Kết thúc phép đo"')
+    expect(html).toContain('aria-label="Hủy thao tác"')
+    expect(html).not.toContain('aria-label="Quản lý số liệu"')
   })
 
   it('renders a labelled, non-modal and closable drawer', () => {

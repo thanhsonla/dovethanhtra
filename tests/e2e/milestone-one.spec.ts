@@ -1,6 +1,11 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 test.setTimeout(90_000)
+
+async function openAdvancedTools(page: Page) {
+  await page.getByRole('button', { name: 'Thêm công cụ', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Nâng cao', exact: true }).click()
+}
 
 test('creates a case and adds a catalog work item', async ({ page }, testInfo) => {
   await page.context().grantPermissions(['geolocation'])
@@ -136,6 +141,15 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
       }
     })
   expect(dataButtonBounds).toEqual({ insideToolbar: true, visibleText: '' })
+  await page.getByRole('button', { name: 'Lớp bản đồ', exact: true }).click()
+  await expect(page.locator('#map-layers-drawer')).toBeVisible()
+  await expect(
+    page.locator('#map-layers-drawer').getByRole('group', { name: 'Chế độ hiển thị thực địa' }),
+  ).toBeVisible()
+  await expect(page.getByLabel('Hiện ranh giới và tên phường/xã')).toBeVisible()
+  await expect(page.getByLabel('Bản đồ nền trong bảng Lớp')).toHaveValue('esri-imagery-labels')
+  await page.getByLabel('Đóng lớp bản đồ', { exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Thêm công cụ', exact: true })).toBeVisible()
   const toolbarDisplay = await page
     .locator('.map-primary-toolbar')
     .evaluate((element) => getComputedStyle(element).display)
@@ -144,20 +158,11 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   const map = page.getByLabel('Bản đồ phép đo')
   await map.click({ position: { x: 400, y: 280 } })
   await page.keyboard.press('p')
-  await expect(page.getByRole('button', { name: 'Điểm', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByText('Đang vẽ điểm', { exact: true })).toBeVisible()
   await page.keyboard.press('a')
-  await expect(page.getByRole('button', { name: 'Diện tích', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByText('Đang vẽ vùng', { exact: true })).toBeVisible()
   await page.keyboard.press('d')
-  await expect(page.getByRole('button', { name: 'Chiều dài', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(page.getByText('Đang vẽ tuyến', { exact: true })).toBeVisible()
   await map.click({ position: { x: 550, y: 320 } })
   await map.click({ position: { x: 610, y: 320 } })
   await expect(page.getByRole('button', { name: 'Kết thúc phép đo' })).toBeEnabled()
@@ -380,9 +385,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .locator('#map-filter-drawer')
     .getByRole('button', { name: 'Tìm kiếm', exact: true })
     .click()
-  await page
-    .getByRole('button', { name: 'Mở nâng cao' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await openAdvancedTools(page)
   await page.getByText('Import GeoJSON', { exact: true }).press('Enter')
   await page.getByLabel('Tệp GeoJSON').setInputFiles({
     name: 'import-e2e.geojson',
@@ -466,9 +469,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
   await expect(page.getByRole('button', { name: new RegExp(reviewMeasurementName) })).toBeVisible()
   await expect(page.getByLabel('Tổng đã xác nhận')).toContainText('—')
 
-  await page
-    .getByRole('button', { name: 'Mở nâng cao' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await openAdvancedTools(page)
   await page
     .getByRole('button', { name: 'Bắt đầu GPS' })
     .evaluate((element: HTMLButtonElement) => element.click())
@@ -510,9 +511,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .locator('#map-filter-drawer')
     .getByRole('button', { name: 'Tìm kiếm', exact: true })
     .click()
-  await page
-    .getByRole('button', { name: 'Mở nâng cao' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await openAdvancedTools(page)
   await expect(page.getByText('GPS track: 2 điểm')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Đồng bộ: local_only')).toBeVisible()
   await page
@@ -551,9 +550,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .locator('#map-filter-drawer')
     .getByRole('button', { name: 'Tìm kiếm', exact: true })
     .click()
-  await page
-    .getByRole('button', { name: 'Mở nâng cao' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await openAdvancedTools(page)
   const pointResponsePromise = page.waitForResponse((response) =>
     response.url().includes('/gps-points'),
   )
@@ -571,9 +568,7 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
     .locator('#map-filter-drawer')
     .getByRole('button', { name: 'Tìm kiếm', exact: true })
     .click()
-  await page
-    .getByRole('button', { name: 'Mở nâng cao' })
-    .evaluate((element: HTMLButtonElement) => element.click())
+  await openAdvancedTools(page)
   await page.getByLabel('Cơ sở xử lý').selectOption({ index: 1 })
   await page
     .getByRole('button', { name: 'Tính phương án' })

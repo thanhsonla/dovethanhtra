@@ -4,7 +4,7 @@
 
 .map-toolbar-container {
   position: absolute;
-  z-index: 3;
+  z-index: 5;
   top: 12px;
   left: 12px;
   display: flex;
@@ -36,6 +36,10 @@
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+.map-toolbar-more {
+  position: relative;
 }
 
 .map-toolbar-container__divider {
@@ -133,7 +137,8 @@
 }
 
 .map-primary-toolbar button,
-.map-panel-toolbar button {
+.map-panel-toolbar button,
+.map-toolbar-more > button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,7 +153,10 @@
 }
 
 .map-primary-toolbar svg,
-.map-panel-toolbar svg {
+.map-panel-toolbar svg,
+.map-toolbar-more svg,
+.field-mode-btn svg,
+.basemap-select__icon svg {
   width: 18px;
   height: 18px;
   fill: none;
@@ -159,19 +167,22 @@
 }
 
 .map-primary-toolbar button:hover:not(:disabled),
-.map-panel-toolbar button:hover:not(:disabled) {
+.map-panel-toolbar button:hover:not(:disabled),
+.map-toolbar-more > button:hover:not(:disabled) {
   background: #e5f1e9;
 }
 
 .map-primary-toolbar button.is-active,
 .map-panel-toolbar button.is-active,
+.map-toolbar-more > button.is-active,
 .map-primary-toolbar .map-primary-toolbar__finish:not(:disabled) {
   background: #176c4c;
   color: #fff;
 }
 
 .map-primary-toolbar button:disabled,
-.map-panel-toolbar button:disabled {
+.map-panel-toolbar button:disabled,
+.map-toolbar-more > button:disabled {
   cursor: not-allowed;
   opacity: 0.38;
 }
@@ -181,6 +192,64 @@
   height: 24px;
   margin: 0 1px;
   background: #d3dfd9;
+}
+
+.map-toolbar-mode {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 7px;
+  border-radius: 8px;
+  background: #edf4f0;
+  color: #174032;
+  font-size: 0.7rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.map-primary-toolbar__cancel {
+  color: #a23a2a !important;
+}
+
+.map-toolbar-more__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 7;
+  display: grid;
+  min-width: 176px;
+  padding: 4px;
+  border: 1px solid #c5d4cc;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 12px 28px rgb(18 62 48 / 20%);
+  backdrop-filter: blur(10px);
+}
+
+.map-toolbar-more__menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #244d3e;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.map-toolbar-more__menu button:hover,
+.map-toolbar-more__menu button:focus-visible {
+  background: #e5f1e9;
+}
+
+.map-toolbar-more__menu svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
 }
 
 .map-drawer {
@@ -1323,7 +1392,7 @@
     display: flex;
     width: max-content;
     max-width: calc(100% - 10px);
-    overflow: hidden;
+    overflow: visible;
     transform: translateX(-50%);
   }
 
@@ -1334,11 +1403,23 @@
   }
 
   .map-primary-toolbar button,
-  .map-panel-toolbar button {
+  .map-panel-toolbar button,
+  .map-toolbar-more > button {
     flex: 0 0 clamp(28px, 8.5vw, 36px);
     width: clamp(28px, 8.5vw, 36px);
     height: 34px;
     min-height: 34px;
+  }
+
+  .map-toolbar-mode {
+    max-width: 90px;
+    overflow: hidden;
+    font-size: 0.64rem;
+    text-overflow: ellipsis;
+  }
+
+  .map-toolbar-more__menu {
+    right: -2px;
   }
 
   .map-drawer {

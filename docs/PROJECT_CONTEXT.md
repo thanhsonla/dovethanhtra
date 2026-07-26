@@ -525,3 +525,11 @@ và các cổng bảo mật trong runbook.
   công cụ đã hoạt động, dùng hệ icon SVG nội bộ **Field Precision** và toolbar theo
   ngữ cảnh; Hình chữ nhật/Ortho đã được loại bỏ hẳn khỏi phạm vi. Không thay đổi
   API, phép đo chính thức, dữ liệu/audit hoặc địa giới.
+- Giai đoạn 1 hoàn tất ngày 26/07/2026: toolbar ở chế độ xem chỉ giữ **Điểm, Chiều
+  dài, Diện tích** cùng **Dữ liệu, Tìm kiếm, Lớp**; khi bắt đầu số hóa, nó chuyển
+  sang trạng thái thao tác gồm nhãn chế độ, Bắt điểm, Lùi/Khôi phục, Xóa, Kết thúc
+  và Hủy. Kính lúp cùng **Mở nâng cao** nằm trong menu **Thêm công cụ**. Drawer
+  **Lớp bản đồ** dùng lại state hiện có cho nền bản đồ, ranh giới xã/phường và ba
+  chế độ thực địa. Tất cả icon chuyển sang SVG nội bộ, không thêm thư viện; build
+  sau thay đổi giữ CSS bản đồ 111,52 kB raw/18,38 kB gzip và tổng các chunk theo
+  yêu cầu 79,45 kB raw/22,37 kB gzip, đều trong ngân sách.

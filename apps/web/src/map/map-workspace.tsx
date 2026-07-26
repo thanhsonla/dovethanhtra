@@ -635,6 +635,15 @@ export function MapWorkspace(props: {
                 workItems: measurable,
                 zones,
               }}
+              layers={{
+                basemapId,
+                basemaps,
+                fieldMode,
+                onBasemapChange: setBasemapId,
+                onFieldModeChange: setFieldMode,
+                onShowCommunesChange: setShowCommunes,
+                showCommunes,
+              }}
               sidebar={{
                 features:
                   mapFeatures.inventoryItems.length > 0

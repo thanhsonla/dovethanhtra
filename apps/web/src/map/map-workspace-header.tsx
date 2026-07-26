@@ -1,6 +1,8 @@
 import type { BasemapProvider } from './basemap-provider.js'
 import type { FieldDisplayMode } from './map-service-colors.js'
 
+import { MapIcon } from './map-icon.js'
+
 export function MapWorkspaceHeader(props: {
   basemapId: string
   basemaps: BasemapProvider
@@ -38,7 +40,7 @@ export function MapWorkspaceHeader(props: {
             onClick={() => props.onFieldModeChange?.('normal')}
             title="Chế độ hiển thị chuẩn"
           >
-            🌐 <span>Chuẩn</span>
+            <MapIcon name="globe" /> <span>Chuẩn</span>
           </button>
           <button
             type="button"
@@ -46,7 +48,7 @@ export function MapWorkspaceHeader(props: {
             onClick={() => props.onFieldModeChange?.('sun')}
             title="Chế độ Chói nắng ngoài thực địa (Tăng tương phản & màu Neon)"
           >
-            ☀️ <span>Chói nắng</span>
+            <MapIcon name="sun" /> <span>Chói nắng</span>
           </button>
           <button
             type="button"
@@ -54,7 +56,7 @@ export function MapWorkspaceHeader(props: {
             onClick={() => props.onFieldModeChange?.('night')}
             title="Chế độ Ban đêm (Tối màu dịu mắt & màu Dạ quang)"
           >
-            🌙 <span>Đêm</span>
+            <MapIcon name="moon" /> <span>Đêm</span>
           </button>
         </div>
 
@@ -68,10 +70,9 @@ export function MapWorkspaceHeader(props: {
           <span>RG &amp; tên P/X</span>
         </label>
         <label className="basemap-select" title={`Bản đồ nền: ${selected.label}`}>
-          <svg aria-hidden="true" className="basemap-select__icon" viewBox="0 0 24 24">
-            <path d="m12 3 9 5-9 5-9-5 9-5Z" />
-            <path d="m3 12 9 5 9-5M3 16l9 5 9-5" />
-          </svg>
+          <span className="basemap-select__icon">
+            <MapIcon name="layers" />
+          </span>
           <select
             aria-describedby="basemap-help"
             aria-label="Bản đồ nền"

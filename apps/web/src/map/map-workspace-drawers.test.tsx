@@ -28,6 +28,7 @@ describe('MapWorkspaceDrawers', () => {
       data: {} as never,
       details: {} as never,
       filters: {} as never,
+      layers: {} as never,
       onClose: closeOnly,
       sidebar: null,
     })
