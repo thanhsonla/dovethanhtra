@@ -70,17 +70,40 @@ function csrfToken(): string {
   return item ? decodeURIComponent(item.slice('dove_csrf='.length)) : ''
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, maxRetries = 2): Promise<T> {
   const method = init.method ?? 'GET'
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      ...(init.body ? { 'content-type': 'application/json' } : {}),
-      ...(method !== 'GET' && method !== 'HEAD' ? { 'x-csrf-token': csrfToken() } : {}),
-      ...init.headers,
-    },
-  })
+  let response: Response | null = null
+  let lastError: unknown = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      response = await fetch(`${API_BASE}${path}`, {
+        ...init,
+        credentials: 'include',
+        headers: {
+          ...(init.body ? { 'content-type': 'application/json' } : {}),
+          ...(method !== 'GET' && method !== 'HEAD' ? { 'x-csrf-token': csrfToken() } : {}),
+          ...init.headers,
+        },
+      })
+      break
+    } catch (err) {
+      lastError = err
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)))
+      }
+    }
+  }
+
+  if (!response) {
+    throw new ApiClientError(
+      'Không thể kết nối tới máy chủ. Máy chủ có thể đang trong quá trình khởi động, vui lòng thử lại sau giây lát.',
+      503,
+      'NETWORK_ERROR',
+      lastError,
+    )
+  }
+
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as {
       code?: string
@@ -366,6 +389,7 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
   logout: () => request('/auth/logout', { method: 'POST' }),
+  pingHealth: () => request<{ status: string }>('/health', { method: 'GET' }, 1).catch(() => null),
   session: () => request<SessionResponse>('/auth/session'),
   supersedeMeasurement: async (measurementId: string, input: SupersedeMeasurementRequest) => {
     try {

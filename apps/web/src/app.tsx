@@ -104,7 +104,16 @@ export function App() {
     }
   }
 
+  const [isServerWarming, setIsServerWarming] = useState(false)
+
   useEffect(() => {
+    // Ping health endpoint in background to wake up Render.com cold start immediately on page load
+    void api.pingHealth()
+
+    const warmingTimer = setTimeout(() => {
+      setIsServerWarming(true)
+    }, 2500)
+
     void api
       .session()
       .then(async (current) => {
@@ -114,7 +123,11 @@ export function App() {
       .catch((reason: unknown) => {
         if (!(reason instanceof ApiClientError) || reason.status !== 401) setError(message(reason))
       })
-      .finally(() => setChecking(false))
+      .finally(() => {
+        clearTimeout(warmingTimer)
+        setIsServerWarming(false)
+        setChecking(false)
+      })
   }, [])
 
   const selectCase = async (item: InspectionCase) => {
@@ -132,7 +145,16 @@ export function App() {
   if (checking)
     return (
       <main className="center-card" role="status">
-        Đang mở không gian làm việc…
+        <div style={{ textAlign: 'center', padding: '12px' }}>
+          <p style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '8px' }}>
+            Đang mở không gian làm việc…
+          </p>
+          {isServerWarming && (
+            <p style={{ fontSize: '0.85rem', color: '#0284c7', margin: 0, lineHeight: 1.4 }}>
+              ⚡ Máy chủ đang kết nối ban đầu (Cold Start). Vui lòng chờ trong giây lát…
+            </p>
+          )}
+        </div>
       </main>
     )
   if (!session) {
@@ -432,13 +454,27 @@ export function App() {
 
 function Login(props: { error: string; onLogin(email: string, password: string): Promise<void> }) {
   const [busy, setBusy] = useState(false)
+  const [isSlowResponse, setIsSlowResponse] = useState(false)
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const values = new FormData(event.currentTarget)
     setBusy(true)
-    await props.onLogin(field(values, 'email'), field(values, 'password'))
-    setBusy(false)
+    setIsSlowResponse(false)
+    const slowTimer = setTimeout(() => setIsSlowResponse(true), 2500)
+    try {
+      await props.onLogin(field(values, 'email'), field(values, 'password'))
+    } finally {
+      clearTimeout(slowTimer)
+      setIsSlowResponse(false)
+      setBusy(false)
+    }
   }
+
+  const handleInputFocus = () => {
+    void api.pingHealth()
+  }
+
   return (
     <main className="login-page">
       <form className="login-card" onSubmit={(event) => void submit(event)}>
@@ -450,16 +486,36 @@ function Login(props: { error: string; onLogin(email: string, password: string):
             {props.error}
           </div>
         )}
+        {busy && isSlowResponse && (
+          <div
+            className="alert"
+            style={{ backgroundColor: '#e0f2fe', borderColor: '#38bdf8', color: '#0369a1' }}
+          >
+            ⚡ Máy chủ đang kết nối ban đầu (Cold Start). Vui lòng chờ trong giây lát…
+          </div>
+        )}
         <label>
           Email
-          <input name="email" type="email" required autoComplete="username" />
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="username"
+            onFocus={handleInputFocus}
+          />
         </label>
         <label>
           Mật khẩu
-          <input name="password" type="password" required autoComplete="current-password" />
+          <input
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            onFocus={handleInputFocus}
+          />
         </label>
         <button className="button" disabled={busy}>
-          {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
+          {busy ? (isSlowResponse ? 'Đang khởi động máy chủ…' : 'Đang đăng nhập…') : 'Đăng nhập'}
         </button>
       </form>
     </main>
