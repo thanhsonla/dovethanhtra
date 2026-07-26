@@ -58,14 +58,7 @@ export function handleMapShortcut(event: MapShortcutEvent, actions: MapShortcutA
     if (actions.canDelete) actions.onDelete()
     return true
   }
-  const mode =
-    key === 'd'
-      ? 'line'
-      : key === 'a'
-        ? 'area'
-        : key === 'p'
-          ? 'point'
-          : null
+  const mode = key === 'd' ? 'line' : key === 'a' ? 'area' : key === 'p' ? 'point' : null
   if (!mode) return false
   event.preventDefault()
   actions.onStart(mode)
@@ -81,9 +74,7 @@ function ToolIcon(props: {
     | 'line'
     | 'magnifier'
     | 'measure'
-    | 'ortho'
     | 'point'
-    | 'rect'
     | 'redo'
     | 'snap'
     | 'undo'
@@ -129,20 +120,11 @@ function ToolIcon(props: {
         <path d="M6 17v-2M10 17v-3M14 17v-2M18 17v-3" stroke="currentColor" strokeWidth="1.5" />
       </g>
     ),
-    ortho: (
-      <g fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 20V4h16" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M4 12h8v8" strokeDasharray="2 2" strokeWidth="1.5" />
-      </g>
-    ),
     point: (
       <g>
         <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11z" />
         <circle cx="12" cy="10" fill="currentColor" r="2.5" />
       </g>
-    ),
-    rect: (
-      <rect x="4" y="6" width="16" height="12" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
     ),
     redo: <path d="m15 14 5-5-5-5M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13" />,
     snap: (

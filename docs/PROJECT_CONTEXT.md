@@ -486,12 +486,12 @@ và các cổng bảo mật trong runbook.
 - Chuẩn hóa **Đơn vị tính & Chu vi đối tượng diện tích**: Hàm `sanitizeUnit` tự động loại bỏ hoàn toàn các hậu tố `.lần` hoặc `lần` ở mọi vị trí hiển thị (thẻ Popover, nhãn vector trên bản đồ, thẻ đối tượng và chi tiết phép đo), đưa đơn vị về đúng chuẩn (`m²`, `ha`, `m`, `điểm`). Đối với các đối tượng diện tích (`geometryKind: 'area'` hoặc `Polygon`), hệ thống bổ sung số liệu **Chu vi (đơn vị m)** được tính tự động từ hình học GeoJSON chính thức thông qua hàm `polygonPerimeterMeters`.
 - Phím **Esc thoát nhanh lệnh đo & Gióng đường nét đứt vuông góc**: Khi đang ở bất kỳ công cụ đo đạc nào (`point`, `line`, `area`, `measure`), nhấn phím **Esc** lập tức hủy các điểm nháp và thoát nhanh về chế độ xem bản đồ bình thường. Trong quá trình chấm mốc đo, hệ thống hiển thị đường nối mờ (nét đứt mảnh [3, 3]) từ điểm vừa chấm đến con trỏ; khi góc tiệm cận 90° so với đoạn thẳng trước đó (ngưỡng 14px), con trỏ tự động bắt dính vuông góc chuẩn xác, đường gióng đổi sang màu **Xanh Neon (`#00ff66`)** đồng thời hiển thị **ký hiệu vuông góc ∟** tại đỉnh góc.
 - **Bắt điểm Giao vuông góc giữa 2 điểm tham chiếu (Object Snap Tracking - OTRACK)**: Khi kỹ sư đang thực hiện đo đạc và rê chuột qua 2 điểm mốc khác (hoặc 1 điểm đã chấm + 1 điểm góc mốc bất kỳ trên bản đồ), 2 điểm này được gắn vòng tròn mục tiêu **Cyan Neon (`#00ffff`)**. Khi di chuyển con trỏ tiệm cận vùng giao điểm chiếu vuông góc của 2 điểm đó (ngưỡng 20px), con trỏ tự động **bắt dính chuẩn xác vào tọa độ giao điểm vuông góc**, tự động bắn 2 đường gióng nét đứt mờ song song/vuông góc từ 2 điểm mốc đến giao điểm, hiển thị biểu tượng **góc vuông ∟** và nhãn tooltip `🎯 Giao điểm vuông góc (90°)`.
-- **4 Cải tiến Trải nghiệm Thao tác Đo đạc (Ortho Lock, Quick Rect 2-Click, Magnifier Toggle, Reverse Line Direction)**:
-  1. **Khóa hướng Ortho (`📐` / `Shift`)**: Khi vẽ tuyến/vùng/đo nháp, giữ phím `Shift` hoặc bật nút `📐 Ortho` trên thanh công cụ sẽ khóa tuyệt đối hướng di chuyển con trỏ theo trục ngang ($0^\circ$) hoặc dọc ($90^\circ$) từ điểm trước đó.
-  2. **Vẽ hình chữ nhật Quick Rect (`⏹️` / `R`)**: Công cụ vẽ hình chữ nhật 2 nhấp (Click 1: Đỉnh góc 1, Click 2: Đỉnh góc đối diện), tự động dựng hình chữ nhật 4 đỉnh vuông góc chuẩn xấp xỉ diện tích thực địa.
-  3. **Nút bật/tắt Kính lúp (`🔍 Magnifier`)**: Nút bật/tắt nhanh chế độ kính lúp phóng đại 2x trên thanh công cụ `DrawingToolbar`, hỗ trợ thao tác soi kính lúp trên PC/Desktop mà không cần thao tác vuốt cảm ứng.
-  4. **Đảo chiều Tuyến đo (`🔄 Đảo chiều`)**: Nút 1-click trong bảng chi tiết tuyến đo `MeasurementInspector` hỗ trợ đảo ngược mảng tọa độ tuyến (`coordinates.reverse()`) và lưu thành bản ghi hiệu chỉnh mới (`supersedeMeasurement`), giúp xử lý chuẩn xác hướng di chuyển công ích.
-- **Loại bỏ công cụ Đo nháp khỏi thanh công cụ (`DrawingToolbar`)**: Theo yêu cầu đơn giản hóa giao diện sử dụng thực địa, nút **Đo nháp** (`measure`) đã được loại bỏ khỏi danh sách công cụ đo nhanh trên thanh `DrawingToolbar`, tập trung giao diện chính cho 4 công cụ số hóa chính (`Điểm`, `Chiều dài`, `Diện tích`, `Hình chữ nhật`) cùng các tiện ích hỗ trợ (`🧲 Bắt điểm`, `📐 Ortho`, `🔍 Kính lúp`).
+- **Tiện ích đo đạc còn hiệu lực**: Kính lúp 2x hỗ trợ quan sát trên PC/Desktop;
+  đảo chiều tuyến trong bảng chi tiết tạo một phiên bản hiệu chỉnh mới bằng
+  `supersedeMeasurement`. Hình chữ nhật, Ortho và shortcut `R`/`Shift` đã được
+  loại bỏ khỏi mã và phạm vi sản phẩm ngày 26/07/2026.
+- **Thanh công cụ đo nhanh** chỉ gồm ba công cụ số hóa chính: **Điểm**, **Chiều
+  dài**, **Diện tích**, cùng các tiện ích Bắt điểm và Kính lúp.
 - **Tối ưu hóa Tốc độ Đăng nhập & Xử lý Khởi động nguội Máy chủ API (Cold Start)**: Tự động phát lệnh kiểm tra siêu nhẹ `GET /api/v1/health` (`api.pingHealth()`) ngay khi mở trang web hoặc khi người dùng focus gõ tài khoản để khởi động ngầm máy chủ Render Free Tier. Thêm cơ chế tự động thử lại 3 lần (`Fetch Retry with Backoff`), cache mô-đun Argon2id phía máy chủ, và hiển thị thông báo trạng thái `⚡ Máy chủ đang kết nối ban đầu (Cold Start). Vui lòng chờ trong giây lát…` giúp loại bỏ cảm giác đăng nhập lâu/khó và đảm bảo đăng nhập mượt mà.
 - Rà soát production ngày 26/07/2026 xác nhận warm-up cũ gọi nhầm
   `/api/v1/health` (`404`) và workflow keep-alive gọi `/api/v1/auth/me` (`404`).
@@ -520,3 +520,8 @@ và các cổng bảo mật trong runbook.
   204,34 kB raw/64,30 kB gzip, JavaScript bản đồ 1.099,32 kB/292,77 kB và CSS
   khởi động 9,54 kB/2,68 kB. Cổng bundle kiểm thêm CSS bản đồ cùng tổng JavaScript
   bảng thông tin theo yêu cầu để việc code-split không né ngân sách.
+- Giai đoạn 0 thiết kế lại công cụ bản đồ đã được chốt tại
+  `docs/16_TOOL_INTERACTION_DESIGN_PHASE_0.md`. Giai đoạn 1 chỉ đổi giao diện của
+  công cụ đã hoạt động, dùng hệ icon SVG nội bộ **Field Precision** và toolbar theo
+  ngữ cảnh; Hình chữ nhật/Ortho đã được loại bỏ hẳn khỏi phạm vi. Không thay đổi
+  API, phép đo chính thức, dữ liệu/audit hoặc địa giới.
