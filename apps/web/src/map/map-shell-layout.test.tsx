@@ -34,7 +34,6 @@ describe('map-first shell', () => {
     expect(html).toContain('aria-label="Tìm kiếm"')
     expect(html).toContain('aria-label="Bảng điều khiển bản đồ"')
     expect(html).toContain('aria-label="Quản lý số liệu"')
-    expect(html).toContain('aria-label="Lớp bản đồ"')
     expect(html).toContain('aria-label="Thêm công cụ"')
     expect(html).not.toContain('map-data-rail')
     expect(html).toContain('aria-controls="map-data-drawer"')

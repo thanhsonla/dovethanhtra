@@ -1471,30 +1471,19 @@
 }
 
 @media (max-width: 640px) {
-  .field-mode-toggle,
-  .commune-toggle {
-    display: none;
-  }
-
   .map-toolbar-container {
     width: calc(100% - 12px);
     max-width: none;
-    flex-wrap: wrap;
     justify-content: center;
   }
 
   .map-primary-toolbar,
   .map-panel-toolbar {
-    flex-wrap: wrap;
     justify-content: center;
   }
 
   .map-primary-toolbar {
-    width: 100%;
-  }
-
-  .map-toolbar-container__divider {
-    display: none;
+    width: auto;
   }
 
   .map-primary-toolbar button,

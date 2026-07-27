@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { MapIcon, type MapIconName } from './map-icon.js'
 import type { MapMode } from './measurement-map.js'
 
-export type MapPanelName = 'capture' | 'classification' | 'data' | 'details' | 'filters' | 'layers'
+export type MapPanelName = 'capture' | 'classification' | 'data' | 'details' | 'filters'
 type ToolbarPanelName = Exclude<MapPanelName, 'capture' | 'classification'>
 
 interface MapShortcutEvent {
@@ -70,7 +70,6 @@ const panelIcons: Record<ToolbarPanelName, MapIconName> = {
   data: 'data',
   details: 'settings',
   filters: 'search',
-  layers: 'layers',
 }
 
 export function DrawingToolbar(props: {
@@ -229,27 +228,15 @@ export function DrawingToolbar(props: {
         <>
           <span className="map-toolbar-container__divider" aria-hidden="true" />
           <nav className="map-panel-toolbar" aria-label="Bảng điều khiển bản đồ">
-            {(['data', 'filters', 'layers'] as const).map((panel) => (
+            {(['data', 'filters'] as const).map((panel) => (
               <button
                 aria-controls={`map-${panel === 'filters' ? 'filter' : panel}-drawer`}
                 aria-expanded={props.activePanel === panel}
-                aria-label={
-                  panel === 'data'
-                    ? 'Quản lý số liệu'
-                    : panel === 'filters'
-                      ? 'Tìm kiếm'
-                      : 'Lớp bản đồ'
-                }
+                aria-label={panel === 'data' ? 'Quản lý số liệu' : 'Tìm kiếm'}
                 className={props.activePanel === panel ? 'is-active' : undefined}
                 key={panel}
                 onClick={() => openPanel(panel)}
-                title={
-                  panel === 'data'
-                    ? 'Quản lý số liệu'
-                    : panel === 'filters'
-                      ? 'Tìm kiếm'
-                      : 'Lớp bản đồ'
-                }
+                title={panel === 'data' ? 'Quản lý số liệu' : 'Tìm kiếm'}
                 type="button"
               >
                 <MapIcon name={panelIcons[panel]} />

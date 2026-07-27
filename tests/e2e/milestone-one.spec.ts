@@ -141,14 +141,9 @@ test('creates a case and adds a catalog work item', async ({ page }, testInfo) =
       }
     })
   expect(dataButtonBounds).toEqual({ insideToolbar: true, visibleText: '' })
-  await page.getByRole('button', { name: 'Lớp bản đồ', exact: true }).click()
-  await expect(page.locator('#map-layers-drawer')).toBeVisible()
-  await expect(
-    page.locator('#map-layers-drawer').getByRole('group', { name: 'Chế độ hiển thị thực địa' }),
-  ).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Chế độ hiển thị thực địa' })).toBeVisible()
   await expect(page.getByLabel('Hiện ranh giới và tên phường/xã')).toBeVisible()
-  await expect(page.getByLabel('Bản đồ nền trong bảng Lớp')).toHaveValue('esri-imagery-labels')
-  await page.getByLabel('Đóng lớp bản đồ', { exact: true }).click()
+  await expect(page.getByLabel('Bản đồ nền')).toHaveValue('esri-imagery-labels')
   await expect(page.getByRole('button', { name: 'Thêm công cụ', exact: true })).toBeVisible()
   const toolbarDisplay = await page
     .locator('.map-primary-toolbar')
