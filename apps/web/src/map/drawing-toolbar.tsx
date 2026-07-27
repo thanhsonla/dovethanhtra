@@ -125,6 +125,7 @@ export function DrawingToolbar(props: {
     { kind: 'area', label: 'Diện tích', shortcut: 'A' },
   ]
   const isDrawing = props.mode !== 'view'
+  const leftDrawerOpen = props.activePanel === 'data' || props.activePanel === 'filters'
   const modeLabel =
     props.mode === 'point'
       ? 'Đang vẽ điểm'
@@ -140,7 +141,11 @@ export function DrawingToolbar(props: {
   }
 
   return (
-    <div className={`map-toolbar-container${isDrawing ? ' map-toolbar-container--drawing' : ''}`}>
+    <div
+      className={`map-toolbar-container${isDrawing ? ' map-toolbar-container--drawing' : ''}${
+        leftDrawerOpen ? ' is-left-panel' : ''
+      }`}
+    >
       <nav className="map-primary-toolbar" aria-label="Công cụ đo nhanh">
         {isDrawing ? (
           <>

@@ -533,10 +533,14 @@ và các cổng bảo mật trong runbook.
   ở toolbar. Tất cả icon chuyển sang SVG nội bộ, không thêm thư viện; build
   sau thay đổi giữ CSS bản đồ 111,52 kB raw/18,38 kB gzip và tổng các chunk theo
   yêu cầu 79,45 kB raw/22,37 kB gzip, đều trong ngân sách.
-- Trên điện thoại (tối đa 640 px), toolbar chuyển thành hai hàng cảm ứng 44 px:
-  hàng đo chính và hàng Dữ liệu/Tìm kiếm/Lớp/Thêm. Header ẩn các điều khiển đã có
-  trong drawer **Lớp**, drawer trở thành bottom sheet có thể cuộn và thẻ đối tượng
-  dùng toàn chiều ngang, có chiều cao tối đa/cuộn nội dung để không che hoặc cắt
-  công cụ. Lựa chọn **Google vệ tinh · nhãn dễ đọc** luôn có sẵn qua adapter hybrid
-  khóa hướng Bắc; chế độ nhãn vector ngay ngắn hơn vẫn tự xuất hiện khi Vercel có
-  `VITE_MAPBOX_PUBLIC_TOKEN` hợp lệ. Không đưa khóa hoặc dữ liệu production vào mã.
+- Trên điện thoại (tối đa 640 px), toolbar giữ một hàng sáu nút cảm ứng 44 px:
+  đo chính, Dữ liệu, Tìm kiếm và Thêm. Drawer trở thành bottom sheet có thể cuộn và
+  thẻ đối tượng dùng toàn chiều ngang, có chiều cao tối đa/cuộn nội dung để không
+  che hoặc cắt công cụ. Lựa chọn **Google vệ tinh · nhãn dễ đọc** luôn có sẵn qua
+  adapter hybrid khóa hướng Bắc; chế độ nhãn vector ngay ngắn hơn vẫn tự xuất hiện
+  khi Vercel có `VITE_MAPBOX_PUBLIC_TOKEN` hợp lệ. Không đưa khóa hoặc dữ liệu
+  production vào mã.
+- Khi mở drawer bên trái (**Quản lý số liệu** hoặc **Tìm kiếm**) trên desktop/tablet,
+  toolbar tự neo vào phần bản đồ còn lại; ở điện thoại drawer là bottom sheet nên
+  toolbar vẫn nằm giữa. Cách bố trí này không che nội dung danh sách và không nhân
+  đôi công cụ điều khiển.

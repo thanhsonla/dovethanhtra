@@ -38,6 +38,7 @@ describe('map-first shell', () => {
     expect(html).not.toContain('map-data-rail')
     expect(html).toContain('aria-controls="map-data-drawer"')
     expect(html).toContain('aria-expanded="true"')
+    expect(html).toContain('is-left-panel')
     expect(html).not.toContain('>Số liệu<')
     expect(html).not.toContain('map-data-rail__chevron')
   })

@@ -42,6 +42,10 @@
   position: relative;
 }
 
+.map-toolbar-container.is-left-panel {
+  left: calc(var(--map-data-drawer-width) + 12px);
+}
+
 .map-toolbar-container__divider {
   width: 1px;
   height: 26px;
@@ -1396,6 +1400,10 @@
     transform: translateX(-50%);
   }
 
+  .map-toolbar-container.is-left-panel {
+    left: 66.6667%;
+  }
+
   .map-primary-toolbar,
   .map-panel-toolbar {
     display: flex;
@@ -1472,18 +1480,16 @@
 
 @media (max-width: 640px) {
   .map-toolbar-container {
-    width: calc(100% - 12px);
-    max-width: none;
     justify-content: center;
+  }
+
+  .map-toolbar-container.is-left-panel {
+    left: 50%;
   }
 
   .map-primary-toolbar,
   .map-panel-toolbar {
     justify-content: center;
-  }
-
-  .map-primary-toolbar {
-    width: auto;
   }
 
   .map-primary-toolbar button,
