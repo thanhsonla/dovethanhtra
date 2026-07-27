@@ -544,3 +544,6 @@ và các cổng bảo mật trong runbook.
   toolbar tự neo vào phần bản đồ còn lại; ở điện thoại drawer là bottom sheet nên
   toolbar vẫn nằm giữa. Cách bố trí này không che nội dung danh sách và không nhân
   đôi công cụ điều khiển.
+- Khi đang xem thẻ một đối tượng trên bản đồ, một lần nhấp/chạm vào vùng trống chỉ
+  giữ nguyên thẻ để người dùng tiếp tục rê/kéo bản đồ; cần hai lần liên tiếp trong
+  750 ms mới bỏ chọn. Nút đóng thẻ và phím Escape vẫn đóng ngay lập tức.

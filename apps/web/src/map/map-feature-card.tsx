@@ -100,7 +100,6 @@ export function MapFeatureCard(props: {
   const [componentDeleteKey, setComponentDeleteKey] = useState<string | null>(null)
   const [componentDeletingKey, setComponentDeletingKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const cardRef = useRef<HTMLElement | null>(null)
   const colorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -118,15 +117,9 @@ export function MapFeatureCard(props: {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') props.onClose()
     }
-    const closeOnOutside = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Node && !cardRef.current?.contains(target)) props.onClose()
-    }
     document.addEventListener('keydown', closeOnEscape, true)
-    document.addEventListener('pointerdown', closeOnOutside)
     return () => {
       document.removeEventListener('keydown', closeOnEscape, true)
-      document.removeEventListener('pointerdown', closeOnOutside)
     }
   }, [props.onClose])
 
@@ -330,7 +323,7 @@ export function MapFeatureCard(props: {
   const primaryMeasurementId = workMeasurements[0]?.id
 
   return (
-    <article className="map-feature-card" aria-label="Thông tin đối tượng đã chọn" ref={cardRef}>
+    <article className="map-feature-card" aria-label="Thông tin đối tượng đã chọn">
       <button
         className="map-feature-card__close"
         aria-label="Đóng thẻ"

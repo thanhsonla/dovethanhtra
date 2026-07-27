@@ -31,6 +31,7 @@ import type { FieldDisplayMode } from './map-service-colors.js'
 import { MapAlert } from './map-alert.js'
 import { MeasurementMap } from './measurement-map.js'
 import { MapWorkspaceOverlays } from './map-workspace-overlays.js'
+import { isSecondOutsideSelectionPress } from './map-selection-dismissal.js'
 import { activeWorkId, measurementKindForWork, rememberActiveWork } from './map-workspace-state.js'
 import { useMapDrawingWorkflow } from './use-map-drawing-workflow.js'
 import { useMapWorkspaceResources } from './use-map-workspace-resources.js'
@@ -132,6 +133,7 @@ export function MapWorkspace(props: {
   // synchronously inside selectMapFeature (before React re-renders), so it
   // survives concurrent mapFeatures.refresh() calls that temporarily empty items.
   const lastSelectedFeatureRef = useRef<typeof selectedFeatureFromItems | null>(null)
+  const lastOutsideSelectionPressRef = useRef<number | null>(null)
   const selectedMeasurement = selectedId
     ? (allMeasurements.find((item) => item.id === selectedId) ??
       lastSelectedFeatureRef.current?.measurement ??
@@ -274,6 +276,13 @@ export function MapWorkspace(props: {
 
   const selectMapFeature = (id: string) => {
     if (!id) {
+      if (!selectedId) return
+      const now = Date.now()
+      if (!isSecondOutsideSelectionPress(lastOutsideSelectionPressRef.current, now)) {
+        lastOutsideSelectionPressRef.current = now
+        return
+      }
+      lastOutsideSelectionPressRef.current = null
       setSelectedId(null)
       if (
         mapFeatures.filters.search ||
@@ -292,6 +301,7 @@ export function MapWorkspace(props: {
       }
       return
     }
+    lastOutsideSelectionPressRef.current = null
     const feature = mapFeatures.items.find((item) => item.measurement.id === id) ?? null
     lastSelectedFeatureRef.current = feature
     setSelectedId(id)
