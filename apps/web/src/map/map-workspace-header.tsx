@@ -35,6 +35,7 @@ export function MapWorkspaceHeader(props: {
       <div className="map-header__controls">
         <div className="field-mode-toggle" role="group" aria-label="Chế độ hiển thị thực địa">
           <button
+            aria-label="Chế độ hiển thị chuẩn"
             type="button"
             className={`field-mode-btn ${fieldMode === 'normal' ? 'is-active' : ''}`}
             onClick={() => props.onFieldModeChange?.('normal')}
@@ -43,6 +44,7 @@ export function MapWorkspaceHeader(props: {
             <MapIcon name="globe" /> <span>Chuẩn</span>
           </button>
           <button
+            aria-label="Chế độ Chói nắng"
             type="button"
             className={`field-mode-btn ${fieldMode === 'sun' ? 'is-active' : ''}`}
             onClick={() => props.onFieldModeChange?.('sun')}
@@ -51,6 +53,7 @@ export function MapWorkspaceHeader(props: {
             <MapIcon name="sun" /> <span>Chói nắng</span>
           </button>
           <button
+            aria-label="Chế độ Ban đêm"
             type="button"
             className={`field-mode-btn ${fieldMode === 'night' ? 'is-active' : ''}`}
             onClick={() => props.onFieldModeChange?.('night')}

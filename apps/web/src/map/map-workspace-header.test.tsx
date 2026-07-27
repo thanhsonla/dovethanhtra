@@ -39,8 +39,8 @@ describe('compact map workspace header', () => {
       />,
     )
 
-    expect(html).toContain('Chói nắng')
-    expect(html).toContain('Đêm')
+    expect(html).toContain('aria-label="Chế độ Chói nắng"')
+    expect(html).toContain('aria-label="Chế độ Ban đêm"')
     expect(html).toContain('field-mode-toggle')
   })
 })
