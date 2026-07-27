@@ -282,7 +282,7 @@ function directGoogleHybridDescriptor(): BasemapDescriptor {
   return {
     attribution: '<a href="https://maps.google.com/">Google Maps</a>',
     id: 'google-hybrid-direct',
-    label: 'Google vệ tinh · khóa hướng Bắc',
+    label: 'Google vệ tinh · nhãn dễ đọc',
     lockRotation: true,
     style: {
       version: 8,

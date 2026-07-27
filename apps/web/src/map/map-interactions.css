@@ -1470,6 +1470,70 @@
   }
 }
 
+@media (max-width: 640px) {
+  .field-mode-toggle,
+  .commune-toggle {
+    display: none;
+  }
+
+  .map-toolbar-container {
+    width: calc(100% - 12px);
+    max-width: none;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .map-primary-toolbar,
+  .map-panel-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .map-primary-toolbar {
+    width: 100%;
+  }
+
+  .map-toolbar-container__divider {
+    display: none;
+  }
+
+  .map-primary-toolbar button,
+  .map-panel-toolbar button,
+  .map-toolbar-more > button {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .map-toolbar-mode {
+    max-width: 132px;
+  }
+
+  .map-toolbar-more__menu {
+    top: auto;
+    right: 0;
+    bottom: calc(100% + 8px);
+  }
+
+  .map-drawer,
+  .map-drawer.map-drawer--left {
+    position: absolute;
+    inset: auto 6px 6px;
+    width: auto;
+    height: auto;
+    max-height: 64dvh;
+    border-radius: 16px;
+  }
+
+  .map-feature-card {
+    inset: auto 6px 6px;
+    width: auto;
+    max-height: 52dvh;
+    overflow-y: auto;
+  }
+}
+
 /* Sidebar panel for Point, Line, and Area features */
 .map-feature-sidebar {
   display: grid;

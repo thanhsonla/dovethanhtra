@@ -134,7 +134,7 @@ describe('configured basemap provider', () => {
     const provider = new ConfiguredBasemapProvider({})
     const google = provider.get('google-hybrid-direct')
 
-    expect(google.label).toBe('Google vệ tinh · khóa hướng Bắc')
+    expect(google.label).toBe('Google vệ tinh · nhãn dễ đọc')
     expect(google.lockRotation).toBe(true)
     expect(JSON.stringify(google.style)).toContain(
       'https://mt1.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
